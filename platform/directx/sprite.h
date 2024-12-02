@@ -3,7 +3,7 @@
 
 #include <d3d11.h>
 #include <directxmath.h>
-#include "constants.h"
+#include "../../constants.h"
 #include "math.h"
 #include "file_util.h"
 

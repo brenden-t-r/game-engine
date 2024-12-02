@@ -15,7 +15,7 @@
 #if defined(PLATFORM_WINDOWS) and defined(BACKEND_OPENGL)
 #include "platform/opengl.h"
 #elif defined(PLATFORM_WINDOWS) and defined(BACKEND_DIRECTX)
-#include "platform/windows.h"
+#include "platform/directx/directx.h"
 #elif defined(PLATFORM_LINUX)
 #include "platform/opengl.h"
 #elif defined(PLATFORM_APPLE)

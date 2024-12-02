@@ -1,29 +1,32 @@
-#ifndef GAMEENGINE_WINDOWS_H
-#define GAMEENGINE_WINDOWS_H
+#ifndef GAMEENGINE_DIRECTX_H
+#define GAMEENGINE_DIRECTX_H
 
 // Include constants
-#include "../constants.h"
-#include "platform.h"
+#include "../../constants.h"
+#include "../platform.h"
+#include "sprite.h"
 
 // Windows/DirectX imports
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include <iostream>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-class PlatformWindows : public Platform {
+
+class PlatformDirectX : public Platform {
 public:
-    PlatformWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    PlatformDirectX(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
         this->hInstance = hInstance;
         this->hPrevInstance = hPrevInstance;
         this->lpCmdLine = lpCmdLine;
         this->nCmdShow = nCmdShow;
     };
-    ~PlatformWindows() override= default;
+    ~PlatformDirectX() override= default;
 
     void Init() override {
         // Register the window class
@@ -63,27 +66,14 @@ public:
         );
         ShowWindow(hwnd, nCmdShow);
 
-        RECT clientRect, windowRect;
-        GetClientRect(hwnd, &clientRect);
-        GetWindowRect(hwnd, &windowRect);
-
-        int clientWidth = clientRect.right - clientRect.left;
-        int clientHeight = clientRect.bottom - clientRect.top;
-
-        int windowWidth = windowRect.right - windowRect.left;
-        int windowHeight = windowRect.bottom - windowRect.top;
-
-        std::cout << "Client Size: " << clientWidth << "x" << clientHeight << std::endl;
-        std::cout << "Window Size: " << windowWidth << "x" << windowHeight << std::endl;
-
         // Initialize Direct3D
         InitD3D(hwnd);
 
         // Initialize graphics pipeline
-//        InitPipeline();
+        InitPipeline();
     }
 
-    void Run() override {
+    void Run(const std::function<void()>& func) override {
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -95,9 +85,35 @@ public:
             }
             else
             {
-                RenderFrame();
+                func();
+
+                // Clear the back buffer
+                float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
+                d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
+
+                // Set the blend state
+                float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
+//                DrawTriangle();
+                DisplaySprite();
+
+                // Present the back buffer to the screen
+                swapChain->Present(1, 0);
             }
         }
+    }
+
+    void DisplaySprite() {
+        Sprite spriteBackground{};
+        spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+        spriteBackground.CreateBuffer(d3dDevice);
+        spriteBackground.LoadTexture(d3dDevice, L"assets/sprites/background.png");
+        spriteBackground.Draw(d3dContext, vertexShader, pixelShader);
+    }
+
+    void DrawTriangle() {
+
     }
 
     void Shutdown() override {
@@ -135,7 +151,6 @@ private:
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-
     // Initialize Direct3D
     void InitD3D(HWND hwnd)
     {
@@ -150,8 +165,14 @@ private:
         scd.BufferDesc.Width = WINDOW_WIDTH;
         scd.BufferDesc.Height = WINDOW_HEIGHT;
 
+        // Device creation flags
+        UINT createDeviceFlags = 0;
+//#ifdef _DEBUG
+        createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+//#endif
+
         // Create the device, device context, and swap chain
-        D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, NULL, 0,
+        D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, NULL, 0,
                                       D3D11_SDK_VERSION, &scd, &swapChain, &d3dDevice, NULL, &d3dContext);
 
         // Create the render target view
@@ -172,8 +193,9 @@ private:
         d3dContext->RSSetViewports(1, &viewport);
     }
 
-    // Initialize graphics pipeline
-/*    void InitPipeline() {
+    void LoadShaders() override {
+        const WCHAR * SHADER_TEXTURE = L"assets/shaders/TextureShader.hlsl";
+
         // Compile and create the vertex shader
         ID3DBlob* vsBlob = nullptr;
         D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
@@ -194,6 +216,13 @@ private:
         d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
         d3dContext->IASetInputLayout(inputLayout);
 
+        // Clean up shader blobs
+        vsBlob->Release();
+        psBlob->Release();
+    }
+
+    // Initialize graphics pipeline
+    void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -220,36 +249,15 @@ private:
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
         d3dDevice->CreateBlendState(&blendDesc, &blendState);
-
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
-    }*/
-
-    // Render the frame
-    void RenderFrame()
-    {
-        // Clear the back buffer
-        float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
-        d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
-
-        // Set the blend state
-        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-
-        // YourScene->Update()
-
-        // Present the back buffer to the screen
-        swapChain->Present(1, 0);
     }
 
     // Clean up Direct3D objects
     void CleanD3D()
     {
-//        vertexBuffer->Release();
-//        inputLayout->Release();
-//        vertexShader->Release();
-//        pixelShader->Release();
+        vertexBuffer->Release();
+        inputLayout->Release();
+        vertexShader->Release();
+        pixelShader->Release();
         renderTargetView->Release();
         swapChain->Release();
         d3dDevice->Release();
@@ -259,8 +267,8 @@ private:
 
 // Entrypoint
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    Platform* platform = new PlatformWindows(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
-    return PlatformMain(platform);
+    auto platform = new PlatformDirectX(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+    return RealMain(platform);
 }
 
-#endif //GAMEENGINE_WINDOWS_H
+#endif //GAMEENGINE_DIRECTX_H
