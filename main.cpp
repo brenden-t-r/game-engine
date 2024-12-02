@@ -14,8 +14,6 @@
  * Platform-specific entry-points using preprocessor macro
  */
 #ifdef PLATFORM_WINDOWS
-
-// Initialize Window
 #ifdef BACKEND_OPENGL
 #include "platform/opengl.h"
 #endif

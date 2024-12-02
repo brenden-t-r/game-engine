@@ -43,6 +43,15 @@ public:
         };
         RegisterClassEx(&wc);
 
+        // Disable monitor DPI scaling
+#if (_WIN32_WINNT >= 0x0A00) // Windows 10+
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+#elif (_WIN32_WINNT >= 0x0603) // Windows 8.1+
+        SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+#else
+        SetProcessDPIAware(); // Legacy API
+#endif
+
         // Create the window
         HWND hwnd = CreateWindow(
                 wc.lpszClassName,
