@@ -1,5 +1,5 @@
-#ifndef DIRECTX11_WINDOWS_H
-#define DIRECTX11_WINDOWS_H
+#ifndef GAMEENGINE_WINDOWS_H
+#define GAMEENGINE_WINDOWS_H
 
 // Include constants
 #include "../constants.h"
@@ -263,4 +263,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return PlatformMain(platform);
 }
 
-#endif //DIRECTX11_WINDOWS_H
+#endif //GAMEENGINE_WINDOWS_H

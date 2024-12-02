@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSharedSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug-DirectX" ENABLED="true" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCMAKE_CXX_FLAGS=&quot;-DBACKEND_DIRECTX&quot;" />
+      <configuration PROFILE_NAME="Debug-OpenGL" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Visual Studio" GENERATION_OPTIONS="-DCMAKE_CXX_FLAGS=&quot;-DBACKEND_OPENGL&quot;" />
+    </configurations>
+  </component>
+</project>

@@ -1,5 +1,5 @@
-#ifndef DIRECTX11_OPENGL_H
-#define DIRECTX11_OPENGL_H
+#ifndef GAMEENGINE_OPENGL_H
+#define GAMEENGINE_OPENGL_H
 
 // Include constants
 #include "../constants.h"
@@ -89,4 +89,4 @@ int main() {
     return PlatformMain(platform);
 }
 
-#endif //DIRECTX11_OPENGL_H
+#endif //GAMEENGINE_OPENGL_H

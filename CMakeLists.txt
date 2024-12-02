@@ -42,6 +42,12 @@ endif()
 # Add executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+# Check if MYMACRO should be defined
+#if(DEFINED ENV{MYMACRO})
+#    message(STATUS "Defining MYMACRO")
+#    target_compile_definitions(my_app PRIVATE MYMACRO)
+#endif()
+
 # Link platform-specific libraries
 if (WIN32)
     # DirectX

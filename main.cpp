@@ -1,4 +1,3 @@
-//#include "platform/platform.h"
 
 /*
  * Choose backend
@@ -6,26 +5,23 @@
  *  Linux   => OpenGL
  *  Apple   => OpenGL, Metal
  * */
-#define BACKEND_DIRECTX
+//#define BACKEND_DIRECTX
 //#define BACKEND_OPENGL
 //#define BACKEND_METAL
 
 /*
  * Platform-specific entry-points using preprocessor macro
  */
-#ifdef PLATFORM_WINDOWS
-#ifdef BACKEND_OPENGL
+#if defined(PLATFORM_WINDOWS) and defined(BACKEND_OPENGL)
 #include "platform/opengl.h"
-#endif
-#ifdef BACKEND_DIRECTX
+#elif defined(PLATFORM_WINDOWS) and defined(BACKEND_DIRECTX)
 #include "platform/windows.h"
-#endif
-
-#endif
-
-#ifdef PLATFORM_LINUX
+#elif defined(PLATFORM_LINUX)
 #include "platform/opengl.h"
-#endif
-
-#ifdef PLATFORM_APPLE
+#elif defined(PLATFORM_APPLE)
+#else
+// No backend selected
+int main() {
+    return -1;
+}
 #endif
