@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(DirectX11)
+project(GameEngine)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -11,6 +11,7 @@ set(SOURCES main.cpp file_util.h
         math.h
         constants.h
         scene.h
+        platform/platform.h
 )
 
 # Add platform-specific sources
@@ -69,6 +70,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/TextureShader.hlsl"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+
 
 #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 #        COMMAND ${CMAKE_COMMAND} -E copy_if_different
