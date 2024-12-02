@@ -1,3 +1,7 @@
+#ifndef GAMEENGINE_CONSTANTS
+#define GAMEENGINE_CONSTANTS
 
 constexpr int WINDOW_WIDTH = 1920;
 constexpr int WINDOW_HEIGHT = 1080;
+
+#endif //GAMEENGINE_CONSTANTS

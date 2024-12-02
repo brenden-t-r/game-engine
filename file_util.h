@@ -1,3 +1,6 @@
+#ifndef GAMEENGINE_FILE_UTIL
+#define GAMEENGINE_FILE_UTIL
+
 #include <d3d11.h>
 #include <wincodec.h>
 #include <vector>
@@ -65,3 +68,5 @@ void LoadTextureFromFile(ID3D11Device* d3dDevice, const wchar_t* filename, ID3D1
     wicFactory->Release();
     CoUninitialize();
 }
+
+#endif // GAMEENGINE_FILE_UTIL

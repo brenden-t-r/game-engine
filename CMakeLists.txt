@@ -77,8 +77,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         "${CMAKE_SOURCE_DIR}/TextureShader.hlsl"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
-
-#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#        "${CMAKE_SOURCE_DIR}/images/texture.png"
-#        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+file(GLOB ASSETS_FOLDER
+        "assets/*.png"
+)
+file(COPY ${ASSETS_FOLDER} DESTINATION assets)

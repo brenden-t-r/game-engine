@@ -1,3 +1,6 @@
+#ifndef GAMEENGINE_SPRITE
+#define GAMEENGINE_SPRITE
+
 #include <d3d11.h>
 #include <directxmath.h>
 #include "constants.h"
@@ -97,3 +100,5 @@ public:
         d3dContext->Draw(4, 0);
     }
 };
+
+#endif //GAMEENGINE_SPRITE
