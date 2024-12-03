@@ -85,14 +85,13 @@ public:
             }
             else
             {
-                func();
-
                 // Clear the back buffer
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
-                DisplaySprite();
-                DrawTriangle();
+                func();
+//                DisplaySprite();
+//                DrawTriangle();
 
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
@@ -112,7 +111,7 @@ public:
         spriteBackground.Draw(d3dContext, vertexShader, pixelShader);
     }
 
-    void DrawTriangle() {
+    void DrawTriangle() override {
         // "Unset" the blend state
         float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         d3dContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);

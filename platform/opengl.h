@@ -96,8 +96,8 @@ public:
             glClear( GL_COLOR_BUFFER_BIT );
 
             func();
-            DrawTriangle();
-            DrawSprite();
+//            DrawTriangle();
+//            DrawSprite();
 
             glfwPollEvents();
         }
@@ -121,7 +121,7 @@ public:
     void DrawSprite() {
     }
 
-    void DrawTriangle() {
+    void DrawTriangle() override {
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);

@@ -1,5 +1,5 @@
-#ifndef GAMEENGINE_SPRITE
-#define GAMEENGINE_SPRITE
+#ifndef GAMEENGINE_DIRECTX_SPRITE
+#define GAMEENGINE_DIRECTX_SPRITE
 
 #include <d3d11.h>
 #include <directxmath.h>
@@ -101,4 +101,4 @@ public:
     }
 };
 
-#endif //GAMEENGINE_SPRITE
+#endif //GAMEENGINE_DIRECTX_SPRITE
