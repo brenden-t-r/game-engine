@@ -91,12 +91,8 @@ public:
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
-                // Set the blend state
-                float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-                d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-
-//                DrawTriangle();
                 DisplaySprite();
+                DrawTriangle();
 
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
@@ -105,6 +101,10 @@ public:
     }
 
     void DisplaySprite() {
+        // Set the blend state
+        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
         Sprite spriteBackground{};
         spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
         spriteBackground.CreateBuffer(d3dDevice);
@@ -113,7 +113,49 @@ public:
     }
 
     void DrawTriangle() {
+        // "Unset" the blend state
+        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        d3dContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
 
+        // Define a triangle with 3 vertices
+        Vertex vertices[3] = {
+                { DirectX::XMFLOAT3(0.5f,  -0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
+                { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.0f), DirectX::XMFLOAT2(0.5f, 0.0f) },
+                { DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.25f, 0.5f) }
+        };
+
+            // Create the vertex buffer
+        D3D11_BUFFER_DESC bufferDesc = {};
+        bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        bufferDesc.ByteWidth = sizeof(vertices);
+        bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA initData = {};
+        initData.pSysMem = vertices;
+
+        HRESULT hr = d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
+        if (FAILED(hr)) {
+            // Handle the error (e.g., log it)
+        }
+
+        // Set the vertex buffer
+        UINT stride = sizeof(Vertex);
+        UINT offset = 0;
+        d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+        d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        // Set the shaders
+        d3dContext->VSSetShader(vertexShader, nullptr, 0);
+        d3dContext->PSSetShader(pixelShader, nullptr, 0);
+        ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+        d3dContext->PSSetShaderResources(0, 1, nullSRV);
+
+        // Draw the triangle
+        d3dContext->Draw(3, 0); // Draw 3 vertices
+
+        // Release resources (if necessary, depending on your resource management strategy)
+        vertexBuffer->Release();
     }
 
     void Shutdown() override {
