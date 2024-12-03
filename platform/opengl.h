@@ -97,6 +97,7 @@ public:
 
             func();
             DrawTriangle();
+            DrawSprite();
 
             glfwPollEvents();
         }
@@ -117,6 +118,9 @@ public:
         glfwTerminate();
     }
 
+    void DrawSprite() {
+    }
+
     void DrawTriangle() {
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
@@ -127,19 +131,7 @@ public:
                 GL_FLOAT,           // type
                 GL_FALSE,           // normalized?
                 0,                  // stride
-                (void*)0            // array buffer offset
-        );
-
-        // 1rst attribute buffer : vertices
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void*)0            // array buffer offset
+                nullptr             // array buffer offset
         );
 
         // Draw the triangle !
@@ -266,5 +258,6 @@ int main() {
     auto platform = new PlatformOpenGL();
     return RealMain(platform);
 }
+
 
 #endif //GAMEENGINE_OPENGL_H
