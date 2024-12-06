@@ -31,6 +31,8 @@ public:
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL
 
+        glfwSwapInterval(1); // Enables V-Sync
+
         /* Create a windowed mode window and its OpenGL context */
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello World", NULL, NULL);
         if (window == NULL) {
@@ -65,35 +67,19 @@ public:
     }
 
     void LoadShaders() override {
-        VertexArrayID;
-        glGenVertexArrays(1, &VertexArrayID);
-        glBindVertexArray(VertexArrayID);
-
         // Create and compile our GLSL program from the shaders
-        GLuint programID = LoadShaders(
-                "SimpleVertexShader.vertexshader",
-                "SimpleFragmentShader.fragmentshader"
-        );
-
+//        shaderProgram = LoadShaders(
+//                "TextureShader.vertexshader",
+//                "TextureShader.fragmentshader"
+//        );
         // Use our shader
-        glUseProgram(programID);
-
-        static const GLfloat g_vertex_buffer_data[] = {
-                -1.0f, -1.0f, 0.0f,
-                1.0f, -1.0f, 0.0f,
-                0.0f,  1.0f, 0.0f,
-        };
-
-        vertexbuffer;
-        glGenBuffers(1, &vertexbuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+//        glUseProgram(shaderProgram);
     }
 
     void Run(const std::function<void()>& func) override{
         do{
             // Clear the screen
-            glClear( GL_COLOR_BUFFER_BIT );
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             func();
 //            DrawTriangle();
@@ -106,48 +92,84 @@ public:
                 glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
                 glfwWindowShouldClose(window) == 0
         );
+
+        glDeleteBuffers(1, &vertexBufferObject);
+        glDisableVertexAttribArray(0);
     }
 
     void Shutdown() override{
         // Cleanup VBO
-        glDeleteBuffers(1, &vertexbuffer);
-        glDeleteVertexArrays(1, &VertexArrayID);
-        glDeleteProgram(programID);
+        glDeleteBuffers(1, &vertexBufferObject);
+        glDeleteVertexArrays(1, &vertexArrayObject);
+        glDeleteProgram(shaderProgram);
 
         // Close OpenGL window and terminate GLFW
         glfwTerminate();
     }
 
-    void DrawSprite() {
-    }
-
     void DrawTriangle() override {
-        // 1rst attribute buffer : vertices
+        // Initialize triangle
+        GLfloat vertices[] = {
+                0.5f,  -0.5f, 0.0f,
+                -0.5f, -0.5f, 0.0f,
+                0, 0.5f, 0.0f,
+        };
+
+        glGenBuffers(1, &vertexBufferObject);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glGenVertexArrays(1, &vertexArrayObject);
+        glBindVertexArray(vertexArrayObject);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                nullptr             // array buffer offset
-        );
 
-        // Draw the triangle !
-        glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
-
-        glDisableVertexAttribArray(0);
-
-        // Swap buffers
+        // Draw
+        glDrawArrays(GL_TRIANGLES, 0, 3);
         glfwSwapBuffers(window);
     }
 
+//    void DrawSprite() {
+//        static const GLfloat vertices[] = {
+//                0.5f,  0.5f, 0.0f,  // top right
+//                0.5f, -0.5f, 0.0f,  // bottom right
+//                -0.5f, -0.5f, 0.0f,  // bottom left
+//                -0.5f,  0.5f, 0.0f   // top left
+//        };
+//        glGenBuffers(1, &vertexBufferObject);
+//        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+//        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+//        unsigned int indices[] = {  // note that we start from 0!
+//                0, 1, 3,   // first triangle
+//                1, 2, 3    // second triangle
+//        };
+//
+//        unsigned int elementBufferObject;
+//        glGenBuffers(1, &elementBufferObject);
+//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+//
+//        glEnableVertexAttribArray(0);
+//        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+//
+//        glUseProgram(shaderProgram);
+//        glBindVertexArray(vertexArrayObject);
+//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+//        glDisableVertexAttribArray(0);
+//
+//        // Swap buffers
+//        glfwSwapBuffers(window);
+//
+//        glDeleteBuffers(1, &vertexBufferObject);
+//    }
+
 private:
     GLFWwindow *window = nullptr;
-    GLuint VertexArrayID = 0;
-    GLuint programID = 0;
-    GLuint vertexbuffer = 0;
+    GLuint vertexArrayObject = 0;
+    GLuint shaderProgram = 0;
+    GLuint vertexBufferObject = 0;
 
     GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
         // Create the shaders
