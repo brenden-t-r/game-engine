@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include "../engine/file.h"
+#include "../engine/vector.h"
 
 class Platform {
 public:
@@ -13,7 +14,12 @@ public:
     virtual void Init() = 0;
     virtual void LoadShaders() = 0;
     virtual void Run(const std::function<void()>& func) = 0;
-    virtual void DrawTriangle() = 0;
+
+    virtual GameObject* CreateGameObject(){ return new GameObject(); };
+    virtual GameObject* CreateTriangle() = 0;
+
+
+
     virtual void Shutdown() = 0;
 };
 

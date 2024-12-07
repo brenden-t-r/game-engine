@@ -8,8 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Set sources
 set(SOURCES main.cpp
         constants.h
-        engine/file.h
         platform/platform.h
+        engine/file.h
+        engine/vector.h
 )
 
 # Add platform-specific sources

@@ -18,17 +18,31 @@ public:
     };
     ~Game() = default;
 
-    void Start() {
+    virtual void Start() = 0;
+    virtual void Update() = 0;
+
+protected:
+    Platform* platform;
+};
+
+class SampleGame : public Game {
+public:
+    using Game::Game;
+
+    ~SampleGame() {
+        delete triangle;
+    };
+
+    void Start() override {
         platform->LoadShaders();
     }
 
-    void Update() {
+    void Update() override {
         printf(".");
-        platform->DrawTriangle();
     }
 
 private:
-    Platform* platform;
+    GameObject* triangle{};
 };
 
 // Common logic for the application
@@ -37,7 +51,8 @@ int RealMain(Platform* platform) {
 
     platform->Init();
 
-    Game* game = new Game(platform);
+    Game* game = new SampleGame(platform);
+//    Game* game = new Game(platform);
     game->Start();
 
     printf("Running...\n");
@@ -68,5 +83,32 @@ int main() {
     return -1;
 }
 #endif
+
+
+/*
+ * Game examples
+ */
+class TriangleGame : public Game {
+public:
+    using Game::Game;
+
+    ~TriangleGame() {
+        delete triangle;
+    };
+
+    void Start() override {
+        platform->LoadShaders();
+        triangle = platform->CreateTriangle();
+    }
+
+    void Update() override {
+        printf(".");
+        triangle->Update();
+        triangle->transform.pos.x += 0.01;
+    }
+
+private:
+    GameObject* triangle{};
+};
 
 

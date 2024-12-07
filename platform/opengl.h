@@ -64,6 +64,12 @@ public:
 
         // Dark blue background
         glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+
+        // Setup VAOs
+        glGenVertexArrays(1, &triangleVAO);
+        glBindVertexArray(triangleVAO);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+        glEnableVertexAttribArray(0);
     }
 
     void LoadShaders() override {
@@ -81,52 +87,73 @@ public:
             // Clear the screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            glGenVertexArrays(1, &triangleVAO);
+            glBindVertexArray(triangleVAO);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+            glEnableVertexAttribArray(0);
+
             func();
 //            DrawTriangle();
 //            DrawSprite();
 
             glfwPollEvents();
+
+
+            glfwSwapBuffers(window);
         }
         // Check if the ESC key was pressed or the window was closed
         while(
                 glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
                 glfwWindowShouldClose(window) == 0
         );
-
-        glDeleteBuffers(1, &vertexBufferObject);
-        glDisableVertexAttribArray(0);
     }
 
     void Shutdown() override{
-        // Cleanup VBO
-        glDeleteBuffers(1, &vertexBufferObject);
-        glDeleteVertexArrays(1, &vertexArrayObject);
+        glDisableVertexAttribArray(0);
+        glDeleteVertexArrays(1, &triangleVAO);
         glDeleteProgram(shaderProgram);
 
         // Close OpenGL window and terminate GLFW
         glfwTerminate();
     }
 
-    void DrawTriangle() override {
-        // Initialize triangle
-        GLfloat vertices[] = {
+    GameObject* CreateGameObject() override {
+        auto gameObject = new GameObject();
+        return gameObject;
+    }
+
+    class TriangleGL : public Triangle{
+
+    public:
+        ~TriangleGL(){
+            glDeleteBuffers(1, &vertexBufferObject);
+        }
+
+        void Update() override {
+            Triangle::Update();
+            GLfloat newVertices[] = {
+                    vertex1.x, vertex1.y, 0.0f,
+                    vertex2.x, vertex2.y, 0.0f,
+                    vertex3.x, vertex3.y, 0.0f,
+            };
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+
+        GLuint vertexBufferObject = 0;
+        GLfloat vertices[9]{
                 0.5f,  -0.5f, 0.0f,
                 -0.5f, -0.5f, 0.0f,
-                0, 0.5f, 0.0f,
+                0.0, 0.5f, 0.0f,
         };
+    };
 
-        glGenBuffers(1, &vertexBufferObject);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glGenVertexArrays(1, &vertexArrayObject);
-        glBindVertexArray(vertexArrayObject);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
-
-        // Draw
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwSwapBuffers(window);
+    GameObject* CreateTriangle() override {
+        auto gameObject = new TriangleGL();
+        glGenBuffers(1, &gameObject->vertexBufferObject);
+        glBindBuffer(GL_ARRAY_BUFFER, gameObject->vertexBufferObject);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(gameObject->vertices), gameObject->vertices, GL_STATIC_DRAW);
+        return gameObject;
     }
 
 //    void DrawSprite() {
@@ -155,7 +182,7 @@ public:
 //        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 //
 //        glUseProgram(shaderProgram);
-//        glBindVertexArray(vertexArrayObject);
+//        glBindVertexArray(triangleVAO);
 //        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 //        glDisableVertexAttribArray(0);
 //
@@ -167,9 +194,8 @@ public:
 
 private:
     GLFWwindow *window = nullptr;
-    GLuint vertexArrayObject = 0;
+    GLuint triangleVAO = 0;
     GLuint shaderProgram = 0;
-    GLuint vertexBufferObject = 0;
 
     GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
         // Create the shaders
