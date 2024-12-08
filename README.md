@@ -2,8 +2,8 @@
 
 ## Windows
 
-DirectX backend must be run with MingGW toolchain
-OpenGL backend must be run with VS Studio toolchain
+- DirectX backend must be run with MingGW toolchain.
+- OpenGL backend must be run with VS Studio toolchain.
 
 Run with one of the following CMake options to choose a backend
 ```bash

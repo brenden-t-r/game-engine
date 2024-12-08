@@ -11,6 +11,8 @@ set(SOURCES main.cpp
         platform/platform.h
         engine/file.h
         engine/vector.h
+        engine/game.h
+        samples/triangleGame.h
 )
 
 # Add platform-specific sources
