@@ -46,7 +46,17 @@ elseif (APPLE)
 endif()
 
 # Add executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+option(BACKEND_DIRECTX "Use DirectX backend" OFF)
+option(BACKEND_OPENGL "Use OpenGL backend" OFF)
+if (BACKEND_DIRECTX)
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_DIRECTX)
+elseif (BACKEND_OPENGL)
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
+else()
+    message(FATAL_ERROR "No backend specified! Use -DBACKEND_DIRECTX or -DBACKEND_OPENGL.")
+endif()
 
 # Link platform-specific libraries
 if (WIN32)

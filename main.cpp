@@ -58,9 +58,9 @@ int RealMain(Platform* platform) {
 /*
  * Platform-specific entry-points using preprocessor macro
  */
-#if defined(PLATFORM_WINDOWS) and defined(BACKEND_OPENGL)
+#if defined(PLATFORM_WINDOWS) && defined(BACKEND_OPENGL)
 #include "platform/opengl.h"
-#elif defined(PLATFORM_WINDOWS) and defined(BACKEND_DIRECTX)
+#elif defined(PLATFORM_WINDOWS) && defined(BACKEND_DIRECTX)
 #include "platform/directx/directx.h"
 #elif defined(PLATFORM_LINUX)
 #include "platform/opengl.h"

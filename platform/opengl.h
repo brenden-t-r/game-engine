@@ -302,10 +302,19 @@ private:
     }
 };
 
+// Entrypoint
+#if PLATFORM_WINDOWS
+#include <Windows.h>
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    auto platform = new PlatformOpenGL();
+    return RealMain(platform);
+}
+#else
 int main() {
     auto platform = new PlatformOpenGL();
     return RealMain(platform);
 }
+#endif
 
 
 #endif //GAMEENGINE_OPENGL_H
