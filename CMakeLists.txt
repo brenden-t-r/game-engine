@@ -17,14 +17,12 @@ set(SOURCES main.cpp
 
 # Add platform-specific sources
 if (WIN32)
-
     # DirectX
     list(APPEND SOURCES platform/directx/directx.h)
     list(APPEND SOURCES platform/directx/file_util.h)
     list(APPEND SOURCES platform/directx/math.h)
     list(APPEND SOURCES platform/directx/scene.h)
     list(APPEND SOURCES platform/directx/sprite.h)
-
     # (Optional) OpenGL
     list(APPEND SOURCES platform/opengl.h)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
@@ -32,10 +30,8 @@ if (WIN32)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/include)
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/lib/Release/x64)
     add_definitions(-DGLEW_STATIC)
-
-
 elseif (UNIX AND NOT APPLE) # For Linux
-    #OpenGL
+    # OpenGL
     list(APPEND SOURCES platform/opengl.h)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/lib-vc2019)
@@ -43,19 +39,29 @@ elseif (UNIX AND NOT APPLE) # For Linux
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/lib/Release/x64)
     add_definitions(-DGLEW_STATIC)
 elseif (APPLE)
+    # GLFW
+    set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
+    set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
+    include_directories(${GLFW_INCLUDE_DIR})
+    list(APPEND SOURCES platform/metal/mtl_implementation.cpp platform/metal/main.mm platform/metal/stbi_image.cpp)
+
 endif()
 
 # Add executable
-option(BACKEND_DIRECTX "Use DirectX backend" OFF)
-option(BACKEND_OPENGL "Use OpenGL backend" OFF)
-if (BACKEND_DIRECTX)
-    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_DIRECTX)
-elseif (BACKEND_OPENGL)
-    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
+if (WIN32)
+    option(BACKEND_DIRECTX "Use DirectX backend" OFF)
+    option(BACKEND_OPENGL "Use OpenGL backend" OFF)
+    if (BACKEND_DIRECTX)
+        add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_DIRECTX)
+    elseif (BACKEND_OPENGL)
+        add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
+    else()
+        message(FATAL_ERROR "No backend specified! Use -DBACKEND_DIRECTX or -DBACKEND_OPENGL.")
+    endif()
 else()
-    message(FATAL_ERROR "No backend specified! Use -DBACKEND_DIRECTX or -DBACKEND_OPENGL.")
+    add_executable(${PROJECT_NAME} ${SOURCES})
 endif()
 
 # Link platform-specific libraries
@@ -76,9 +82,21 @@ elseif (UNIX AND NOT APPLE) # For Linux
 
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
 elseif (APPLE)
     # TODO: Link OSX, Metal libraries
-    target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_MACOS)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)
+    target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY}
+            "-framework Metal"
+            "-framework Foundation"
+            "-framework QuartzCore"
+            "-framework OpenGL"
+            "-framework Cocoa"
+            "-framework IOKit"
+            "-framework CoreVideo"
+    )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
 endif()
 
 file(GLOB ASSETS_FOLDER
