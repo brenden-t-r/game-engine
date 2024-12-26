@@ -41,15 +41,6 @@ public:
     }
 };
 
-class SpriteRenderer : public Component {
-    void Init() override{
-        printf("SpriteRenderer::Init");
-    }
-    void Update() override{
-        printf("SpriteRenderer::Update");
-    }
-};
-
 class Triangle : public GameObject {
 public:
     Vector3 vertex1 = { 0.5f,  -0.5f, 0.0f};
@@ -67,6 +58,25 @@ public:
     }
 };
 
+class Sprite : public GameObject {
+public:
+    Vector3 vertex1 = {0.5f,  0.5f, 0.0f};  // top right
+    Vector3 vertex2 = {0.5f, -0.5f, 0.0f};  // bottom right
+    Vector3 vertex3 = {-0.5f, -0.5f, 0.0f};  // bottom left
+    Vector3 vertex4 = {-0.5f,  0.5f, 0.0f};  // top left
+
+    void Update() override {
+        GameObject::Update();
+        vertex1.x = transform.pos.x + transform.width/2;
+        vertex1.y = transform.pos.y + transform.height/2;
+        vertex2.x = transform.pos.x + transform.width/2;
+        vertex2.y = transform.pos.y - transform.height/2;
+        vertex3.x = transform.pos.x - transform.width/2;
+        vertex3.y = transform.pos.y - transform.height/2;
+        vertex4.x = transform.pos.x - transform.width/2;
+        vertex4.y = transform.pos.y + transform.height/2;
+    }
+};
 
 
 #endif //GAMEENGINE_VECTOR_H

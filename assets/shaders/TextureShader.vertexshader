@@ -1,13 +1,18 @@
 #version 330 core
-layout (location = 0) in vec4 vertex; // <vec2 position, vec2 texCoords>
+layout (location = 0) in vec4 vertex; // vec2 position, vec2 texCoords
 
 out vec2 TexCoords;
 
-uniform mat4 model;
-uniform mat4 projection;
+uniform mat3 transform;
 
-void main()
-{
+void main() {
+    // Apply transformation
+    vec3 pos = transform * vec3(vertex.xy, 1.0);
+
+    // Convert to clip space (-1 to 1)
+    // Note: For 2D rendering, we keep z at 0.0
+    gl_Position = vec4(pos.xy, 0.0, 1.0);
+
+    // Pass texture coordinates to fragment shader
     TexCoords = vertex.zw;
-    gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);
 }

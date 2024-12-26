@@ -12,6 +12,29 @@
 #include <GLFW/glfw3.h>
 #include <string.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "opengl/stb_image.h"
+
+// Shader compilation helper function
+GLuint compileShader(const char* source, GLenum type) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    // Check for compilation errors
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        std::cerr << "Shader compilation failed: " << infoLog << std::endl;
+    }
+
+    return shader;
+}
+
+GLuint LoadTexture(const char* path);
+
 class PlatformOpenGL : public Platform {
 public:
     PlatformOpenGL() = default;
@@ -69,16 +92,48 @@ public:
         glGenVertexArrays(1, &triangleVAO);
         glBindVertexArray(triangleVAO);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
+//        glEnableVertexAttribArray(0);
     }
 
     void LoadShaders() override {
-        // Create and compile our GLSL program from the shaders
+
+        auto vertexSource = get_shader_content("assets/shaders/TextureShader.vertexshader");
+        auto fragmentSource = get_shader_content("assets/shaders/TextureShader.fragmentshader");
+
+        // Compile shaders
+        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
+        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
+
+        // Create program
+        shaderProgram = glCreateProgram();
+        glAttachShader(shaderProgram, vertexShader);
+        glAttachShader(shaderProgram, fragmentShader);
+        glLinkProgram(shaderProgram);
+
+        // Check for linking errors
+        GLint success;
+        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
+        }
+
+        // Cleanup
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        glUseProgram(shaderProgram);
+
+//        return program;
+
+
+//        // Create and compile our GLSL program from the shaders
 //        shaderProgram = LoadShaders(
-//                "TextureShader.vertexshader",
-//                "TextureShader.fragmentshader"
+////                "TextureShader.vertexshader",
+////                "TextureShader.fragmentshader"
 //        );
-        // Use our shader
+//        // Use our shader
 //        glUseProgram(shaderProgram);
     }
 
@@ -87,14 +142,16 @@ public:
             // Clear the screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glGenVertexArrays(1, &triangleVAO);
-            glBindVertexArray(triangleVAO);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-            glEnableVertexAttribArray(0);
+//            glGenVertexArrays(1, &triangleVAO);
+//            glBindVertexArray(triangleVAO);
+//            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+//            glEnableVertexAttribArray(0);
 
-            func();
+//            func();
 //            DrawTriangle();
-//            DrawSprite();
+            auto texture = LoadTexture("assets/sprites/background.png");
+            DrawSprite2(texture);
+//              DrawSprite();
 
             glfwPollEvents();
 
@@ -156,48 +213,218 @@ public:
         return gameObject;
     }
 
-//    void DrawSprite() {
-//        static const GLfloat vertices[] = {
-//                0.5f,  0.5f, 0.0f,  // top right
-//                0.5f, -0.5f, 0.0f,  // bottom right
-//                -0.5f, -0.5f, 0.0f,  // bottom left
-//                -0.5f,  0.5f, 0.0f   // top left
-//        };
-//        glGenBuffers(1, &vertexBufferObject);
-//        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-//        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-//
-//        unsigned int indices[] = {  // note that we start from 0!
-//                0, 1, 3,   // first triangle
-//                1, 2, 3    // second triangle
-//        };
-//
-//        unsigned int elementBufferObject;
-//        glGenBuffers(1, &elementBufferObject);
-//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
-//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-//
-//        glEnableVertexAttribArray(0);
-//        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-//
-//        glUseProgram(shaderProgram);
-//        glBindVertexArray(triangleVAO);
-//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-//        glDisableVertexAttribArray(0);
-//
-//        // Swap buffers
+    class SpriteGL : public Sprite {
+    public:
+        ~SpriteGL() {
+            glDeleteBuffers(1, &vertexBufferObject);
+        }
+
+        void SetTexture(const char* path) {
+            GLuint spriteTexture = LoadTexture(path);
+
+            if (spriteTexture == 0) {
+                std::cerr << "Failed to load sprite texture!" << std::endl;
+                return;
+            }
+        }
+
+        void Update() override {
+            Sprite::Update();
+            GLfloat newVertices[] = {
+                    vertex1.x, vertex1.y, 0.0f,
+                    vertex2.x, vertex2.y, 0.0f,
+                    vertex3.x, vertex3.y, 0.0f,
+                    vertex4.x, vertex4.y, 0.0f,
+            };
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
+
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+//            glUseProgram(shaderProgram);
+//            glBindVertexArray(triangleVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            glDisableVertexAttribArray(0);
+        }
+
+        GLuint vertexBufferObject = 0;
+        const GLfloat vertices[12] {
+            0.5f,  0.5f, 0.0f,  // top right
+            0.5f, -0.5f, 0.0f,  // bottom right
+            -0.5f, -0.5f, 0.0f,  // bottom left
+            -0.5f,  0.5f, 0.0f   // top left
+        };
+        unsigned int indices[6] {
+            // note that we start from 0!
+            0, 1, 3,   // first triangle
+            1, 2, 3    // second triangle
+        };
+    };
+
+    GameObject* CreateSprite() override {
+        auto gameObject = new SpriteGL();
+        gameObject->SetTexture("assets/sprites/background.png");
+        glGenBuffers(1, &gameObject->vertexBufferObject);
+        glBindBuffer(GL_ARRAY_BUFFER, gameObject->vertexBufferObject);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(gameObject->vertices), gameObject->vertices, GL_STATIC_DRAW);
+        unsigned int elementBufferObject;
+        glGenBuffers(1, &elementBufferObject);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gameObject->indices), gameObject->indices, GL_STATIC_DRAW);
+        return gameObject;
+    }
+
+    // Structure to hold 2D transformation matrix
+    struct Matrix3x3 {
+        float m[9];
+
+        Matrix3x3() {
+            // Initialize as identity matrix
+            m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
+            m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
+            m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
+        }
+    };
+
+// Helper functions for matrix operations
+    Matrix3x3 createTranslationMatrix(float x, float y) {
+        Matrix3x3 matrix;
+        matrix.m[6] = x;
+        matrix.m[7] = y;
+        return matrix;
+    }
+
+    Matrix3x3 createRotationMatrix(float angle) {
+        Matrix3x3 matrix;
+        float rad = angle * 3.14159f / 180.0f;
+        float cos_a = cosf(rad);
+        float sin_a = sinf(rad);
+        matrix.m[0] = cos_a;  matrix.m[3] = -sin_a;
+        matrix.m[1] = sin_a;  matrix.m[4] = cos_a;
+        return matrix;
+    }
+
+    Matrix3x3 createScaleMatrix(float sx, float sy) {
+        Matrix3x3 matrix;
+        matrix.m[0] = sx;
+        matrix.m[4] = sy;
+        return matrix;
+    }
+
+    Matrix3x3 multiplyMatrices(const Matrix3x3& a, const Matrix3x3& b) {
+        Matrix3x3 result;
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                result.m[i * 3 + j] =
+                        a.m[i * 3 + 0] * b.m[0 * 3 + j] +
+                        a.m[i * 3 + 1] * b.m[1 * 3 + j] +
+                        a.m[i * 3 + 2] * b.m[2 * 3 + j];
+            }
+        }
+        return result;
+    }
+
+    void DrawSprite2(GLuint textureID) {
+        float m[9];
+        // Initialize as identity matrix
+        m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
+        m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
+        m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
+
+        // Vertex data for a quad (position and texture coordinates)
+        float vertices[] = {
+                // Pos      // Tex
+                -1.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, -1.0f, 1.0f, 0.0f,
+                -1.0f, -1.0f, 0.0f, 0.0f,
+
+                -1.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, -1.0f, 1.0f, 0.0f
+        };
+
+        // Create and bind VBO
+        GLuint VBO;
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        // Set vertex attributes
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+
+        // Assuming you have a basic shader program that accepts these uniforms
+        glUniformMatrix3fv(glGetUniformLocation(shaderProgram, "transform"), 1, GL_FALSE, m);
+        glUniform4f(glGetUniformLocation(shaderProgram, "spriteColor"), 1.0, 1.0, 1.0, 1.0);
+
+        // Bind texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        // Draw the sprite
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // Cleanup
+        glDeleteBuffers(1, &VBO);
+    }
+
+    void DrawSprite() {
+        static const GLfloat vertices[] = {
+                1.0f,  1.0f, 0.0f,  // top right
+                1.0f, -1.0f, 0.0f,  // bottom right
+                -1.0f, -1.0f, 0.0f,  // bottom left
+                -1.0f,  1.0f, 0.0f   // top left
+        };
+        GLuint vertexBufferObject = 0;
+        glGenBuffers(1, &vertexBufferObject);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        unsigned int indices[] = {  // note that we start from 0!
+                0, 1, 3,   // first triangle
+                1, 2, 3    // second triangle
+        };
+
+        unsigned int elementBufferObject;
+        glGenBuffers(1, &elementBufferObject);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+
+        glUseProgram(shaderProgram);
+        glBindVertexArray(triangleVAO);
+
+
+        // Assuming you have a basic shader program that accepts these uniforms
+        float m[9];
+        m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
+        m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
+        m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
+        glUniformMatrix3fv(glGetUniformLocation(shaderProgram, "transform"), 1, GL_FALSE, m);
+        glUniform4f(glGetUniformLocation(shaderProgram, "spriteColor"), 1.0, 1.0, 1.0, 1.0);
+        // Bind texture
+        auto textureID = LoadTexture("assets/sprites/background.png");
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glDisableVertexAttribArray(0);
+
+        // Swap buffers
 //        glfwSwapBuffers(window);
-//
-//        glDeleteBuffers(1, &vertexBufferObject);
-//    }
+
+        glDeleteBuffers(1, &vertexBufferObject);
+    }
 
 private:
     GLFWwindow *window = nullptr;
     GLuint triangleVAO = 0;
     GLuint shaderProgram = 0;
 
-    GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
+    GLuint LoadShaders2(const char * vertex_file_path,const char * fragment_file_path){
         // Create the shaders
         GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
         GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -301,6 +528,54 @@ private:
         return shaderContent;
     }
 };
+
+GLuint LoadTexture(const char* path) {
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    // Load image data
+    int width, height, channels;
+    stbi_set_flip_vertically_on_load(true); // OpenGL expects texture coordinates to start from bottom-left
+    unsigned char* data = stbi_load(path, &width, &height, &channels, 0);
+
+    if (data) {
+        GLenum format;
+        switch (channels) {
+            case 1:
+                format = GL_RED;
+                break;
+            case 3:
+                format = GL_RGB;
+                break;
+            case 4:
+                format = GL_RGBA;
+                break;
+            default:
+                format = GL_RGBA;
+                break;
+        }
+
+        // Bind and set texture parameters
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        // Set texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        // Free image data
+        stbi_image_free(data);
+    } else {
+        std::cerr << "Failed to load texture: " << path << std::endl;
+        stbi_image_free(data);
+        return 0;
+    }
+
+    return textureID;
+}
 
 // Entrypoint
 #if PLATFORM_WINDOWS

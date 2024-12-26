@@ -32,7 +32,7 @@ if (WIN32)
     add_definitions(-DGLEW_STATIC)
 elseif (UNIX AND NOT APPLE) # For Linux
     # OpenGL
-    list(APPEND SOURCES platform/opengl.h)
+    list(APPEND SOURCES platform/opengl.h platform/opengl/stb_image.h)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/lib-vc2019)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/include)

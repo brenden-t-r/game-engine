@@ -18,19 +18,21 @@ public:
     using Game::Game;
 
     ~SampleGame() override {
-        delete triangle;
+        delete sprite;
     };
 
     void Start() override {
+        sprite = platform->CreateSprite();
         platform->LoadShaders();
     }
 
     void Update() override {
         printf(".");
+        sprite->Update();
     }
 
 private:
-    GameObject* triangle{};
+    GameObject* sprite{};
 };
 
 // Common logic for the application
@@ -39,8 +41,8 @@ int RealMain(Platform* platform) {
 
     platform->Init();
 
-//    Game* game = new SampleGame(platform);
-    Game* game = new TriangleGame(platform);
+    Game* game = new SampleGame(platform);
+//    Game* game = new TriangleGame(platform);
     game->Start();
 
     printf("Running...\n");
