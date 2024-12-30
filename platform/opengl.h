@@ -44,7 +44,6 @@ public:
         /* Initialize the library */
         if (!glfwInit()) {
             fprintf(stderr, "Failed to initialize GLFW\n");
-//            return -1;
             return;
         }
 
@@ -57,13 +56,12 @@ public:
         glfwSwapInterval(1); // Enables V-Sync
 
         /* Create a windowed mode window and its OpenGL context */
-        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello World", NULL, NULL);
-        if (window == NULL) {
+        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello World", nullptr, nullptr);
+        if (window == nullptr) {
             fprintf(stderr,
                     "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
             glfwTerminate();
             return;
-//            return -1;
         }
         glfwMakeContextCurrent(window);
 
@@ -71,7 +69,7 @@ public:
         if (glewInit() != GLEW_OK) {
             fprintf(stderr, "Failed to initialize GLEW\n");
             glfwTerminate();
-//            return -1;
+            return;
         }
 
         printf("%s\n", glGetString(GL_VERSION));
@@ -96,9 +94,8 @@ public:
     }
 
     void LoadShaders() override {
-
-        auto vertexSource = get_shader_content("assets/shaders/TextureShader.vertexshader");
-        auto fragmentSource = get_shader_content("assets/shaders/TextureShader.fragmentshader");
+        auto vertexSource = getFileContent("assets/shaders/TextureShader.vertexshader");
+        auto fragmentSource = getFileContent("assets/shaders/TextureShader.fragmentshader");
 
         // Compile shaders
         GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
@@ -115,26 +112,17 @@ public:
         glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
         if (!success) {
             char infoLog[512];
-            glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+            glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
             std::cerr << "Shader program linking failed: " << infoLog << std::endl;
         }
 
         // Cleanup
+        glDetachShader(shaderProgram, vertexShader);
+        glDetachShader(shaderProgram, fragmentShader);
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
 
         glUseProgram(shaderProgram);
-
-//        return program;
-
-
-//        // Create and compile our GLSL program from the shaders
-//        shaderProgram = LoadShaders(
-////                "TextureShader.vertexshader",
-////                "TextureShader.fragmentshader"
-//        );
-//        // Use our shader
-//        glUseProgram(shaderProgram);
     }
 
     void Run(const std::function<void()>& func) override{
@@ -150,7 +138,7 @@ public:
 //            func();
 //            DrawTriangle();
             auto texture = LoadTexture("assets/sprites/background.png");
-            DrawSprite2(texture);
+            DrawSprite(texture);
 //              DrawSprite();
 
             glfwPollEvents();
@@ -274,59 +262,8 @@ public:
         return gameObject;
     }
 
-    // Structure to hold 2D transformation matrix
-    struct Matrix3x3 {
+    void DrawSprite(GLuint textureID) {
         float m[9];
-
-        Matrix3x3() {
-            // Initialize as identity matrix
-            m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
-            m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
-            m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
-        }
-    };
-
-// Helper functions for matrix operations
-    Matrix3x3 createTranslationMatrix(float x, float y) {
-        Matrix3x3 matrix;
-        matrix.m[6] = x;
-        matrix.m[7] = y;
-        return matrix;
-    }
-
-    Matrix3x3 createRotationMatrix(float angle) {
-        Matrix3x3 matrix;
-        float rad = angle * 3.14159f / 180.0f;
-        float cos_a = cosf(rad);
-        float sin_a = sinf(rad);
-        matrix.m[0] = cos_a;  matrix.m[3] = -sin_a;
-        matrix.m[1] = sin_a;  matrix.m[4] = cos_a;
-        return matrix;
-    }
-
-    Matrix3x3 createScaleMatrix(float sx, float sy) {
-        Matrix3x3 matrix;
-        matrix.m[0] = sx;
-        matrix.m[4] = sy;
-        return matrix;
-    }
-
-    Matrix3x3 multiplyMatrices(const Matrix3x3& a, const Matrix3x3& b) {
-        Matrix3x3 result;
-        for(int i = 0; i < 3; i++) {
-            for(int j = 0; j < 3; j++) {
-                result.m[i * 3 + j] =
-                        a.m[i * 3 + 0] * b.m[0 * 3 + j] +
-                        a.m[i * 3 + 1] * b.m[1 * 3 + j] +
-                        a.m[i * 3 + 2] * b.m[2 * 3 + j];
-            }
-        }
-        return result;
-    }
-
-    void DrawSprite2(GLuint textureID) {
-        float m[9];
-        // Initialize as identity matrix
         m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
         m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
         m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
@@ -424,86 +361,7 @@ private:
     GLuint triangleVAO = 0;
     GLuint shaderProgram = 0;
 
-    GLuint LoadShaders2(const char * vertex_file_path,const char * fragment_file_path){
-        // Create the shaders
-        GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-        GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-        // Read vertex shader code from file
-        const char* vertexShaderCode = get_shader_content(vertex_file_path);
-
-        // Read fragment shader
-        const char* fragmentShaderCode = get_shader_content(fragment_file_path);
-
-        // compile vertex shader
-        glShaderSource(VertexShaderID, 1, &vertexShaderCode, NULL);
-        glCompileShader(VertexShaderID);
-
-        // compile fragment shader
-        glShaderSource(FragmentShaderID, 1, &fragmentShaderCode, NULL);
-        glCompileShader(FragmentShaderID);
-
-        // Check vertex shader
-        GLint Result = GL_FALSE;
-        int InfoLogLength;
-        glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-        glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-        printf("%i\n", Result);
-        if (InfoLogLength > 0){
-            char* infoLog = static_cast<char *>(malloc(1024));
-            glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &infoLog[0]);
-            printf("%s\n", infoLog);
-            free(infoLog);
-        }
-
-        // Check fragment shader
-        Result = GL_FALSE;
-        glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-        glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-        printf("%i\n", Result);
-        if (InfoLogLength > 0){
-            char* infoLog = static_cast<char *>(malloc(1024));
-            glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &infoLog[0]);
-            printf("%s\n", infoLog);
-            free(infoLog);
-        }
-
-
-        // Link the program
-        printf("Linking program\n");
-        GLuint ProgramID = glCreateProgram();
-        glAttachShader(ProgramID, VertexShaderID);
-        glAttachShader(ProgramID, FragmentShaderID);
-        glLinkProgram(ProgramID);
-
-        // Check the program
-        glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-        glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-        printf("%i\n", Result);
-        printf("%i\n", InfoLogLength);
-        if (InfoLogLength > 0){
-            char* infoLog = static_cast<char *>(malloc(1024));
-            glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &infoLog[0]);
-            printf("%s\n", infoLog);
-
-            GLint maxLength = 0;
-            glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &maxLength);
-            glGetProgramInfoLog(ProgramID, maxLength, &maxLength, &infoLog[0]);
-            printf("%s\n", infoLog);
-
-            free(infoLog);
-        }
-
-        glDetachShader(ProgramID, VertexShaderID);
-        glDetachShader(ProgramID, FragmentShaderID);
-
-        glDeleteShader(VertexShaderID);
-        glDeleteShader(FragmentShaderID);
-
-        return ProgramID;
-    }
-
-    char* get_shader_content(const char* fileName)
+    static char* getFileContent(const char* fileName)
     {
         FILE *fp;
         long size = 0;
@@ -511,7 +369,7 @@ private:
 
         /* Read File to get size */
         fp = fopen(fileName, "rb");
-        if(fp == NULL) {
+        if(fp == nullptr) {
             printf("Error reading %s\n", fileName);
             return "";
         }
