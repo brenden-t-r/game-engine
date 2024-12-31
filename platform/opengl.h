@@ -15,25 +15,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "opengl/stb_image.h"
 
-// Shader compilation helper function
-GLuint compileShader(const char* source, GLenum type) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    // Check for compilation errors
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cerr << "Shader compilation failed: " << infoLog << std::endl;
-    }
-
-    return shader;
-}
-
-GLuint LoadTexture(const char* path);
+GLuint compileShader(const char* source, GLenum type);
+GLuint loadTexture(const char* path);
 
 class PlatformOpenGL : public Platform {
 public:
@@ -225,7 +208,7 @@ public:
         }
 
         void SetTexture(const char* path) {
-            texture = LoadTexture(path);
+            texture = loadTexture(path);
 
             if (texture == 0) {
                 std::cerr << "Failed to load sprite texture!" << std::endl;
@@ -332,7 +315,25 @@ private:
     }
 };
 
-GLuint LoadTexture(const char* path) {
+// Shader compilation helper function
+GLuint compileShader(const char* source, GLenum type) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    // Check for compilation errors
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        std::cerr << "Shader compilation failed: " << infoLog << std::endl;
+    }
+
+    return shader;
+}
+
+GLuint loadTexture(const char* path) {
     GLuint textureID;
     glGenTextures(1, &textureID);
 
