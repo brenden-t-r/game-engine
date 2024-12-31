@@ -12,33 +12,23 @@
 #include "platform/platform.h"
 #include "engine/game.h"
 #include "samples/triangleGame.h"
+#include "samples/spriteGame.h"
 
 class SampleGame : public Game {
 public:
     using Game::Game;
 
-    ~SampleGame() override {
-        delete sprite;
-    };
+    ~SampleGame() override = default;
 
     void Start() override {
-        sprite = platform->CreateSprite();
-        sprite->transform.width = 2.0f;
-        sprite->transform.height = 2.0f;
-//        triangle = platform->CreateTriangle();
         platform->LoadShaders();
     }
 
     void Update() override {
         printf(".");
-        sprite->Update();
-//        triangle->Update();
-//        triangle->transform.pos.x += 0.01;
     }
 
 private:
-    GameObject* sprite{};
-    GameObject* triangle{};
 };
 
 // Common logic for the application
@@ -47,8 +37,9 @@ int RealMain(Platform* platform) {
 
     platform->Init();
 
-    Game* game = new SampleGame(platform);
+//    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
+    Game* game = new SpriteGame(platform);
     game->Start();
 
     printf("Running...\n");

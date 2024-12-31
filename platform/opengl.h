@@ -87,26 +87,10 @@ public:
         glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
         // Setup VAOs
-//        glGenVertexArrays(1, &triangleVAO);
-//        glBindVertexArray(triangleVAO);
-//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-//        glEnableVertexAttribArray(0);
+        setupVAOs();
     }
 
-    void LoadShaders() override {
-        triangleShader = loadShaderProgram(
-                "assets/shaders/SimpleVertexShader.vertexshader",
-                "assets/shaders/SimpleFragmentShader.fragmentshader"
-        );
-        textureShader = loadShaderProgram(
-                "assets/shaders/TextureShader.vertexshader",
-                "assets/shaders/TextureShader.fragmentshader"
-        );
-    }
-
-    void Run(const std::function<void()>& func) override{
-
-
+    void setupVAOs() {
         // Triangle Data
         float triangleVertices[] = {
                 // Positions
@@ -128,15 +112,12 @@ public:
                 0, 2, 3  // Second Triangle
         };
 
-        auto texture = LoadTexture("assets/sprites/background.png");
-
         // VAO and VBO for Triangle
-        unsigned int triangleVAO, triangleVBO;
         glGenVertexArrays(1, &triangleVAO);
         glGenBuffers(1, &triangleVBO);
 
         // VAO, VBO, and EBO for Quad
-        unsigned int quadVAO, quadVBO, quadEBO;
+        unsigned int quadEBO;
         glGenVertexArrays(1, &quadVAO);
         glGenBuffers(1, &quadVBO);
         glGenBuffers(1, &quadEBO);
@@ -158,28 +139,23 @@ public:
         glEnableVertexAttribArray(1); // Texture coordinate attribute
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glBindVertexArray(0); // Unbind VAO
+    }
 
-        float x = 0;
-        float y = 0;
+    void LoadShaders() override {
+        triangleShader = loadShaderProgram(
+                "assets/shaders/SimpleVertexShader.vertexshader",
+                "assets/shaders/SimpleFragmentShader.fragmentshader"
+        );
+        textureShader = loadShaderProgram(
+                "assets/shaders/TextureShader.vertexshader",
+                "assets/shaders/TextureShader.fragmentshader"
+        );
+    }
 
-        auto goTriangle = CreateTriangle();
-        auto goSprite = CreateSprite();
-
+    void Run(const std::function<void()>& func) override{
         do{
             // Clear the screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            // Render Textured Quad
-            glUseProgram(textureShader); // Use appropriate shader
-            glBindVertexArray(quadVAO);
-            glBindBuffer(GL_ARRAY_BUFFER, quadVAO);
-//            goSprite->Update();
-
-            // Render Triangle
-//            glUseProgram(triangleShader); // Use appropriate shader
-//            glBindVertexArray(triangleVAO);
-//            glBindBuffer(GL_ARRAY_BUFFER, triangleVBO); // Bind the triangle's VBO
-//            goTriangle->Update();
 
             func();
 
@@ -222,34 +198,23 @@ public:
                     vertex2.x, vertex2.y, 0.0f,
                     vertex3.x, vertex3.y, 0.0f,
             };
-//            glUseProgram(triangleShader); // Use appropriate shader
-//            glBindVertexArray(triangleVAO);
-//            glBindBuffer(GL_ARRAY_BUFFER, triangleVBO); // Bind the triangle's VBO
+            glUseProgram(shaderProgram); // Use appropriate shader
+            glBindVertexArray(vertexArrayObject);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject); // Bind the triangle's VBO
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
+        GLuint shaderProgram = 0;
+        GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
-        GLfloat vertices[6]{
-                0.5f,  -0.5f, //0.0f,
-                -0.5f, -0.5f, //0.0f,
-                0.0, 0.5f//, 0.0f,
-        };
     };
 
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-//        glGenBuffers(1, &gameObject->vertexBufferObject);
-//        glBindBuffer(GL_ARRAY_BUFFER, gameObject->vertexBufferObject);
-//        glBufferData(GL_ARRAY_BUFFER, sizeof(gameObject->vertices), gameObject->vertices, GL_STATIC_DRAW);
-
-//        glBindVertexArray(triangleVAO);
-//        glBindBuffer(GL_ARRAY_BUFFER, triangleVBO);
-//        glBufferData(GL_ARRAY_BUFFER, sizeof(gameObject->vertices), gameObject->vertices, GL_STATIC_DRAW);
-//        glEnableVertexAttribArray(0); // Position attribute
-//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-//        glBindVertexArray(0); // Unbind VAO
-
+        gameObject->shaderProgram = triangleShader;
+        gameObject->vertexArrayObject = triangleVAO;
+        gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
     }
 
@@ -277,43 +242,36 @@ public:
                     vertex3.x, vertex3.y, 0.0f,  1.0f, 0.0f, // Bottom-right
                     vertex4.x, vertex4.y, 0.0f,  0.0f, 0.0f  // Bottom-left
             };
+            glUseProgram(shaderProgram); // Use appropriate shader
+            glBindVertexArray(vertexArrayObject);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject);
             glBindTexture(GL_TEXTURE_2D, texture);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         }
 
         GLuint texture = 0;
+        GLuint shaderProgram = 0;
+        GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
-//        float vertices[20] = {
-//                // Positions      // Texture Coords
-//                -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // Top-left
-//                1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // Top-right
-//                1.0f, -1.0f, 0.0f,  1.0f, 0.0f, // Bottom-right
-//                -1.0f, -1.0f, 0.0f,  0.0f, 0.0f  // Bottom-left
-//        };
-//        unsigned int indices[6] {
-//                0, 1, 2, // First Triangle
-//                0, 2, 3  // Second Triangle
-//        };
     };
 
     GameObject* CreateSprite() override {
         auto gameObject = new SpriteGL();
         gameObject->SetTexture("assets/sprites/background.png");
-//        glGenBuffers(1, &gameObject->vertexBufferObject);
-//        glBindBuffer(GL_ARRAY_BUFFER, gameObject->vertexBufferObject);
-//        glBufferData(GL_ARRAY_BUFFER, sizeof(gameObject->vertices), gameObject->vertices, GL_STATIC_DRAW);
-//        unsigned int elementBufferObject;
-//        glGenBuffers(1, &elementBufferObject);
-//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
-//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gameObject->indices), gameObject->indices, GL_STATIC_DRAW);
+        gameObject->shaderProgram = textureShader;
+        gameObject->vertexArrayObject = quadVAO;
+        gameObject->vertexBufferObject = quadVBO;
         return gameObject;
     }
 
 private:
     GLFWwindow *window = nullptr;
     GLuint triangleVAO = 0;
+    GLuint triangleVBO = 0;
     GLuint triangleShader = 0;
+    GLuint quadVAO = 0;
+    GLuint quadVBO = 0;
     GLuint textureShader = 0;
 
     static char* getFileContent(const char* fileName)
