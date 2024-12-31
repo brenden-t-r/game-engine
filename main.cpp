@@ -37,9 +37,9 @@ int RealMain(Platform* platform) {
 
     platform->Init();
 
-    Game* game = new SampleGame(platform);
+//    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
-//    Game* game = new SpriteGame(platform);
+    Game* game = new SpriteGame(platform);
     game->Start();
 
     printf("Running...\n");

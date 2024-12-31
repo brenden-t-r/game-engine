@@ -10,6 +10,8 @@ public:
     ~SpriteGame() override {
         delete triangle;
         delete sprite;
+        delete triangle2;
+        delete sprite2;
     };
 
     void Start() override {

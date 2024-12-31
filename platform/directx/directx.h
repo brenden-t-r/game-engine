@@ -81,8 +81,6 @@ public:
         ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
         d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
-        auto sprite = CreateSprite();
-
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -98,14 +96,7 @@ public:
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
-                // Set the blend state
-//                float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-//                d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-
-//                func();
-//                DisplaySprite();
-//                DrawTriangle();
-                sprite->Update();
+                func();
 
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
@@ -133,6 +124,10 @@ public:
             vertices[2].position.x = vertex3.x;
             vertices[2].position.y = vertex3.y;
 
+            // "Unset" the blend state
+            float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            d3dContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
+
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;
             HRESULT hr = d3dContext->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -140,6 +135,16 @@ public:
                 memcpy(mappedResource.pData, vertices, sizeof(vertices));
                 d3dContext->Unmap(vertexBuffer, 0);
             }
+
+            // Set the vertex buffer
+            UINT stride = sizeof(Vertex);
+            UINT offset = 0;
+            d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+            d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+            // Set the shaders
+            ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+            d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
             // Draw the triangle
             d3dContext->Draw(3, 0); // Draw 3 vertices
@@ -185,9 +190,10 @@ public:
 
     class SpriteD3D : public Sprite {
     public:
-        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11VertexShader *vertexShader,
-                  ID3D11PixelShader *pixelShader) : d3dDevice(d3DDevice), d3dContext(d3DContext),
-                                                    vertexShader(vertexShader), pixelShader(pixelShader) {}
+        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState,
+                  ID3D11VertexShader *vertexShader, ID3D11PixelShader *pixelShader) :
+                  d3dDevice(d3DDevice), d3dContext(d3DContext),
+                  vertexShader(vertexShader), pixelShader(pixelShader) {}
 
         ~SpriteD3D() = default;
 
@@ -198,10 +204,10 @@ public:
         void CreateBuffer() {
             // Create the vertex buffer (same as before)
             D3D11_BUFFER_DESC bufferDesc = {};
-            bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+            bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
             bufferDesc.ByteWidth = sizeof(vertices);
             bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            bufferDesc.CPUAccessFlags = 0;
+            bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = vertices;
@@ -211,6 +217,27 @@ public:
 
         void Update() override {
             Sprite::Update();
+            vertices[0].position.x = vertex1.x;
+            vertices[0].position.y = vertex1.y;
+            vertices[1].position.x = vertex2.x;
+            vertices[1].position.y = vertex2.y;
+            // Bottom left and bottom right are flipped in DirectX; order matters
+            vertices[3].position.x = vertex3.x;
+            vertices[3].position.y = vertex3.y;
+            vertices[2].position.x = vertex4.x;
+            vertices[2].position.y = vertex4.y;
+
+            // Set the blend state
+            float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
+            // Map the buffer to update it
+            D3D11_MAPPED_SUBRESOURCE mappedResource;
+            HRESULT hr = d3dContext->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+            if (SUCCEEDED(hr)) {
+                memcpy(mappedResource.pData, vertices, sizeof(vertices));
+                d3dContext->Unmap(vertexBuffer, 0);
+            }
 
             // Set the vertex buffer
             UINT stride = sizeof(Vertex);
@@ -229,37 +256,27 @@ public:
 
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
+        ID3D11BlendState* blendState = nullptr;
         ID3D11VertexShader* vertexShader = nullptr;
         ID3D11PixelShader* pixelShader = nullptr;
         ID3D11ShaderResourceView* textureView = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
 
         Vertex vertices[4] {
-                { DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
-                { DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f) },
-                { DirectX::XMFLOAT3(-1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
-                { DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f) },
+                // Order matters
+                { DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) }, // Top left
+                { DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f) }, // Top Right
+                { DirectX::XMFLOAT3(-1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) }, // Bottom Left
+                { DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f) }, // Bottom Right
         };
     };
 
     GameObject* CreateSprite() override {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, vertexShader, pixelShader);
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, vertexShader, pixelShader);
         gameObject->CreateBuffer();
         gameObject->SetTexture(L"assets/sprites/background.png");
         return gameObject;
     }
-
-//    void DisplaySprite() {
-//        // Set the blend state
-//        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-//        d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-//
-//        SpriteD3D spriteBackground{};
-////        spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
-//        spriteBackground.CreateBuffer(d3dDevice);
-//        spriteBackground.LoadTexture(d3dDevice, L"assets/sprites/background.png");
-//        spriteBackground.Draw(d3dContext, vertexShader, pixelShader);
-//    }
 
     void Shutdown() override {
         CleanD3D();
@@ -281,7 +298,6 @@ private:
     ID3D11Buffer* vertexBuffer = nullptr;
     ID3D11VertexShader* vertexShader = nullptr;
     ID3D11PixelShader* pixelShader = nullptr;
-    ID3D11ShaderResourceView* textureView = nullptr;
     ID3D11BlendState* blendState =nullptr;
 
     // Window procedure function
