@@ -179,12 +179,18 @@ public:
         return gameObject;
     }
 
+    GameObject* CreateSprite() override {
+//        auto gameObject = new SpriteD3D(); // d3dContext, d3dDevice
+//        return gameObject;
+        return nullptr;
+    }
+
     void DisplaySprite() {
         // Set the blend state
         float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
 
-        Sprite spriteBackground{};
+        SpriteD3D spriteBackground{};
         spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
         spriteBackground.CreateBuffer(d3dDevice);
         spriteBackground.LoadTexture(d3dDevice, L"assets/sprites/background.png");
