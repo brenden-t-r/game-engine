@@ -12,6 +12,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <iostream>
+#include "file_util.h"
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
@@ -80,6 +81,8 @@ public:
         ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
         d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
+        auto sprite = CreateSprite();
+
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -99,9 +102,10 @@ public:
 //                float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 //                d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
 
-                func();
+//                func();
 //                DisplaySprite();
 //                DrawTriangle();
+                sprite->Update();
 
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
@@ -179,23 +183,83 @@ public:
         return gameObject;
     }
 
+    class SpriteD3D : public Sprite {
+    public:
+        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11VertexShader *vertexShader,
+                  ID3D11PixelShader *pixelShader) : d3dDevice(d3DDevice), d3dContext(d3DContext),
+                                                    vertexShader(vertexShader), pixelShader(pixelShader) {}
+
+        ~SpriteD3D() = default;
+
+        void SetTexture(const WCHAR * path) {
+            LoadTextureFromFile(d3dDevice, path, &textureView);
+        }
+
+        void CreateBuffer() {
+            // Create the vertex buffer (same as before)
+            D3D11_BUFFER_DESC bufferDesc = {};
+            bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+            bufferDesc.ByteWidth = sizeof(vertices);
+            bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+            bufferDesc.CPUAccessFlags = 0;
+
+            D3D11_SUBRESOURCE_DATA initData = {};
+            initData.pSysMem = vertices;
+
+            d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
+        }
+
+        void Update() override {
+            Sprite::Update();
+
+            // Set the vertex buffer
+            UINT stride = sizeof(Vertex);
+            UINT offset = 0;
+            d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+            d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+            // Set the shaders
+            d3dContext->VSSetShader(vertexShader, nullptr, 0);
+            d3dContext->PSSetShader(pixelShader, nullptr, 0);
+            d3dContext->PSSetShaderResources(0, 1, &textureView);
+
+            // Draw
+            d3dContext->Draw(4, 0);
+        }
+
+        ID3D11Device* d3dDevice = nullptr;
+        ID3D11DeviceContext* d3dContext = nullptr;
+        ID3D11VertexShader* vertexShader = nullptr;
+        ID3D11PixelShader* pixelShader = nullptr;
+        ID3D11ShaderResourceView* textureView = nullptr;
+        ID3D11Buffer* vertexBuffer = nullptr;
+
+        Vertex vertices[4] {
+                { DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
+                { DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f) },
+                { DirectX::XMFLOAT3(-1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
+                { DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f) },
+        };
+    };
+
     GameObject* CreateSprite() override {
-//        auto gameObject = new SpriteD3D(); // d3dContext, d3dDevice
-//        return gameObject;
-        return nullptr;
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, vertexShader, pixelShader);
+        gameObject->CreateBuffer();
+        gameObject->SetTexture(L"assets/sprites/background.png");
+        return gameObject;
     }
 
-    void DisplaySprite() {
-        // Set the blend state
-        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-
-        SpriteD3D spriteBackground{};
-        spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
-        spriteBackground.CreateBuffer(d3dDevice);
-        spriteBackground.LoadTexture(d3dDevice, L"assets/sprites/background.png");
-        spriteBackground.Draw(d3dContext, vertexShader, pixelShader);
-    }
+//    void DisplaySprite() {
+//        // Set the blend state
+//        float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+//        d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+//
+//        SpriteD3D spriteBackground{};
+////        spriteBackground.SetPosition(-1.0, 1.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+//        spriteBackground.CreateBuffer(d3dDevice);
+//        spriteBackground.LoadTexture(d3dDevice, L"assets/sprites/background.png");
+//        spriteBackground.Draw(d3dContext, vertexShader, pixelShader);
+//    }
 
     void Shutdown() override {
         CleanD3D();

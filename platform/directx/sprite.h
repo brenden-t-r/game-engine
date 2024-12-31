@@ -26,50 +26,6 @@ public:
         LoadTextureFromFile(d3dDevice, file, &textureView);
     }
 
-    void SetPosition(float x, float y, float width, float height) {
-        width = width / WINDOW_WIDTH * 2;
-        height = height / WINDOW_HEIGHT * 2;
-        vertices[0].position = DirectX::XMFLOAT3(x, y, 0.0f);
-        vertices[1].position = DirectX::XMFLOAT3(x+width, y, 0.0f);
-        vertices[2].position = DirectX::XMFLOAT3(x, y-height, 0.0f);
-        vertices[3].position = DirectX::XMFLOAT3(x+width, y-height, 0.0);
-    }
-
-    void SetPositionCentered(float width, float height) {
-        width = width / WINDOW_WIDTH;
-        height = height / WINDOW_HEIGHT;
-        vertices[0].position = DirectX::XMFLOAT3(- width/2, 0 + height/2, 0.0f);
-        vertices[1].position = DirectX::XMFLOAT3(width/2, 0 + height/2, 0.0f);
-        vertices[2].position = DirectX::XMFLOAT3(-width/2, 0 - height/2, 0.0f);
-        vertices[3].position = DirectX::XMFLOAT3(width/2, 0 -height/2, 0.0);
-    }
-
-    void TranslateY(float y) {
-        vertices[0].position.y += y;
-        vertices[1].position.y += y;
-        vertices[2].position.y += y;
-        vertices[3].position.y += y;
-    }
-
-    void SetPositionPixels(float x, float y, float width, float height) {
-        float w = width / WINDOW_WIDTH;
-        float h = height / WINDOW_HEIGHT;
-        float posX = -1 + x / WINDOW_WIDTH;
-        float posY = 1 - y / WINDOW_HEIGHT;
-
-        vertices[0].position = DirectX::XMFLOAT3(posX, posY, 0.0);
-        vertices[1].position = DirectX::XMFLOAT3(posX+w, posY, 0.0);
-        vertices[2].position = DirectX::XMFLOAT3(posX, posY-h, 0.0);
-        vertices[3].position = DirectX::XMFLOAT3(posX+w, posY-h, 0.0);
-    }
-
-    void Rotate(float offset) {
-        vertices[0].position = DirectX::XMFLOAT3(vertices[0].position.x+offset, vertices[0].position.y+offset, 0.0);
-        vertices[1].position = DirectX::XMFLOAT3(vertices[1].position.x+offset, vertices[1].position.y-offset, 0.0);
-        vertices[2].position = DirectX::XMFLOAT3(vertices[2].position.x-offset, vertices[2].position.y+offset, 0.0);
-        vertices[3].position = DirectX::XMFLOAT3(vertices[3].position.x-offset, vertices[3].position.y-offset, 0.0);
-    }
-
     void CreateBuffer(ID3D11Device* d3dDevice) {
         // Create the vertex buffer (same as before)
         D3D11_BUFFER_DESC bufferDesc = {};
