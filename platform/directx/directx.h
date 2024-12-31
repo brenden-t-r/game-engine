@@ -4,7 +4,6 @@
 // Include constants
 #include "../../constants.h"
 #include "../platform.h"
-#include "sprite.h"
 
 // Windows/DirectX imports
 #include <Windows.h>
@@ -13,6 +12,7 @@
 #include <DirectXMath.h>
 #include <iostream>
 #include "file_util.h"
+#include "math.h"
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
