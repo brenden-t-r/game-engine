@@ -7,10 +7,10 @@
 #include "math.h"
 #include "file_util.h"
 
-class Sprite {
+class SpriteD3D {
 public:
-    Sprite() {}
-    ~Sprite() {}
+    SpriteD3D() = default;
+    ~SpriteD3D() = default;
 
     Vertex vertices[4] = {
             { DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
