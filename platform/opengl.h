@@ -87,62 +87,105 @@ public:
         glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
         // Setup VAOs
-        glGenVertexArrays(1, &triangleVAO);
-        glBindVertexArray(triangleVAO);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+//        glGenVertexArrays(1, &triangleVAO);
+//        glBindVertexArray(triangleVAO);
+//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 //        glEnableVertexAttribArray(0);
     }
 
     void LoadShaders() override {
-        auto vertexSource = getFileContent("assets/shaders/TextureShader.vertexshader");
-        auto fragmentSource = getFileContent("assets/shaders/TextureShader.fragmentshader");
-
-        // Compile shaders
-        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
-        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
-
-        // Create program
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-
-        // Check for linking errors
-        GLint success;
-        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
-            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
-        }
-
-        // Cleanup
-        glDetachShader(shaderProgram, vertexShader);
-        glDetachShader(shaderProgram, fragmentShader);
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-
-        glUseProgram(shaderProgram);
+        textureShader = loadShaderProgram(
+                "assets/shaders/TextureShader.vertexshader",
+                "assets/shaders/TextureShader.fragmentshader"
+        );
     }
 
     void Run(const std::function<void()>& func) override{
+        auto triangleShader = loadShaderProgram(
+                "assets/shaders/SimpleVertexShader.vertexshader",
+                "assets/shaders/SimpleFragmentShader.fragmentshader"
+        );
+
+        // Triangle Data
+        float triangleVertices[] = {
+                // Positions
+                0.0f,  0.5f, 0.0f, // Top
+                -0.5f, -0.5f, 0.0f, // Left
+                0.5f, -0.5f, 0.0f  // Right
+        };
+
+        // Quad Data
+        float quadVertices[] = {
+                // Positions      // Texture Coords
+                -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // Top-left
+                1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // Top-right
+                1.0f, -1.0f, 0.0f,  1.0f, 0.0f, // Bottom-right
+                -1.0f, -1.0f, 0.0f,  0.0f, 0.0f  // Bottom-left
+        };
+        unsigned int quadIndices[] = {
+                0, 1, 2, // First Triangle
+                0, 2, 3  // Second Triangle
+        };
+        auto texture = LoadTexture("assets/sprites/background.png");
+
+        // VAO and VBO for Triangle
+        unsigned int triangleVAO, triangleVBO;
+        glGenVertexArrays(1, &triangleVAO);
+        glGenBuffers(1, &triangleVBO);
+
+        // VAO, VBO, and EBO for Quad
+        unsigned int quadVAO, quadVBO, quadEBO;
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glGenBuffers(1, &quadEBO);
+
+        glBindVertexArray(triangleVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, triangleVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0); // Position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glBindVertexArray(0); // Unbind VAO
+
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0); // Position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1); // Texture coordinate attribute
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glBindVertexArray(0); // Unbind VAO
+
+        float x = 0;
+        float y = 0;
+
         do{
             // Clear the screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//            glGenVertexArrays(1, &triangleVAO);
-//            glBindVertexArray(triangleVAO);
-//            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-//            glEnableVertexAttribArray(0);
+            // Render Textured Quad
+            glUseProgram(textureShader); // Use appropriate shader
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindVertexArray(quadVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, quadVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-//            func();
-//            DrawTriangle();
-            auto texture = LoadTexture("assets/sprites/background.png");
-            DrawSprite(texture);
-//              DrawSprite();
+            // Render Triangle
+            glUseProgram(triangleShader); // Use appropriate shader
+            glBindVertexArray(triangleVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, triangleVBO); // Bind the triangle's VBO
+            x += 0.01f;
+            GLfloat newVertices[] = {
+                    // Positions
+                    x + 0.0f, y+ 0.5f, 0.0f, // Top
+                    x -0.5f, y-0.5f, 0.0f, // Left
+                    x + 0.5f, y-0.5f, 0.0f  // Right
+            };
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
             glfwPollEvents();
-
 
             glfwSwapBuffers(window);
         }
@@ -156,7 +199,7 @@ public:
     void Shutdown() override{
         glDisableVertexAttribArray(0);
         glDeleteVertexArrays(1, &triangleVAO);
-        glDeleteProgram(shaderProgram);
+        glDeleteProgram(textureShader);
 
         // Close OpenGL window and terminate GLFW
         glfwTerminate();
@@ -181,15 +224,16 @@ public:
                     vertex2.x, vertex2.y, 0.0f,
                     vertex3.x, vertex3.y, 0.0f,
             };
+//            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
         GLuint vertexBufferObject = 0;
-        GLfloat vertices[9]{
-                0.5f,  -0.5f, 0.0f,
-                -0.5f, -0.5f, 0.0f,
-                0.0, 0.5f, 0.0f,
+        GLfloat vertices[6]{
+                0.5f,  -0.5f, //0.0f,
+                -0.5f, -0.5f, //0.0f,
+                0.0, 0.5f//, 0.0f,
         };
     };
 
@@ -229,7 +273,7 @@ public:
             glEnableVertexAttribArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-//            glUseProgram(shaderProgram);
+//            glUseProgram(textureShader);
 //            glBindVertexArray(triangleVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
             glDisableVertexAttribArray(0);
@@ -263,103 +307,65 @@ public:
     }
 
     void DrawSprite(GLuint textureID) {
-        float m[9];
-        m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
-        m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
-        m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
+//        // Vertex data for a quad (position and texture coordinates)
+//        float vertices[] = {
+//                // Pos      // Tex
+//                -1.0f, 1.0f, 0.0f, 1.0f,
+//                1.0f, -1.0f, 1.0f, 0.0f,
+//                -1.0f, -1.0f, 0.0f, 0.0f,
+//
+//                -1.0f, 1.0f, 0.0f, 1.0f,
+//                1.0f, 1.0f, 1.0f, 1.0f,
+//                1.0f, -1.0f, 1.0f, 0.0f
+//        };
+//        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
-        // Vertex data for a quad (position and texture coordinates)
-        float vertices[] = {
-                // Pos      // Tex
-                -1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, -1.0f, 1.0f, 0.0f,
-                -1.0f, -1.0f, 0.0f, 0.0f,
+//        float m[9];
+//        m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
+//        m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
+//        m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
+//        glUniformMatrix3fv(glGetUniformLocation(textureShader, "transform"), 1, GL_FALSE, m);
 
-                -1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 1.0f, 1.0f,
-                1.0f, -1.0f, 1.0f, 0.0f
+        static const GLfloat vertices[] = {
+                // Pos         // Tex
+                0.0f,  1.0f,   1.0f, 1.0f,  // top right
+                0.0f, -1.0f,   1.0f, 0.0f,  // bottom right
+                -1.0f, -1.0f,  0.0f, 0.0f,  // bottom left
+                -1.0f,  1.0f,  0.0f, 1.0f   // top left
         };
 
         // Create and bind VBO
-        GLuint VBO;
-        glGenBuffers(1, &VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        // Set vertex attributes
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-
-        // Assuming you have a basic shader program that accepts these uniforms
-        glUniformMatrix3fv(glGetUniformLocation(shaderProgram, "transform"), 1, GL_FALSE, m);
-        glUniform4f(glGetUniformLocation(shaderProgram, "spriteColor"), 1.0, 1.0, 1.0, 1.0);
-
-        // Bind texture
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, textureID);
-
-        // Draw the sprite
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        // Cleanup
-        glDeleteBuffers(1, &VBO);
-    }
-
-    void DrawSprite() {
-        static const GLfloat vertices[] = {
-                1.0f,  1.0f, 0.0f,  // top right
-                1.0f, -1.0f, 0.0f,  // bottom right
-                -1.0f, -1.0f, 0.0f,  // bottom left
-                -1.0f,  1.0f, 0.0f   // top left
-        };
         GLuint vertexBufferObject = 0;
         glGenBuffers(1, &vertexBufferObject);
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        unsigned int indices[] = {  // note that we start from 0!
+        unsigned int indices[] = {
                 0, 1, 3,   // first triangle
                 1, 2, 3    // second triangle
         };
-
         unsigned int elementBufferObject;
         glGenBuffers(1, &elementBufferObject);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+        // Set vertex attributes
         glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
-        glUseProgram(shaderProgram);
-        glBindVertexArray(triangleVAO);
-
-
-        // Assuming you have a basic shader program that accepts these uniforms
-        float m[9];
-        m[0] = 1.0f; m[3] = 0.0f; m[6] = 0.0f;
-        m[1] = 0.0f; m[4] = 1.0f; m[7] = 0.0f;
-        m[2] = 0.0f; m[5] = 0.0f; m[8] = 1.0f;
-        glUniformMatrix3fv(glGetUniformLocation(shaderProgram, "transform"), 1, GL_FALSE, m);
-        glUniform4f(glGetUniformLocation(shaderProgram, "spriteColor"), 1.0, 1.0, 1.0, 1.0);
         // Bind texture
-        auto textureID = LoadTexture("assets/sprites/background.png");
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureID);
 
+        // Draw
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-        glDisableVertexAttribArray(0);
-
-        // Swap buffers
-//        glfwSwapBuffers(window);
-
+        // Cleanup
         glDeleteBuffers(1, &vertexBufferObject);
     }
 
 private:
     GLFWwindow *window = nullptr;
     GLuint triangleVAO = 0;
-    GLuint shaderProgram = 0;
+    GLuint textureShader = 0;
 
     static char* getFileContent(const char* fileName)
     {
@@ -384,6 +390,38 @@ private:
         fclose(fp);
 
         return shaderContent;
+    }
+
+    static GLuint loadShaderProgram(const char* vertex, const char* fragment) {
+        auto vertexSource = getFileContent(vertex);
+        auto fragmentSource = getFileContent(fragment);
+
+        // Compile shaders
+        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
+        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
+
+        // Create program
+        GLuint program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        // Check for linking errors
+        GLint success;
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(program, 512, nullptr, infoLog);
+            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
+        }
+
+        // Cleanup
+        glDetachShader(program, vertexShader);
+        glDetachShader(program, fragmentShader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        return program;
     }
 };
 

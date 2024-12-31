@@ -1,18 +1,22 @@
 #version 330 core
-layout (location = 0) in vec4 vertex; // vec2 position, vec2 texCoords
+//layout (location = 0) in vec4 vertex; // vec2 position, vec2 texCoords
+layout(location = 0) in vec3 aPos;    // Position attribute
+layout(location = 1) in vec2 aTexCoord; // Texture coordinate attribute
+
+//out vec2 TexCoord; // Pass texture coordinates to fragment shader
 
 out vec2 TexCoords;
 
-uniform mat3 transform;
-
 void main() {
     // Apply transformation
-    vec3 pos = transform * vec3(vertex.xy, 1.0);
+   // vec3 pos = vec3(vertex.xy, 1.0);
 
     // Convert to clip space (-1 to 1)
     // Note: For 2D rendering, we keep z at 0.0
-    gl_Position = vec4(pos.xy, 0.0, 1.0);
+    gl_Position = vec4(aPos, 1.0);
 
     // Pass texture coordinates to fragment shader
-    TexCoords = vertex.zw;
+    //TexCoords = vertex.zw;
+
+    TexCoords = aTexCoord;
 }
