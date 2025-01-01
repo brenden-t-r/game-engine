@@ -30,12 +30,15 @@ if (WIN32)
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/lib/Release/x64)
     add_definitions(-DGLEW_STATIC)
 elseif (UNIX AND NOT APPLE) # For Linux
-    # OpenGL
-    list(APPEND SOURCES platform/opengl.h platform/opengl/stb_image.h)
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
-    link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/lib-vc2019)
-    include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/include)
-    link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/lib/Release/x64)
+    #OpenGL
+    list(APPEND SOURCES platform/opengl.h)
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GLFW3 REQUIRED glfw3)
+    include_directories(${GLFW3_INCLUDE_DIRS})
+    include_directories(/usr/include/GL)
+    link_directories(${GLFW3_LIBRARY_DIRS})
+    link_directories(/usr/lib/x86_64-linux-gnu)
     add_definitions(-DGLEW_STATIC)
 elseif (APPLE)
     # GLFW
@@ -76,12 +79,12 @@ if (WIN32)
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_WINDOWS)
 elseif (UNIX AND NOT APPLE) # For Linux
+    message(STATUS "Building for Linux")
     #OpenGL
-    target_link_libraries(${PROJECT_NAME} PRIVATE glew32s glfw3 opengl32)
+    target_link_libraries(${PROJECT_NAME} ${GLFW3_LIBRARIES} GLEW GL X11 pthread Xrandr Xi dl)
 
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
 elseif (APPLE)
     # TODO: Link OSX, Metal libraries
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)

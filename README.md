@@ -18,3 +18,7 @@ Compile shaders:
 xcrun -sdk macosc metal -o shader.air -c shader.metal
 xcrun -sdk macosc metallib -o shader.metallib shader.air
 ```
+
+## Linux
+
+
