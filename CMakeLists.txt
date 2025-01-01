@@ -22,8 +22,6 @@ if (WIN32)
     list(APPEND SOURCES platform/directx/directx.h)
     list(APPEND SOURCES platform/directx/file_util.h)
     list(APPEND SOURCES platform/directx/math.h)
-    list(APPEND SOURCES platform/directx/scene.h)
-    list(APPEND SOURCES platform/directx/sprite.h)
     # (Optional) OpenGL
     list(APPEND SOURCES platform/opengl.h)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
