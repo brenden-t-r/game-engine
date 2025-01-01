@@ -17,12 +17,12 @@ public:
     void Start() override {
         platform->LoadShaders();
 
-        sprite = platform->CreateSprite();
+        sprite = platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 2.0f;
         sprite->transform.height = 2.0f;
         triangle = platform->CreateTriangle();
 
-        sprite2 = platform->CreateSprite();
+        sprite2 = platform->CreateSprite("assets/sprites/background.png");
         sprite2->transform.width = 2.0f;
         sprite2->transform.height = 2.0f;
         triangle2 = platform->CreateTriangle();

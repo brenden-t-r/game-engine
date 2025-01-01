@@ -239,9 +239,9 @@ public:
         GLuint vertexBufferObject = 0;
     };
 
-    GameObject* CreateSprite() override {
+    Sprite* CreateSprite(const char* path) override {
         auto gameObject = new SpriteGL();
-        gameObject->SetTexture("assets/sprites/background.png");
+        gameObject->SetTexture(path);
         gameObject->shaderProgram = textureShader;
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;

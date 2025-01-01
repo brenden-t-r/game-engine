@@ -13,6 +13,7 @@
 #include "engine/game.h"
 #include "samples/triangleGame.h"
 #include "samples/spriteGame.h"
+#include "samples/pongGame.h"
 
 class SampleGame : public Game {
 public:
@@ -39,7 +40,8 @@ int RealMain(Platform* platform) {
 
 //    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
-    Game* game = new SpriteGame(platform);
+//    Game* game = new SpriteGame(platform);
+    Game* game = new PongGame(platform);
     game->Start();
 
     printf("Running...\n");

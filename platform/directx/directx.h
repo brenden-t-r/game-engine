@@ -276,10 +276,21 @@ public:
         };
     };
 
-    GameObject* CreateSprite() override {
+    static const WCHAR* convertToWCHAR(const char* str) {
+        if (!str) return nullptr;
+
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        auto* wstr = new WCHAR[size_needed];
+        MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, size_needed);
+        return wstr; // Remember to free with `delete[]` when done.
+    }
+
+    Sprite* CreateSprite(const char * path) override {
         auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture);
         gameObject->CreateBuffer();
-        gameObject->SetTexture(L"assets/sprites/background.png");
+        auto wchar = convertToWCHAR(path);
+        gameObject->SetTexture(wchar);
+        delete[] wchar;
         return gameObject;
     }
 

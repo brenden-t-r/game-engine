@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <vector>
+#include "../constants.h"
 
 class Vector3 {
 public:

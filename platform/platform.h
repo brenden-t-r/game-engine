@@ -17,7 +17,7 @@ public:
 
     virtual GameObject* CreateGameObject(){ return new GameObject(); };
     virtual GameObject* CreateTriangle() = 0;
-    virtual GameObject* CreateSprite() = 0;
+    virtual Sprite* CreateSprite(const char* path) = 0;
 
 
     virtual void Shutdown() = 0;
