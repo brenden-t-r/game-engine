@@ -6,6 +6,20 @@
 #include "../engine/file.h"
 #include "../engine/vector.h"
 
+enum class KeyCode {
+    Unknown = 0,
+    Up,
+    Down,
+    Left,
+    Right,
+    W,
+    A,
+    S,
+    D,
+    // Add more keys as needed
+};
+
+
 class Platform {
 public:
     Platform() = default;
@@ -19,9 +33,10 @@ public:
     virtual GameObject* CreateTriangle() = 0;
     virtual Sprite* CreateSprite(const char* path) = 0;
 
+    virtual bool IsKeyPressed(KeyCode key) = 0;
+
 
     virtual void Shutdown() = 0;
 };
-
 
 #endif //GAMEENGINE_PLATFORM_H

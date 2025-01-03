@@ -13,6 +13,7 @@
 #include <iostream>
 #include "file_util.h"
 #include "math.h"
+#include <unordered_map>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
@@ -72,7 +73,11 @@ public:
 
         // Initialize graphics pipeline
         InitPipeline();
+
+        // Input init
+        RegisterRawInput(hwnd);
     }
+
 
     void Run(const std::function<void()>& func) override {
         // Enter the message loop
@@ -96,6 +101,11 @@ public:
                 swapChain->Present(1, 0);
             }
         }
+    }
+
+    bool IsKeyPressed(KeyCode key) override {
+        auto keyCode = GetWindowsKey(key);
+        return KeyState[keyCode];
     }
 
     class TriangleD3D : public Triangle {
@@ -320,15 +330,41 @@ private:
     ID3D11PixelShader* pixelShaderSimple = nullptr;
 
     // Window procedure function
-    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
-        switch (uMsg)
+        switch (message)
         {
+            case WM_INPUT: {
+                UINT dwSize;
+                GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER));
+                std::vector<BYTE> buffer(dwSize);
+
+                if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+                    break;
+
+                auto raw = (RAWINPUT*)buffer.data();
+                if (raw->header.dwType == RIM_TYPEKEYBOARD) {
+                    RAWKEYBOARD& rawKb = raw->data.keyboard;
+                    bool isKeyDown = (rawKb.Message == WM_KEYDOWN || rawKb.Message == WM_SYSKEYDOWN);
+                    bool isKeyUp = (rawKb.Message == WM_KEYUP || rawKb.Message == WM_SYSKEYUP);
+
+                    int key = rawKb.VKey;
+
+                    // Update your key state table
+                    if (isKeyDown) {
+                        KeyState[key] = true;
+                    } else if (isKeyUp) {
+                        KeyState[key] = false;
+                    }
+                }
+                break;
+            }
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
+            default:
+                return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
     // Initialize Direct3D
@@ -371,6 +407,18 @@ private:
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         d3dContext->RSSetViewports(1, &viewport);
+    }
+
+    static void RegisterRawInput(HWND hwnd) {
+        RAWINPUTDEVICE rid;
+        rid.usUsagePage = 0x01; // Generic desktop controls
+        rid.usUsage = 0x06;     // Keyboard
+        rid.dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid.hwndTarget = hwnd;
+
+        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+            printf("Failed to register raw input device.");
+        }
     }
 
     void LoadShaders() override {
@@ -472,7 +520,26 @@ private:
         d3dDevice->Release();
         d3dContext->Release();
     }
+
+    // Keyboard input map
+    static std::unordered_map<int, bool> KeyState;
+    static int GetWindowsKey(KeyCode keyCode) {
+        switch (keyCode) {
+            case KeyCode::Up:       return VK_UP;
+            case KeyCode::Down:     return VK_DOWN;
+            case KeyCode::Left:     return VK_LEFT;
+            case KeyCode::Right:    return VK_RIGHT;
+            case KeyCode::W:        return 'W';
+            case KeyCode::A:        return 'A';
+            case KeyCode::S:        return 'S';
+            case KeyCode::D:        return 'D';
+            default:                return -1;
+        }
+    }
 };
+
+// Inline definition of the static member variable
+inline std::unordered_map<int, bool> PlatformDirectX::KeyState;
 
 // Entrypoint
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
