@@ -12,8 +12,10 @@ set(SOURCES main.cpp
         engine/file.h
         engine/vector.h
         engine/game.h
+        engine/audio.h
         samples/triangleGame.h
         samples/spriteGame.h
+        dependencies/miniaudio.h
 )
 
 # Add platform-specific sources
