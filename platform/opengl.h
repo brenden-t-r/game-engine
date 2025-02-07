@@ -153,6 +153,27 @@ public:
         );
     }
 
+    bool IsKeyPressed(KeyCode key) override {
+        auto keyCode = GetGLFWKey(key);
+        int state = glfwGetKey(window, keyCode);
+        return state == GLFW_PRESS;
+    }
+
+    // Keyboard input map
+    static int GetGLFWKey(KeyCode keyCode) {
+        switch (keyCode) {
+            case KeyCode::Up:       return GLFW_KEY_UP;
+            case KeyCode::Down:     return GLFW_KEY_DOWN;
+            case KeyCode::Left:     return GLFW_KEY_LEFT;
+            case KeyCode::Right:    return GLFW_KEY_RIGHT;
+            case KeyCode::W:        return GLFW_KEY_W;
+            case KeyCode::A:        return GLFW_KEY_A;
+            case KeyCode::S:        return GLFW_KEY_S;
+            case KeyCode::D:        return GLFW_KEY_D;
+            default:                return -1;
+        }
+    }
+
     void Shutdown() override{
         glDisableVertexAttribArray(0);
         glDeleteVertexArrays(1, &triangleVAO);
