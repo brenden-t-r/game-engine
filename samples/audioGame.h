@@ -5,6 +5,165 @@
 #include "../engine/audio.h"
 #include "cstdio"
 
+constexpr int BAR_COUNT = 16;
+
+struct Beat {
+    bool kick;
+    bool snare;
+    bool hat;
+    bool ride;
+    bool crash;
+};
+
+struct Bar {
+    Beat beats[4];
+};
+
+struct Song {
+    Bar bars[BAR_COUNT];
+};
+
+static Song MySong = {
+    {
+        // Section 1
+        {
+                {
+                        { true, false, false, true, true },
+                        { false, false, true, false },
+                        { false, true, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { false, false, true, false },
+                        { false, true, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { false, false, true, false },
+                        { false, true, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { false, false, true, false },
+                        { false, true, true, false },
+                        { false, false, true, false }
+                }
+        },
+        // Section 2
+        {
+                {
+                        { true, false, false, true },
+                        { true, false, false, true },
+                        { false, true, false, true },
+                        { false, true, false, true }
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { true, false, false, true },
+                        { false, true, false, true },
+                        { false, true, false, true }
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { true, false, false, true },
+                        { false, true, false, true },
+                        { false, true, false, true }
+                }
+        },
+        {
+                {
+                        { true, true, false, false },
+                        { true, true, false, false },
+                        { true, true, false, false },
+                        { true, true, false, false }
+                }
+        },
+        // Section 3
+        {
+                {
+                        { true, false, false, true, true },
+                        { false, false, true, false },
+                        { false, false, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, true, false, true },
+                        { false, false, false, false },
+                        { true, true, false, true },
+                        { false, false, false, false }
+
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { false, false, true, false },
+                        { false, false, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, false, false, false },
+                        { false, true, false, false },
+                        { false, false, true, false },
+                        { false, false, false, true }
+
+                }
+        },
+        // Section 4
+        {
+                {
+                        { true, false, false, true, true },
+                        { false, false, true, false },
+                        { false, false, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, true, false, true },
+                        { false, false, false, false },
+                        { true, true, false, true },
+                        { false, false, false, false }
+
+                }
+        },
+        {
+                {
+                        { true, false, false, true },
+                        { false, false, true, false },
+                        { false, false, true, false },
+                        { false, false, true, false }
+                }
+        },
+        {
+                {
+                        { true, true, false, true, true },
+                        { false, false, false, true, true },
+                        { true, true, false, true, true },
+                        { false, false, false, true, true }
+
+                }
+        },
+    }
+};
+
 class AudioGame : public Game {
 public:
     using Game::Game;
@@ -14,81 +173,79 @@ public:
         delete hat;
         delete triangle;
         delete ride;
+        delete crash;
         delete audioWrapper;
     };
 
     void Start() override {
         audioWrapper = new AudioWrapper();
-        audioWrapper->Init();
-        //audioWrapper->Play(R"(C:\Users\Brenden\Desktop\2025Song9.mp3)");
+        AudioWrapper::Init();
 
         kick = new AudioSoundWrapper();
-        kick->Init(R"(C:\Users\Brenden\Desktop\Kick.wav)");
+        kick->Init("assets/audio/Kick.mp3");
         snare = new AudioSoundWrapper();
-        snare->Init(R"(C:\Users\Brenden\Desktop\Snare.wav)");
+        snare->Init("assets/audio/Snare.mp3");
         hat = new AudioSoundWrapper();
-        hat->Init(R"(C:\Users\Brenden\Desktop\Hat.wav)");
+        hat->Init("assets/audio/Hat.mp3");
         ride = new AudioSoundWrapper();
-        ride->Init(R"(C:\Users\Brenden\Desktop\Ride.wav)");
+        ride->Init("assets/audio/Ride.mp3");
+        crash = new AudioSoundWrapper();
+        crash->Init("assets/audio/Crash.mp3");
         ma_sound_set_volume(&hat->sound, 0.5f);
+        ma_sound_set_volume(&crash->sound, 0.5f);
 
         platform->LoadShaders();
         triangle = platform->CreateTriangle();
     }
 
-    int countKick = 0;
-    int countSnare = 0;
-    int countHat = 0;
-    int countRide = 0;
     int speed = 12;
-    int bars = 1;
-    int barCount = 0;
+    int bars = -1;
+    int beats = 0;
+    int count = 0;
     void Update() override {
         printf(".");
         triangle->Update();
 
-        barCount++;
-        if (barCount == speed*4) {
-            barCount = 0;
-            bars++;
-        }
-        if (bars == 1) {
-            //bars = 0;
-        }
+        count++;
+        if (count % speed == 0) {
+//            kick->Reset();
+//            kick->Play();
 
-        if (bars <= 16) {
-            if (countHat == speed*2 || countHat == 0) {
-                countHat = 0;
+            if (beats % 4 == 0 ) {
+                bars++;
+                beats = 0;
+//                ride->Reset();
+//                ride->Play();
+            }
+
+            if (bars >= BAR_COUNT) {
+                bars = 0;
+            }
+            auto beat = MySong.bars[bars].beats[beats];
+
+            if (beat.kick) {
+                kick->Reset();
+                kick->Play();
+            }
+            if (beat.snare) {
+                snare->Reset();
+                snare->Play();
+            }
+            if (beat.ride) {
+                ride->Reset();
+                ride->Play();
+            }
+            if (beat.hat) {
                 hat->Reset();
                 hat->Play();
             }
-        } else {
-            if (countHat >= speed || countHat == 0) {
-                countHat = 0;
-                hat->Reset();
-                hat->Play();
+            if (beat.crash) {
+                crash->Reset();
+                crash->Play();
             }
-        }
 
-        if (countKick == speed*4|| countKick == 0) {
-            countKick = 0;
-            kick->Reset();
-            kick->Play();
+            beats++;
         }
-        if (countSnare == speed*4) {
-            countSnare = -speed*4;
-            snare->Reset();
-            snare->Play();
-        }
-        if (countRide == speed*32 || countRide == 0) {
-            countRide = 0;
-            ride->Reset();
-            ride->Play();
-        }
-        countKick++;
-        countSnare++;
-        countHat++;
-        countRide++;
     }
 
 private:
@@ -98,6 +255,7 @@ private:
     AudioSoundWrapper* snare = nullptr;
     AudioSoundWrapper* hat = nullptr;
     AudioSoundWrapper* ride = nullptr;
+    AudioSoundWrapper* crash = nullptr;
 };
 
 #endif //GAMEENGINE_AUDIOGAME_H

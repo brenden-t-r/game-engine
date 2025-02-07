@@ -9,7 +9,7 @@ public:
         ma_engine_uninit(&g_engine);
     };
 
-    void Init() {
+    static void Init() {
         ma_result result;
         result = ma_engine_init(nullptr, &g_engine);
         if (result != MA_SUCCESS) {
@@ -18,8 +18,12 @@ public:
         assert(result == MA_SUCCESS);
     }
 
-    void Play(const char* filePath) {
+    static void Play(const char* filePath) {
         ma_engine_play_sound(&g_engine, filePath, nullptr);
+    }
+
+    static void Stop() {
+        ma_engine_stop(&g_engine);
     }
 };
 
