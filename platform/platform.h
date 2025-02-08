@@ -19,6 +19,13 @@ enum class KeyCode {
     // Add more keys as needed
 };
 
+enum class MouseButton {
+    Unknown = 0,
+    Left,
+    Middle,
+    Right
+};
+
 
 class Platform {
 public:
@@ -34,6 +41,8 @@ public:
     virtual Sprite* CreateSprite(const char* path) = 0;
 
     virtual bool IsKeyPressed(KeyCode key) = 0;
+    virtual bool IsMousePressed(MouseButton button) = 0;
+    virtual bool IsMouseReleased(MouseButton button) = 0;
 
 
     virtual void Shutdown() = 0;

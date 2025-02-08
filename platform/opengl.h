@@ -18,6 +18,67 @@
 GLuint compileShader(const char* source, GLenum type);
 GLuint loadTexture(const char* path);
 
+class MouseState {
+public:
+    bool LButtonDown;
+    bool RButtonDown;
+    bool MButtonDown;
+    bool LButtonUp;
+    bool RButtonUp;
+    bool MButtonUp;
+    double posX;
+    double posY;
+
+    bool isButtonDown(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonDown;
+            case MouseButton::Right: return RButtonDown;
+            case MouseButton::Middle: return MButtonDown;
+            default: return false;
+        }
+    }
+
+    bool isButtonUp(MouseButton btn) {
+        switch (btn) {
+            case MouseButton::Left: {
+                if (LButtonUp) {
+                    LButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            case MouseButton::Right: {
+                if (RButtonUp) {
+                    RButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            case MouseButton::Middle: {
+                if (MButtonUp) {
+                    MButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            default: return false;
+        }
+    }
+};
+static MouseState mouseState;
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        mouseState.LButtonUp = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+        mouseState.RButtonUp = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
+        mouseState.MButtonUp = true;
+    }
+}
+
 class PlatformOpenGL : public Platform {
 public:
     PlatformOpenGL() = default;
@@ -136,13 +197,15 @@ public:
     }
 
     void Run(const std::function<void()>& func) override{
+        glfwSetMouseButtonCallback(window, mouse_button_callback);
+
         do{
             // Clear the screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            func();
-
             glfwPollEvents();
+
+            func();
 
             glfwSwapBuffers(window);
         }
@@ -158,6 +221,14 @@ public:
         int state = glfwGetKey(window, keyCode);
         return state == GLFW_PRESS;
     }
+    bool IsMousePressed(MouseButton button) override {
+        auto btn = GetGLFWMouseButton(button);
+        int state = glfwGetMouseButton(window, btn);
+        return state == GLFW_PRESS;
+    }
+    bool IsMouseReleased(MouseButton button) override {
+        return mouseState.isButtonUp(button);
+    }
 
     // Keyboard input map
     static int GetGLFWKey(KeyCode keyCode) {
@@ -171,6 +242,14 @@ public:
             case KeyCode::S:        return GLFW_KEY_S;
             case KeyCode::D:        return GLFW_KEY_D;
             default:                return -1;
+        }
+    }
+    static int GetGLFWMouseButton(MouseButton button) {
+        switch(button) {
+            case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
+            case MouseButton::Right: return GLFW_MOUSE_BUTTON_RIGHT;
+            case MouseButton::Middle: return GLFW_MOUSE_BUTTON_MIDDLE;
+            default: -1;
         }
     }
 

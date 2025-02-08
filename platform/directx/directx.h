@@ -19,6 +19,36 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
+class MouseState {
+public:
+    bool LButtonDown;
+    bool RButtonDown;
+    bool MButtonDown;
+    bool LButtonUp;
+    bool RButtonUp;
+    bool MButtonUp;
+    double posX;
+    double posY;
+
+    bool isButtonDown(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonDown;
+            case MouseButton::Right: return RButtonDown;
+            case MouseButton::Middle: return MButtonDown;
+            default: return false;
+        }
+    }
+
+    bool isButtonUp(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonUp;
+            case MouseButton::Right: return RButtonUp;
+            case MouseButton::Middle: return MButtonUp;
+            default: return false;
+        }
+    }
+};
+static MouseState mouseState;
 
 class PlatformDirectX : public Platform {
 public:
@@ -97,6 +127,9 @@ public:
 
                 func();
 
+                // Reset mouse state, needed for clearing button releases
+                mouseState = {};
+
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
             }
@@ -106,6 +139,12 @@ public:
     bool IsKeyPressed(KeyCode key) override {
         auto keyCode = GetWindowsKey(key);
         return KeyState[keyCode];
+    }
+    bool IsMousePressed(MouseButton button) override {
+        return mouseState.isButtonDown(button);
+    }
+    bool IsMouseReleased(MouseButton button) override {
+        return mouseState.isButtonUp(button);
     }
 
     class TriangleD3D : public Triangle {
@@ -356,9 +395,50 @@ private:
                     } else if (isKeyUp) {
                         KeyState[key] = false;
                     }
+                } else if (raw->header.dwType == RIM_TYPEMOUSE) {
+                    RAWMOUSE& rawM = raw->data.mouse;
+
+                    mouseState = {};
+
+                    // Check mouse movement
+                    int dx = rawM.lLastX;
+                    int dy = rawM.lLastY;
+
+                    printf("%d",dx);
+                    printf("%d",dy);
+                    mouseState.posX = dx;
+                    mouseState.posY = dy;
+
+                    // Check button states
+                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
+                        printf("Left button down\n");
+                        mouseState.LButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
+                        printf("Left button up\n");
+                        mouseState.LButtonUp = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
+                        printf("Right button down\n");
+                        mouseState.RButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
+                        printf("Right button up\n");
+                        mouseState.RButtonUp = true;
+
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
+                        printf("Middle button down\n");
+                        mouseState.MButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
+                        printf("Middle button up\n");
+                        mouseState.MButtonUp = true;
+                    }
                 }
                 break;
             }
+
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
@@ -413,6 +493,7 @@ private:
         RAWINPUTDEVICE rid;
         rid.usUsagePage = 0x01; // Generic desktop controls
         rid.usUsage = 0x06;     // Keyboard
+        rid.usUsage = 0x02;
         rid.dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
         rid.hwndTarget = hwnd;
 
@@ -511,7 +592,10 @@ private:
     // Clean up Direct3D objects
     void CleanD3D()
     {
-        vertexBuffer->Release();
+        if (vertexBuffer) {
+            vertexBuffer->Release();
+            vertexBuffer = nullptr;
+        }
         inputLayoutSimple->Release();
         vertexShaderTexture->Release();
         pixelShaderTexture->Release();
@@ -537,6 +621,7 @@ private:
         }
     }
 };
+
 
 // Inline definition of the static member variable
 inline std::unordered_map<int, bool> PlatformDirectX::KeyState;
