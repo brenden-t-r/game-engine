@@ -27,8 +27,6 @@ public:
     bool LButtonUp;
     bool RButtonUp;
     bool MButtonUp;
-    double posX;
-    double posY;
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
@@ -88,7 +86,7 @@ public:
 #endif
 
         // Create the window
-        HWND hwnd = CreateWindow(
+        hwnd = CreateWindow(
                 wc.lpszClassName,
                 "Direct3D 11 Triangle",
                 WS_OVERLAPPEDWINDOW,
@@ -145,6 +143,21 @@ public:
     }
     bool IsMouseReleased(MouseButton button) override {
         return mouseState.isButtonUp(button);
+    }
+    Vector3 GetMousePos() override {
+        RECT rect;
+        GetClientRect(hwnd, &rect);  // Get window size
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+
+        POINT cursorPos;
+        if (GetCursorPos(&cursorPos)) {
+            ScreenToClient(hwnd, &cursorPos);  // Convert to client space
+
+            float ndcX = (2.0f * cursorPos.x) / width - 1.0f;
+            float ndcY = 1.0f - (2.0f * cursorPos.y) / height;  // Flip Y axis
+            return {ndcX, ndcY};
+        }
     }
 
     class TriangleD3D : public Triangle {
@@ -349,6 +362,7 @@ public:
 
 private:
     // Entry-point args
+    HWND hwnd = nullptr;
     HINSTANCE hInstance = nullptr;
     HINSTANCE hPrevInstance = nullptr;
     LPSTR lpCmdLine = nullptr;

@@ -26,8 +26,6 @@ public:
     bool LButtonUp;
     bool RButtonUp;
     bool MButtonUp;
-    double posX;
-    double posY;
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
@@ -79,6 +77,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    std::cout << "Window resized: " << width << "x" << height << "\n";
+
+    // Adjust viewport (for OpenGL)
+    glViewport(0, 0, width, height);
+}
+
 class PlatformOpenGL : public Platform {
 public:
     PlatformOpenGL() = default;
@@ -109,6 +114,9 @@ public:
         }
         glfwMakeContextCurrent(window);
 
+        // Set the resize callback
+        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
         // Initialize glew
         if (glewInit() != GLEW_OK) {
             fprintf(stderr, "Failed to initialize GLEW\n");
@@ -117,12 +125,6 @@ public:
         }
 
         printf("%s\n", glGetString(GL_VERSION));
-
-        // Ensure we can capture the escape key being pressed below
-        glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-
-        // Dark blue background
-        glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
         // Ensure we can capture the escape key being pressed below
         glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -228,6 +230,15 @@ public:
     }
     bool IsMouseReleased(MouseButton button) override {
         return mouseState.isButtonUp(button);
+    }
+    Vector3 GetMousePos() override {
+        double cursorX, cursorY;
+        int width, height;
+        glfwGetCursorPos(window, &cursorX, &cursorY);
+        glfwGetWindowSize(window, &width, &height);
+        float ndcX = (2.0 * cursorX) / width - 1.0;
+        float ndcY = 1.0 - (2.0 * cursorY) / height;  // Flip Y axis
+        return {ndcX, ndcY, 0};
     }
 
     // Keyboard input map

@@ -43,7 +43,7 @@ public:
     virtual bool IsKeyPressed(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
     virtual bool IsMouseReleased(MouseButton button) = 0;
-
+    virtual Vector3 GetMousePos() = 0;
 
     virtual void Shutdown() = 0;
 };

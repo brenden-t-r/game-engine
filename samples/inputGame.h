@@ -42,6 +42,11 @@ public:
         triangleM2->transform.height = 0.05;
         triangleM2->transform.pos.x = 0.5;
         triangleM2->transform.pos.y = -0.5;
+        triangleCursor = platform->CreateTriangle();
+        triangleCursor->transform.width = 0.07;
+        triangleCursor->transform.height = 0.07;
+        triangleCursor->transform.pos.x = 0;
+        triangleCursor->transform.pos.y = 0;
     }
 
     void Update() override {
@@ -72,6 +77,11 @@ public:
             printf("\nMiddle Released!");
             triangleM2->Update();
         }
+
+        auto pos = platform->GetMousePos();
+        triangleCursor->transform.pos.x = pos.x;
+        triangleCursor->transform.pos.y = pos.y;
+        triangleCursor->Update();
     }
 
 private:
@@ -81,6 +91,7 @@ private:
     GameObject* triangleL2;
     GameObject* triangleR2;
     GameObject* triangleM2;
+    GameObject* triangleCursor;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H
