@@ -506,15 +506,24 @@ private:
     }
 
     static void RegisterRawInput(HWND hwnd) {
-        RAWINPUTDEVICE rid;
-        rid.usUsagePage = 0x01; // Generic desktop controls
-        rid.usUsage = 0x06;     // Keyboard
-        rid.usUsage = 0x02;
-        rid.dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
-        rid.hwndTarget = hwnd;
+        RAWINPUTDEVICE rid[2];
 
-        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+        // Register keyboard
+        rid[0].usUsagePage = 0x01;  // Generic Desktop Controls
+        rid[0].usUsage = 0x06;      // Keyboard
+        rid[0].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid[0].hwndTarget = hwnd;
+
+        // Register mouse
+        rid[1].usUsagePage = 0x01;  // Generic Desktop Controls
+        rid[1].usUsage = 0x02;      // Mouse
+        rid[1].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid[1].hwndTarget = hwnd;
+
+        // Register both devices
+        if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
             printf("Failed to register raw input device.");
+
         }
     }
 
