@@ -27,6 +27,8 @@ public:
     bool LButtonUp;
     bool RButtonUp;
     bool MButtonUp;
+    double posX;
+    double posY;
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
