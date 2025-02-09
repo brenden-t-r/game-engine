@@ -45,19 +45,17 @@ public:
         player2Paddle->Update();
         ball->Update();
 
+        // Paddle left keyboard movement
         if (platform->IsKeyPressed(KeyCode::S)) {
-            player1Paddle->transform.pos.y -= 0.01f;
+            if (player1Paddle->transform.pos.y >= (-1.0f + PaddleHeight/2)) {
+                player1Paddle->transform.pos.y -= 0.01f;
+            }
         }
         if (platform->IsKeyPressed(KeyCode::W)) {
-            player1Paddle->transform.pos.y += 0.01f;
+            if (player1Paddle->transform.pos.y <= (1.0f - PaddleHeight/2)) {
+                player1Paddle->transform.pos.y += 0.01f;
+            }
         }
-
-/*        // Paddle left movement
-        if (temp > (1.0 - PaddleHeight/2) || temp < (-1.0 + PaddleHeight)) {
-            tempDir *= -1;
-        }
-        temp += 0.01f * tempDir;
-        player1Paddle->transform.pos.y = temp;
 
         // Ball movement
         ballPos.x += ballSpeed * ballDir.x;
@@ -69,7 +67,7 @@ public:
         }
         if (ballPos.y > (1 - BallHeight/2) || ballPos.y < (-1 + BallHeight)) {
             ballDir.y *= -1;
-        }*/
+        }
     }
 
 private:
