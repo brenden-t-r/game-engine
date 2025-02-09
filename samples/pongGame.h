@@ -4,6 +4,7 @@
 #include "../constants.h"
 #include "../engine/game.h"
 #include "../engine/vector.h"
+#include "../platform/platform.h"
 
 class PongGame : public Game {
 public:
@@ -44,7 +45,14 @@ public:
         player2Paddle->Update();
         ball->Update();
 
-        // Paddle left movement
+        if (platform->IsKeyPressed(KeyCode::S)) {
+            player1Paddle->transform.pos.y -= 0.01f;
+        }
+        if (platform->IsKeyPressed(KeyCode::W)) {
+            player1Paddle->transform.pos.y += 0.01f;
+        }
+
+/*        // Paddle left movement
         if (temp > (1.0 - PaddleHeight/2) || temp < (-1.0 + PaddleHeight)) {
             tempDir *= -1;
         }
@@ -61,7 +69,7 @@ public:
         }
         if (ballPos.y > (1 - BallHeight/2) || ballPos.y < (-1 + BallHeight)) {
             ballDir.y *= -1;
-        }
+        }*/
     }
 
 private:

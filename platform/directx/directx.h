@@ -13,11 +13,42 @@
 #include <iostream>
 #include "file_util.h"
 #include "math.h"
+#include <unordered_map>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
+class MouseState {
+public:
+    bool LButtonDown;
+    bool RButtonDown;
+    bool MButtonDown;
+    bool LButtonUp;
+    bool RButtonUp;
+    bool MButtonUp;
+    double posX;
+    double posY;
+
+    bool isButtonDown(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonDown;
+            case MouseButton::Right: return RButtonDown;
+            case MouseButton::Middle: return MButtonDown;
+            default: return false;
+        }
+    }
+
+    bool isButtonUp(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonUp;
+            case MouseButton::Right: return RButtonUp;
+            case MouseButton::Middle: return MButtonUp;
+            default: return false;
+        }
+    }
+};
+static MouseState mouseState;
 
 class PlatformDirectX : public Platform {
 public:
@@ -57,7 +88,7 @@ public:
 #endif
 
         // Create the window
-        HWND hwnd = CreateWindow(
+        hwnd = CreateWindow(
                 wc.lpszClassName,
                 "Direct3D 11 Triangle",
                 WS_OVERLAPPEDWINDOW,
@@ -72,7 +103,11 @@ public:
 
         // Initialize graphics pipeline
         InitPipeline();
+
+        // Input init
+        RegisterRawInput(hwnd);
     }
+
 
     void Run(const std::function<void()>& func) override {
         // Enter the message loop
@@ -92,9 +127,38 @@ public:
 
                 func();
 
+                // Reset mouse state, needed for clearing button releases
+                mouseState = {};
+
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
             }
+        }
+    }
+
+    bool IsKeyPressed(KeyCode key) override {
+        auto keyCode = GetWindowsKey(key);
+        return KeyState[keyCode];
+    }
+    bool IsMousePressed(MouseButton button) override {
+        return mouseState.isButtonDown(button);
+    }
+    bool IsMouseReleased(MouseButton button) override {
+        return mouseState.isButtonUp(button);
+    }
+    Vector3 GetMousePos() override {
+        RECT rect;
+        GetClientRect(hwnd, &rect);  // Get window size
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+
+        POINT cursorPos;
+        if (GetCursorPos(&cursorPos)) {
+            ScreenToClient(hwnd, &cursorPos);  // Convert to client space
+
+            float ndcX = (2.0f * cursorPos.x) / width - 1.0f;
+            float ndcY = 1.0f - (2.0f * cursorPos.y) / height;  // Flip Y axis
+            return {ndcX, ndcY};
         }
     }
 
@@ -300,6 +364,7 @@ public:
 
 private:
     // Entry-point args
+    HWND hwnd = nullptr;
     HINSTANCE hInstance = nullptr;
     HINSTANCE hPrevInstance = nullptr;
     LPSTR lpCmdLine = nullptr;
@@ -320,15 +385,82 @@ private:
     ID3D11PixelShader* pixelShaderSimple = nullptr;
 
     // Window procedure function
-    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
-        switch (uMsg)
+        switch (message)
         {
+            case WM_INPUT: {
+                UINT dwSize;
+                GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER));
+                std::vector<BYTE> buffer(dwSize);
+
+                if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+                    break;
+
+                auto raw = (RAWINPUT*)buffer.data();
+                if (raw->header.dwType == RIM_TYPEKEYBOARD) {
+                    RAWKEYBOARD& rawKb = raw->data.keyboard;
+                    bool isKeyDown = (rawKb.Message == WM_KEYDOWN || rawKb.Message == WM_SYSKEYDOWN);
+                    bool isKeyUp = (rawKb.Message == WM_KEYUP || rawKb.Message == WM_SYSKEYUP);
+
+                    int key = rawKb.VKey;
+
+                    // Update your key state table
+                    if (isKeyDown) {
+                        KeyState[key] = true;
+                    } else if (isKeyUp) {
+                        KeyState[key] = false;
+                    }
+                } else if (raw->header.dwType == RIM_TYPEMOUSE) {
+                    RAWMOUSE& rawM = raw->data.mouse;
+
+                    mouseState = {};
+
+                    // Check mouse movement
+                    int dx = rawM.lLastX;
+                    int dy = rawM.lLastY;
+
+                    printf("%d",dx);
+                    printf("%d",dy);
+                    mouseState.posX = dx;
+                    mouseState.posY = dy;
+
+                    // Check button states
+                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
+                        printf("Left button down\n");
+                        mouseState.LButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
+                        printf("Left button up\n");
+                        mouseState.LButtonUp = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
+                        printf("Right button down\n");
+                        mouseState.RButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
+                        printf("Right button up\n");
+                        mouseState.RButtonUp = true;
+
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
+                        printf("Middle button down\n");
+                        mouseState.MButtonDown = true;
+                    }
+                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
+                        printf("Middle button up\n");
+                        mouseState.MButtonUp = true;
+                    }
+                }
+                break;
+            }
+
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
+            default:
+                return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
     // Initialize Direct3D
@@ -371,6 +503,19 @@ private:
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         d3dContext->RSSetViewports(1, &viewport);
+    }
+
+    static void RegisterRawInput(HWND hwnd) {
+        RAWINPUTDEVICE rid;
+        rid.usUsagePage = 0x01; // Generic desktop controls
+        rid.usUsage = 0x06;     // Keyboard
+        rid.usUsage = 0x02;
+        rid.dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid.hwndTarget = hwnd;
+
+        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+            printf("Failed to register raw input device.");
+        }
     }
 
     void LoadShaders() override {
@@ -463,7 +608,10 @@ private:
     // Clean up Direct3D objects
     void CleanD3D()
     {
-        vertexBuffer->Release();
+        if (vertexBuffer) {
+            vertexBuffer->Release();
+            vertexBuffer = nullptr;
+        }
         inputLayoutSimple->Release();
         vertexShaderTexture->Release();
         pixelShaderTexture->Release();
@@ -472,7 +620,27 @@ private:
         d3dDevice->Release();
         d3dContext->Release();
     }
+
+    // Keyboard input map
+    static std::unordered_map<int, bool> KeyState;
+    static int GetWindowsKey(KeyCode keyCode) {
+        switch (keyCode) {
+            case KeyCode::Up:       return VK_UP;
+            case KeyCode::Down:     return VK_DOWN;
+            case KeyCode::Left:     return VK_LEFT;
+            case KeyCode::Right:    return VK_RIGHT;
+            case KeyCode::W:        return 'W';
+            case KeyCode::A:        return 'A';
+            case KeyCode::S:        return 'S';
+            case KeyCode::D:        return 'D';
+            default:                return -1;
+        }
+    }
 };
+
+
+// Inline definition of the static member variable
+inline std::unordered_map<int, bool> PlatformDirectX::KeyState;
 
 // Entrypoint
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {

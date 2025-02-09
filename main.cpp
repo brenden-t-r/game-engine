@@ -14,6 +14,7 @@
 #include "samples/triangleGame.h"
 #include "samples/spriteGame.h"
 #include "samples/pongGame.h"
+#include "samples/inputGame.h"
 #include "samples/audioGame.h"
 
 class SampleGame : public Game {
@@ -40,10 +41,11 @@ int RealMain(Platform* platform) {
     platform->Init();
 
 //    Game* game = new SampleGame(platform);
-//    Game* game = new TriangleGame(platform);
+    Game* game = new TriangleGame(platform);
 //    Game* game = new SpriteGame(platform);
 //    Game* game = new PongGame(platform);
-    Game* game = new AudioGame(platform);
+//    Game* game = new AudioGame(platform);
+//    Game* game = new InputGame(platform);
     game->Start();
 
     printf("Running...\n");
