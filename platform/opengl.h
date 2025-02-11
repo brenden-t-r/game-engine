@@ -336,6 +336,21 @@ public:
                     vertex3.x, vertex3.y, 0.0f,  1.0f, 0.0f, // Bottom-right
                     vertex4.x, vertex4.y, 0.0f,  0.0f, 0.0f  // Bottom-left
             };
+
+            int row = atlasNumRows - atlasRow - 1;
+            if (useAtlas) {
+                newVertices[3] = atlasCellSize * (float)atlasColumn; // Top-left
+                newVertices[4] = atlasCellSize * (float)row + atlasCellSize;
+                newVertices[8] = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top-right
+                newVertices[9] = atlasCellSize * (float)row+ atlasCellSize;
+                newVertices[13] = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom-right
+                newVertices[14] = atlasCellSize * (float)row;
+                newVertices[18] = atlasCellSize * (float)atlasColumn;  // Bottom-left
+                newVertices[19] = atlasCellSize * (float)row;
+            }
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glUseProgram(shaderProgram); // Use appropriate shader
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject);
@@ -478,8 +493,8 @@ GLuint loadTexture(const char* path) {
         // Set texture parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         // Free image data
         stbi_image_free(data);

@@ -294,31 +294,16 @@ public:
             vertices[2].position.x = vertex4.x;
             vertices[2].position.y = vertex4.y;
 
-            /*
-                    { { -0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f } }, // Top-left
-                    { {  0.5f,  0.5f, 0.0f }, { 0.125f, 0.0f } }, // Top-right
-                    { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.125f } }, // Bottom-left
-                    { {  0.5f, -0.5f, 0.0f }, { 0.125f, 0.125f } }, // Bottom-right
-             *
-             *
-             *     { { -0.5f,  0.5f, 0.0f }, { 0.125f, 0.0f } },   // Top-left
-                    { {  0.5f,  0.5f, 0.0f }, { 0.250f, 0.0f } },   // Top-right
-                    { { -0.5f, -0.5f, 0.0f }, { 0.125f, 0.125f } }, // Bottom-left
-                    { {  0.5f, -0.5f, 0.0f }, { 0.250f, 0.125f } }, // Bottom-right
-
-                { { -0.5f,  0.5f, 0.0f }, { 0.0f, 0.125f } },   // Top-left
-                { {  0.5f,  0.5f, 0.0f }, { 0.125f, 0.125f } }, // Top-right
-                { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.250f } },   // Bottom-left
-                { {  0.5f, -0.5f, 0.0f }, { 0.125f, 0.250f } }, // Bottom-right
-             */
-            vertices[0].texCoord.x = atlasCellSize * atlasColumn;
-            vertices[1].texCoord.x = atlasCellSize * atlasColumn + atlasCellSize;
-            vertices[2].texCoord.x = atlasCellSize * atlasColumn;
-            vertices[3].texCoord.x = atlasCellSize * atlasColumn + atlasCellSize;
-            vertices[0].texCoord.y = atlasCellSize * atlasRow;
-            vertices[1].texCoord.y = atlasCellSize * atlasRow;
-            vertices[2].texCoord.y = atlasCellSize * atlasRow + atlasCellSize;
-            vertices[3].texCoord.y = atlasCellSize * atlasRow + atlasCellSize;
+            if (useAtlas) {
+                vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
+                vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
+                vertices[3].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                vertices[0].texCoord.y = atlasCellSize * (float)atlasRow;
+                vertices[1].texCoord.y = atlasCellSize * (float)atlasRow;
+                vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+                vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+            }
 
             // Set the blend state
             float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -614,7 +599,7 @@ private:
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;

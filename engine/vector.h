@@ -70,75 +70,6 @@ static const FontChar AllCharacters[] = { A, B, C, D, E, F, G, H, I, J, K, L, M,
                                           a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,
                                           Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine,
                                           Bang, QuestionMark };
-int FontCharToAtlasRow(FontChar c) {
-    switch (c) {
-//        case Unknown: return -1;
-        case A: return 0;
-        case B: return 1;
-        case C: return 2;
-        case D: return 3;
-        case E: return 4;
-        case F: return 5;
-        case G: return 6;
-        case H: return 7;
-        case I: return 0;
-        case J: return 1;
-        case K: return 2;
-        case L: return 3;
-        case M: return 4;
-        case N: return 5;
-        case O: return 6;
-        case P: return 7;
-        case Q: return 0;
-        case R: return 1;
-        case S: return 2;
-        case T: return 3;
-        case U: return 4;
-        case V: return 5;
-        case W: return 6;
-        case X: return 7;
-        case Y: return 0;
-        case Z: return 1;
-        case a: return 2;
-        case b: return 3;
-        case ::c: return 4;
-        case d: return 5;
-        case e: return 6;
-        case f: return 7;
-        case g: return 0;
-        case h: return 1;
-        case i: return 2;
-        case j: return 3;
-        case k: return 4;
-        case l: return 5;
-        case m: return 6;
-        case n: return 7;
-        case o: return 0;
-        case p: return 1;
-        case q: return 2;
-        case r: return 3;
-        case s: return 4;
-        case t: return 5;
-        case u: return 6;
-        case v: return 7;
-        case w: return 0;
-        case x: return 1;
-        case y: return 2;
-        case z: return 3;
-        case Zero: return 4;
-        case One: return 5;
-        case Two: return 6;
-        case Three: return 7;
-        case Four: return 0;
-        case Five: return 1;
-        case Six: return 2;
-        case Seven: return 3;
-        case Eight: return 4;
-        case Nine: return 5;
-        case Bang: return 6;
-        case QuestionMark: return 7;
-    }
-}
 int CharToAtlasColumn(char c) {
     switch (c) {
         case 'A': return 0;
@@ -278,7 +209,6 @@ int CharToAtlasRow(char c) {
     }
 }
 
-
 class Sprite : public GameObject {
 public:
     Vector3 vertex1 = {-0.5f,  0.5f, 0.0f};  // top left
@@ -286,7 +216,8 @@ public:
     Vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
     Vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
 
-    int atlasIndex = -1;
+    bool useAtlas = false;
+    int atlasNumRows = 0;
     int atlasRow = 0;
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
@@ -301,35 +232,9 @@ public:
         vertex3.y = transform.pos.y - transform.height/2;
         vertex4.x = transform.pos.x - transform.width/2;
         vertex4.y = transform.pos.y - transform.height/2;
-
-//        if (atlasIndex > -1 || (atlasRow > -1 and atlasColumn > -1)) {
-//
-//        }
     }
 };
 
-//class SpriteAtlas : public Sprite {
-//public:
-//    int index = 0;
-//    float atlasCellWidth = 0.125f;
-//    float atlasCellHeight = 0.125f;
-//
-//    void Update() override {
-//        GameObject::Update();
-//
-//        vertex1.x =
-//
-//
-//        vertex1.x = transform.pos.x - transform.width/2;
-//        vertex1.y = transform.pos.y + transform.height/2;
-//        vertex2.x = transform.pos.x + transform.width/2;
-//        vertex2.y = transform.pos.y + transform.height/2;
-//        vertex3.x = transform.pos.x + transform.width/2;
-//        vertex3.y = transform.pos.y - transform.height/2;
-//        vertex4.x = transform.pos.x - transform.width/2;
-//        vertex4.y = transform.pos.y - transform.height/2;
-//    }
-//};
 
 
 #endif //GAMEENGINE_VECTOR_H

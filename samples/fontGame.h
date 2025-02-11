@@ -9,57 +9,47 @@ public:
     using Game::Game;
 
     ~FontGame() override {
-        for (auto & spriteChar : spriteChars) {
-            delete spriteChar;  // Free allocated memory
-        }
-        for (auto & spriteChar : spriteChars2) {
-            delete spriteChar;  // Free allocated memory
-        }
+        delete burbank;
+        delete font;
     };
 
     float size = 0.2f;
-    float textPosX = -0.18;
-    float textPosY = 0.2;
 
     void Start() override {
         platform->LoadShaders();
 
-        int i = 0;
+        burbank = platform->CreateSprite("assets/sprites/burbank512.png");
+        burbank->transform.width = size;
+        burbank->transform.height = size;
+        burbank->useAtlas = true;
+        burbank->atlasNumRows = 8;
+        burbank->atlasCellSize = 0.125f;
+        burbank->atlasRow = 0;
+        burbank->atlasColumn = 0;
 
-        for (auto c : AllCharacters) {
-            spriteChars[i] = platform->CreateSprite("assets/sprites/burbank512.png");
-            spriteChars[i]->transform.width = size;
-            spriteChars[i]->transform.height = size;
-            spriteChars[i]->atlasCellSize = 0.125f;
-            spriteChars[i]->atlasRow = (i / 8);
-            spriteChars[i]->atlasColumn = (i % 8);
-            i++;
-        }
-        i = 0;
-        for (auto c : AllCharacters) {
-            spriteChars2[i] = platform->CreateSprite("assets/sprites/font512.png");
-            spriteChars2[i]->transform.width = size/2;
-            spriteChars2[i]->transform.height = size/2;
-            spriteChars2[i]->atlasCellSize = 0.125f;
-            spriteChars2[i]->atlasRow = (i / 8);
-            spriteChars2[i]->atlasColumn = (i % 8);
-            i++;
-        }
+        font = platform->CreateSprite("assets/sprites/font512.png");
+        font->transform.width = size/2;
+        font->transform.height = size/2;
+        font->useAtlas = true;
+        burbank->atlasNumRows = 8;
+        font->atlasCellSize = 0.125f;
+        font->atlasRow = 0;
+        font->atlasColumn = 0;
     }
 
     void Update() override {
-        ShowText("PONG", spriteChars);
-        ShowText("\n\nPRESS\nENTER", spriteChars2);
+        ShowText("PONG", burbank, size, { -0.18, 0.2});
+        ShowText("PRESS ENTER", font, size/2, {-0.2, -0.2});
     }
 
-    void ShowText(std::string text, Sprite* sprites[]) {
+    static void ShowText(const std::string& text, Sprite* atlas, float fontSize, Vector3 pos) {
         int i = 0;
-        float yPos = textPosY;
+        float yPos = pos.y;
         int horOffset = i;
 
         for (auto c : text) {
             if (c == '\n') {
-                yPos -= size;
+                yPos -= fontSize;
                 horOffset = 0;
                 i++;
                 continue;
@@ -71,17 +61,20 @@ public:
                 horOffset++;
                 continue;
             }
-            auto spr = sprites[row * 8 + (col)];
-            spr->transform.pos.y = yPos;
-            spr->transform.pos.x = textPosX + (horOffset * (size - size/2.5));
+            atlas->atlasRow = row;
+            atlas->atlasColumn = col;
+            atlas->transform.pos.y = yPos;
+            atlas->transform.pos.x = pos.x + (horOffset * (fontSize - fontSize/2.5));
             i++;
             horOffset++;
-            spr->Update();
+            atlas->Update();
         }
     }
 
 private:
     static const int CHAR_COUNT = 64;
+    Sprite* burbank;
+    Sprite* font;
     Sprite* spriteChars[CHAR_COUNT];
     Sprite* spriteChars2[CHAR_COUNT];
 };
