@@ -17,4 +17,20 @@ protected:
     Platform* platform;
 };
 
+class Scene {
+public:
+    explicit Scene(Platform* platform) {
+        this->platform = platform;
+    };
+    virtual ~Scene() = default;
+
+    virtual void Start() = 0;
+    virtual void Update() = 0;
+
+    int nextScene = -1;
+
+protected:
+    Platform* platform;
+};
+
 #endif //GAMEENGINE_GAME_H
