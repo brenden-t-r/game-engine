@@ -12,7 +12,8 @@ std::vector<std::string> getFilenamesInDirectory(const std::string& folderPath) 
     try {
         // Check if the folder exists
         if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
-            throw std::runtime_error("The specified path does not exist or is not a directory.");
+            printf("The specified path does not exist or is not a directory.");
+            exit(1);
         }
 
         // Iterate through the folder and collect filenames

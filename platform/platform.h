@@ -24,7 +24,6 @@ enum class MouseButton {
     Right
 };
 
-
 class Platform {
 public:
     Platform() = default;

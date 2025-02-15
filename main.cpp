@@ -36,8 +36,9 @@ private:
 };
 
 void GameUpdateFn(void* context) {
-    ((Game*)context)->Update();
+    ((Game*)(context))->Update();
 }
+
 
 // Common logic for the application
 int RealMain(Platform* platform) {
@@ -55,8 +56,8 @@ int RealMain(Platform* platform) {
     game->Start();
 
     printf("Running...\n");
-    platform->Run(GameUpdateFn, game);
 
+    platform->Run(GameUpdateFn, platform);
 
     printf("\nShutting down...\n");
     platform->Shutdown();

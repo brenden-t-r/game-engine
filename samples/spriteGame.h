@@ -35,10 +35,10 @@ public:
         triangle->Update();
         triangle2->Update();
 
-        triangle->transform.pos.x += 0.01;
-        sprite->transform.pos.x += 0.01;
-        triangle2->transform.pos.x -= 0.01;
-        sprite2->transform.pos.x -= 0.01;
+        triangle->transform.pos.x += 0.01f;
+        sprite->transform.pos.x += 0.01f;
+        triangle2->transform.pos.x -= 0.01f;
+        sprite2->transform.pos.x -= 0.01f;
     }
 
 private:
