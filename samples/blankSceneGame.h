@@ -10,7 +10,7 @@ enum scenes {
 
 class BlankScene : public Scene {
     using Scene::Scene;
-    ~BlankScene() {
+    ~BlankScene() override {
         delete gameObject;
     }
     void Start() override {
@@ -27,6 +27,9 @@ class BlankScene : public Scene {
 
 class BlankScene2 : public Scene {
     using Scene::Scene;
+    ~BlankScene2() override {
+        delete gameObject;
+    }
     void Start() override {
         gameObject = platform->CreateTriangle();
         gameObject->transform.pos.x += 0.5f;

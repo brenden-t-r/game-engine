@@ -16,6 +16,7 @@
 #include "samples/pongGame.h"
 #include "samples/inputGame.h"
 #include "samples/audioGame.h"
+#include "samples/blankSceneGame.h"
 
 class SampleGame : public Game {
 public:
@@ -34,6 +35,10 @@ public:
 private:
 };
 
+void GameUpdateFn(void* context) {
+    ((Game*)context)->Update();
+}
+
 // Common logic for the application
 int RealMain(Platform* platform) {
     printf("Hello from PlatformMain!\n");
@@ -43,13 +48,15 @@ int RealMain(Platform* platform) {
 //    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
 //    Game* game = new SpriteGame(platform);
-    Game* game = new PongGame(platform);
+//    Game* game = new PongGame(platform);
 //    Game* game = new AudioGame(platform);
 //    Game* game = new InputGame(platform);
+    Game* game = new BlankSceneGame(platform);
     game->Start();
 
     printf("Running...\n");
-    platform->Run([&game]() { game->Update(); });
+    platform->Run(GameUpdateFn, game);
+
 
     printf("\nShutting down...\n");
     platform->Shutdown();

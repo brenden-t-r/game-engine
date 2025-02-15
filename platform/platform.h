@@ -1,8 +1,6 @@
 #ifndef GAMEENGINE_PLATFORM_H
 #define GAMEENGINE_PLATFORM_H
 
-#include <iostream>
-#include <functional>
 #include "../engine/file.h"
 #include "../engine/vector.h"
 
@@ -34,7 +32,7 @@ public:
 
     virtual void Init() = 0;
     virtual void LoadShaders() = 0;
-    virtual void Run(const std::function<void()>& func) = 0;
+    virtual void Run(void (*func)(void*), void* context) = 0;
 
     virtual GameObject* CreateGameObject(){ return new GameObject(); };
     virtual GameObject* CreateTriangle() = 0;
