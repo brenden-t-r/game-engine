@@ -13,12 +13,12 @@ public:
         delete font;
     };
 
-    float size = 0.2f;
+    float size = 0.4f;
 
     void Start() override {
         platform->LoadShaders();
 
-        burbank = platform->CreateSprite("assets/sprites/burbank512.png");
+        burbank = platform->CreateSprite("assets/sprites/burbank2048.png");
         burbank->transform.width = size;
         burbank->transform.height = size;
         burbank->useAtlas = true;
@@ -38,18 +38,41 @@ public:
     }
 
     void Update() override {
-        ShowText("PONG", burbank, size, { -0.18, 0.2});
-        ShowText("PRESS ENTER", font, size/2, {-0.2, -0.2});
+        ShowText("PONG", burbank, {ParagraphAlignment::MIDDLE, size, { 0, 0.2 }});
+        ShowText("PRESS ENTER", font,  {ParagraphAlignment::MIDDLE, size/2, { 0, -0.2 }});
+
+        ShowText("LEFT", font, {ParagraphAlignment::LEFT, size/2, { -0.9, 0.8 }});
+        ShowText("RIGHT", font, {ParagraphAlignment::RIGHT, size/2, { 0.9, 0.8 }});
     }
 
-    static void ShowText(const std::string& text, Sprite* atlas, float fontSize, Vector3 pos) {
+    enum ParagraphAlignment{
+        LEFT, MIDDLE, RIGHT
+    };
+    struct ParagraphSettings{
+        ParagraphAlignment alignment;
+        float fontSize;
+        Vector3 pos;
+    };
+
+    static void ShowText(const std::string& text, Sprite* atlas, ParagraphSettings settings) {
         int i = 0;
-        float yPos = pos.y;
+        float xPos = settings.pos.x;
+        float yPos = settings.pos.y;
+        float letterWidth = settings.fontSize - settings.fontSize/2.5;
+        float lineWidth = letterWidth * text.size();
+
+        if (settings.alignment == ParagraphAlignment::MIDDLE) {
+            xPos = xPos - lineWidth/2 + letterWidth/2;
+        }
+        if (settings.alignment == ParagraphAlignment::RIGHT) {
+            xPos = xPos - lineWidth + letterWidth;
+        }
+
         int horOffset = i;
 
         for (auto c : text) {
             if (c == '\n') {
-                yPos -= fontSize;
+                yPos -= settings.fontSize;
                 horOffset = 0;
                 i++;
                 continue;
@@ -64,7 +87,7 @@ public:
             atlas->atlasRow = row;
             atlas->atlasColumn = col;
             atlas->transform.pos.y = yPos;
-            atlas->transform.pos.x = pos.x + (horOffset * (fontSize - fontSize/2.5));
+            atlas->transform.pos.x = xPos + (horOffset * (settings.fontSize - settings.fontSize/2.5));
             i++;
             horOffset++;
             atlas->Update();
@@ -72,11 +95,8 @@ public:
     }
 
 private:
-    static const int CHAR_COUNT = 64;
     Sprite* burbank;
     Sprite* font;
-    Sprite* spriteChars[CHAR_COUNT];
-    Sprite* spriteChars2[CHAR_COUNT];
 };
 
 
