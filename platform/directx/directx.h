@@ -109,7 +109,7 @@ public:
     }
 
 
-    void Run(const std::function<void()>& func) override {
+    void Run(void (*func)(void*), void* ctx) override {
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -125,7 +125,7 @@ public:
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
-                func();
+                func(ctx);
 
                 // Reset mouse state, needed for clearing button releases
                 mouseState = {};

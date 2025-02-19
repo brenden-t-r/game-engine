@@ -197,7 +197,7 @@ public:
         );
     }
 
-    void Run(const std::function<void()>& func) override{
+    void Run(void (*func)(void*), void* ctx) override{
         glfwSetMouseButtonCallback(window, mouse_button_callback);
 
         do{
@@ -205,7 +205,7 @@ public:
 
             glfwPollEvents();
 
-            func();
+            func(ctx);
 
             glfwSwapBuffers(window);
         }

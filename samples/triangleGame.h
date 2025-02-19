@@ -19,7 +19,7 @@ public:
     void Update() override {
         printf(".");
         triangle->Update();
-        triangle->transform.pos.x += 0.01;
+        triangle->transform.pos.x += 0.01f;
     }
 
 private:
