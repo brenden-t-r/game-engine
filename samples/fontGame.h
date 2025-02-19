@@ -27,7 +27,7 @@ public:
         burbank->atlasRow = 0;
         burbank->atlasColumn = 0;
 
-        font = platform->CreateSprite("assets/sprites/font512.png");
+        font = platform->CreateSprite("assets/sprites/font2048.png");
         font->transform.width = size/3;
         font->transform.height = size/3;
         font->useAtlas = true;
