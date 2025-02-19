@@ -66,6 +66,12 @@ public:
     Vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
     Vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
 
+    bool useAtlas = false;
+    int atlasNumRows = 0;
+    int atlasRow = 0;
+    int atlasColumn = 1;
+    float atlasCellSize = 0.125f;
+
     void Update() override {
         GameObject::Update();
         vertex1.x = transform.pos.x - transform.width/2;
@@ -78,6 +84,7 @@ public:
         vertex4.y = transform.pos.y - transform.height/2;
     }
 };
+
 
 
 #endif //GAMEENGINE_VECTOR_H

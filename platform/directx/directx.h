@@ -294,6 +294,17 @@ public:
             vertices[2].position.x = vertex4.x;
             vertices[2].position.y = vertex4.y;
 
+            if (useAtlas) {
+                vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
+                vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
+                vertices[3].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                vertices[0].texCoord.y = atlasCellSize * (float)atlasRow;
+                vertices[1].texCoord.y = atlasCellSize * (float)atlasRow;
+                vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+                vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+            }
+
             // Set the blend state
             float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
             d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
