@@ -2,6 +2,7 @@
 #define GAMEENGINE_FONTGAME_H
 
 #include "../engine/game.h"
+#include "../engine/text.h"
 #include "string"
 
 class FontGame : public Game {
@@ -137,62 +138,12 @@ public:
         snprintf(buffer, sizeof(buffer),  "Tracking:%g\n",tracking);
 
         ShowText(buffer, sprites[8], {ParagraphAlignment::MIDDLE, size/10.0f, { 0, 0.9}, 0.5});
+
         if (platform->IsMouseReleased(MouseButton::Left)) {
             tracking += 0.1;
         }
         if (platform->IsMouseReleased(MouseButton::Right)) {
             tracking -= 0.1;
-        }
-    }
-
-    enum ParagraphAlignment{
-        LEFT, MIDDLE, RIGHT
-    };
-    struct ParagraphSettings{
-        ParagraphAlignment alignment;
-        float fontSize;
-        Vector3 pos;
-        float tracking;
-    };
-
-    static void ShowText(const std::string& text, Sprite* atlas, ParagraphSettings settings) {
-        int i = 0;
-        float xPos = settings.pos.x;
-        float yPos = settings.pos.y;
-        float trackingWidth = settings.fontSize - settings.tracking*settings.fontSize;
-        float letterWidth = settings.fontSize - trackingWidth;
-        float lineWidth = letterWidth * text.size();
-
-        if (settings.alignment == ParagraphAlignment::MIDDLE) {
-            xPos = xPos - lineWidth/2 + letterWidth/2;
-        }
-        if (settings.alignment == ParagraphAlignment::RIGHT) {
-            xPos = xPos - lineWidth + letterWidth;
-        }
-
-        int horOffset = i;
-
-        for (auto c : text) {
-            if (c == '\n') {
-                yPos -= settings.fontSize;
-                horOffset = 0;
-                i++;
-                continue;
-            }
-            int row = CharToAtlasRow(c);
-            int col = CharToAtlasColumn(c);
-            if (row == -1 || col == -1) {
-                i++;
-                horOffset++;
-                continue;
-            }
-            atlas->atlasRow = row;
-            atlas->atlasColumn = col;
-            atlas->transform.pos.y = yPos;
-            atlas->transform.pos.x = xPos + (horOffset * (settings.fontSize - trackingWidth));
-            i++;
-            horOffset++;
-            atlas->Update();
         }
     }
 
