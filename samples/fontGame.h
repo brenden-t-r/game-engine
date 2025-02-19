@@ -121,23 +121,23 @@ public:
         burbank->transform.width = size;
         burbank->transform.height = size;
 
-        ShowText("right", sprites[2], {ParagraphAlignment::RIGHT, size/3, { 0.9, 0.8 }, tracking});
+        ShowText("right", sprites[2], {{ 0.9, 0.8 }, ParagraphAlignment::RIGHT, size/3, tracking});
 
-        ShowText("right", sprites[3], {ParagraphAlignment::RIGHT, size/2, { 0.9, 0.6 }, tracking});
+        ShowText("right", sprites[3], {{ 0.9, 0.6 }, ParagraphAlignment::RIGHT, size/2, tracking});
 
-        ShowText("right", sprites[4], {ParagraphAlignment::RIGHT, size/1.5f, { 0.9, 0.3}, tracking });
+        ShowText("right", sprites[4], {{ 0.9, 0.3}, ParagraphAlignment::RIGHT, size/1.5f, tracking });
 
-        ShowText("right", sprites[5], {ParagraphAlignment::RIGHT, size/1.25f, { 0.9, 0}, tracking });
+        ShowText("right", sprites[5], {{ 0.9, 0}, ParagraphAlignment::RIGHT, size/1.25f, tracking });
 
-        ShowText("sphinx of black quartz", sprites[7], {ParagraphAlignment::LEFT, size/15.0f, { -0.9, 0.3}, tracking });
+        ShowText("sphinx of black quartz", sprites[7], {{ -0.9, 0.3}, ParagraphAlignment::LEFT, size/15.0f, tracking });
 
-        ShowText("sphinx of black quartz", sprites[9], {ParagraphAlignment::LEFT, size/5.0f, { -0.9, -0.3}, tracking });
+        ShowText("sphinx of black quartz", sprites[9], {{ -0.9, -0.3}, ParagraphAlignment::LEFT, size/5.0f, tracking });
 
-        ShowText("sphinx of black quartz", sprites[8], {ParagraphAlignment::LEFT, size/10.0f, { -0.9, 0}, tracking });
+        ShowText("sphinx of black quartz", sprites[8], {{ -0.9, 0}, ParagraphAlignment::LEFT, size/10.0f, tracking });
 
         snprintf(buffer, sizeof(buffer),  "Tracking:%g\n",tracking);
 
-        ShowText(buffer, sprites[8], {ParagraphAlignment::MIDDLE, size/10.0f, { 0, 0.9}, 0.5});
+        ShowText(buffer, sprites[8], {{ 0, 0.9}, ParagraphAlignment::MIDDLE, size/10.0f, 0.5});
 
         if (platform->IsMouseReleased(MouseButton::Left)) {
             tracking += 0.1;
