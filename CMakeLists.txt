@@ -9,7 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCES main.cpp
         constants.h
         platform/platform.h
-        engine/file.h
         engine/vector.h
         engine/game.h
         engine/audio.h
@@ -89,7 +88,6 @@ elseif (UNIX AND NOT APPLE) # For Linux
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
 elseif (APPLE)
-    # TODO: Link OSX, Metal libraries
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)
     target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY}
             "-framework Metal"

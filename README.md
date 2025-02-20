@@ -10,6 +10,15 @@ Run with one of the following CMake options to choose a backend
 -DBACKEND_DIRECTX=ON
 ```
 
+Build and run
+```bash
+mkdir build
+cd build
+cmake .. -G "Visual Studio 17 2022"
+cmake --build .
+./Debug/GameEngine.exe
+```
+
 ## MacOS
 
 Compile shaders:

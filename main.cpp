@@ -40,7 +40,6 @@ void GameUpdateFn(void* context) {
     ((Game*)(context))->Update();
 }
 
-// Common logic for the application
 int RealMain(Platform* platform) {
     printf("Hello from PlatformMain!\n");
 
