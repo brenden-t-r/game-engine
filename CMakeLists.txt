@@ -25,7 +25,7 @@ if (WIN32)
     list(APPEND SOURCES platform/directx/file_util.h)
     list(APPEND SOURCES platform/directx/math.h)
     # (Optional) OpenGL
-    list(APPEND SOURCES platform/opengl.h)
+    list(APPEND SOURCES platform/opengl/opengl.h)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/include)
     link_directories(${PROJECT_SOURCE_DIR}/dependencies/GLFW/lib-vc2019)
     include_directories(${PROJECT_SOURCE_DIR}/dependencies/GLEW/include)
@@ -33,7 +33,7 @@ if (WIN32)
     add_definitions(-DGLEW_STATIC)
 elseif (UNIX AND NOT APPLE) # For Linux
     #OpenGL
-    list(APPEND SOURCES platform/opengl.h)
+    list(APPEND SOURCES platform/opengl/opengl.h)
 
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLFW3 REQUIRED glfw3)

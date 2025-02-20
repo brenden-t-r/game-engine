@@ -1,20 +1,18 @@
 #ifndef GAMEENGINE_OPENGL_H
 #define GAMEENGINE_OPENGL_H
 
-// Include constants
-#include "../constants.h"
-#include "platform.h"
+#include "../../constants.h"
+#include "../platform.h"
 
-// OpenGL
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <string.h>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "opengl/stb_image.h"
+#include "stb_image.h"
 
 GLuint compileShader(const char* source, GLenum type);
 GLuint loadTexture(const char* path);
