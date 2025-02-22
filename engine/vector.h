@@ -5,8 +5,7 @@
 #include <vector>
 #include "../constants.h"
 
-class Vector3 {
-public:
+struct Vector3 {
     float x;
     float y;
     float z;

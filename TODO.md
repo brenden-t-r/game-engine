@@ -8,10 +8,14 @@
   - Key release
   - Gamepad
   - Callbacks (OnClick, OnHover)
+- Primitives
+  - Line
+  - Rectangle
+  - Circle
 - Vector
   - Rotation
   - Scale
-  - Collision detection (AABB, OBB)
+  - Collision detection (OBB, Rays)
   - Orientation transforms (Screen, World, Object)
 - Text
   - Line wrapping

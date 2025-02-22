@@ -12,6 +12,7 @@ set(SOURCES main.cpp
         engine/vector.h
         engine/game.h
         engine/audio.h
+        engine/collision.h
         samples/triangleGame.h
         samples/spriteGame.h
         dependencies/miniaudio.h

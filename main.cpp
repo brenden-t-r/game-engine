@@ -18,6 +18,7 @@
 #include "samples/audioGame.h"
 #include "samples/blankSceneGame.h"
 #include "samples/fontGame.h"
+#include "samples/collisionGame.h"
 
 class SampleGame : public Game {
 public:
@@ -52,7 +53,8 @@ int RealMain(Platform* platform) {
 //    Game* game = new AudioGame(platform);
 //    Game* game = new InputGame(platform);
 //    Game* game = new BlankSceneGame(platform);
-    Game* game = new FontGame(platform);
+//    Game* game = new FontGame(platform);
+    Game* game = new CollisionGame(platform);
     game->Start();
 
     printf("Running...\n");
