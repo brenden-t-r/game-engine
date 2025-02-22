@@ -7,6 +7,8 @@
  *  TOP_LEFT | Collider is positioned at vector2 `pos` relative to top-left
  *  CENTER   | Collider is centered, with `pos` translation from center.
  */
+#ifndef GAMEENGINE_COLLISION_H
+#define GAMEENGINE_COLLISION_H
 
 enum PIVOT {
     TOP_LEFT = 0,
@@ -60,3 +62,5 @@ static bool AABB_collision(GameObject* a, GameObject* b) {
     auto obj2_collider = box_collider{{0, 0}, b->transform.width,b->transform.height, PIVOT::CENTER};
     return AABB_collision(a->transform.pos, b->transform.pos, obj1_collider, obj2_collider);
 }
+
+#endif // GAMEENGINE_COLLISION_H

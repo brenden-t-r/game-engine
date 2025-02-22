@@ -3,6 +3,7 @@
 
 #include "../constants.h"
 #include "../engine/game.h"
+#include "../engine/collision.h"
 #include "../engine/vector.h"
 #include "../platform/platform.h"
 
@@ -56,15 +57,37 @@ public:
                 player1Paddle->transform.pos.y += 0.01f;
             }
         }
+        if (platform->IsKeyPressed(KeyCode::Down)) {
+            if (player2Paddle->transform.pos.y >= (-1.0f + PaddleHeight/2)) {
+                player2Paddle->transform.pos.y -= 0.01f;
+            }
+        }
+        if (platform->IsKeyPressed(KeyCode::Up)) {
+            if (player2Paddle->transform.pos.y <= (1.0f - PaddleHeight/2)) {
+                player2Paddle->transform.pos.y += 0.01f;
+            }
+        }
 
         // Ball movement
         ballPos.x += ballSpeed * ballDir.x;
         ballPos.y += ballSpeed * ballDir.y;
         ball->transform.pos = ballPos;
 
-        if (ballPos.x > (1 - PaddleWidth - BallWidth) || ballPos.x < (-1 + PaddleWidth)) {
+        if (ballPos.x > 1.0) {
+            printf("Player 1 wins");
+            exit(0);
+        }
+        if (ballPos.x < -1.0) {
+            printf("Player 2 wins");
+            exit(0);
+        }
+        if (AABB_collision(ball, player1Paddle) || AABB_collision(ball, player2Paddle)) {
             ballDir.x *= -1;
         }
+
+//        if (ballPos.x > (1 - PaddleWidth - BallWidth) /*|| ballPos.x < (-1 + PaddleWidth)*/) {
+//            ballDir.x *= -1;
+//        }
         if (ballPos.y > (1 - BallHeight/2) || ballPos.y < (-1 + BallHeight)) {
             ballDir.y *= -1;
         }
