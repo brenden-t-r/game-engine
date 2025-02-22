@@ -5,21 +5,25 @@
 #include <vector>
 #include "../constants.h"
 
-struct Vector3 {
+struct vector3 {
     float x;
     float y;
     float z;
 };
+struct vector2 {
+    float x;
+    float y;
+};
 
 class Transform {
 public:
-    Vector3 pos = {0, 0, 0};
-    Vector3 rot = {0, 0, 0};
-    Vector3 scale = {1, 1, 1};
+    vector3 pos = {0, 0, 0};
+    vector3 rot = {0, 0, 0};
+    vector3 scale = {1, 1, 1};
     float width = 1;
     float height = 1;
 
-    void Translate(Vector3 vector){}
+    void Translate(vector3 vector){}
     void Rotate(float degrees){}
 };
 
@@ -43,9 +47,9 @@ public:
 
 class Triangle : public GameObject {
 public:
-    Vector3 vertex1 = { 1.0f,  -1.0f, 0.0f};
-    Vector3 vertex2 = {-1.0f, -1.0f, 0.0f};
-    Vector3 vertex3 = {0, 1.0f, 0.0f};
+    vector3 vertex1 = {1.0f, -1.0f, 0.0f};
+    vector3 vertex2 = {-1.0f, -1.0f, 0.0f};
+    vector3 vertex3 = {0, 1.0f, 0.0f};
 
     void Update() override {
         GameObject::Update();
@@ -60,10 +64,10 @@ public:
 
 class Sprite : public GameObject {
 public:
-    Vector3 vertex1 = {-0.5f,  0.5f, 0.0f};  // top left
-    Vector3 vertex2 = {0.5f,  0.5f, 0.0f};  // top right
-    Vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
-    Vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
+    vector3 vertex1 = {-0.5f, 0.5f, 0.0f};  // top left
+    vector3 vertex2 = {0.5f, 0.5f, 0.0f};  // top right
+    vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
+    vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
 
     bool useAtlas = false;
     int atlasNumRows = 0;

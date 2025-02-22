@@ -8,11 +8,6 @@
  *  CENTER   | Collider is centered, with `pos` translation from center.
  */
 
-struct vector2 {
-    float x;
-    float y;
-};
-
 enum PIVOT {
     TOP_LEFT = 0,
     CENTER = 1
@@ -53,3 +48,15 @@ static int AABB_collision(
     return 0;
 }
 
+static int AABB_collision(
+        struct vector3 p1, struct vector3 p2,
+        struct box_collider c1, struct box_collider c2
+) {
+    return AABB_collision(vector2{p1.x, p1.y}, vector2{p2.x, p2.y}, c1, c2);
+}
+
+static bool AABB_collision(GameObject* a, GameObject* b) {
+    auto obj1_collider = box_collider{{0, 0}, a->transform.width, a->transform.height, PIVOT::CENTER};
+    auto obj2_collider = box_collider{{0, 0}, b->transform.width,b->transform.height, PIVOT::CENTER};
+    return AABB_collision(a->transform.pos, b->transform.pos, obj1_collider, obj2_collider);
+}

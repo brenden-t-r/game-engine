@@ -30,8 +30,8 @@ public:
         player2Paddle->transform.pos.x = 1 - (PaddleWidth/2);
         player2Paddle->transform.pos.y = 1 - (PaddleHeight/2);
 
-        ballPos = Vector3{0, -0.5, 0};
-        ballDir = Vector3{1, 1, 0};
+        ballPos = vector3{0, -0.5, 0};
+        ballDir = vector3{1, 1, 0};
         ball = platform->CreateSprite("assets/sprites/ball.png");
         ball->transform.width = BallWidth;
         ball->transform.height = BallHeight;
@@ -78,8 +78,8 @@ private:
     float temp = 0;
     float tempDir = -1;
     float ballSpeed = 0.01f;
-    Vector3 ballPos{};
-    Vector3 ballDir{};
+    vector3 ballPos{};
+    vector3 ballDir{};
 
     static constexpr float PaddlePixelWidth = 32.0 * 2;
     static constexpr float PaddlePixelHeight = 128.0 * 2;
