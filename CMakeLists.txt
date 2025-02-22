@@ -6,18 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Set sources
-set(SOURCES main.cpp
-        constants.h
-        platform/platform.h
-        engine/vector.h
-        engine/game.h
-        engine/audio.h
-        engine/collision.h
-        samples/triangleGame.h
-        samples/spriteGame.h
-        dependencies/miniaudio.h
-        samples/inputGame.h
-)
+set(SOURCES main.cpp)
 
 # Add platform-specific sources
 if (WIN32)
