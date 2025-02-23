@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CMakeSharedSettings">
     <configurations>
-      <configuration PROFILE_NAME="Debug-Linux" ENABLED="true" />
+      <configuration PROFILE_NAME="Debug-Linux" ENABLED="false" />
       <configuration PROFILE_NAME="Debug-OpenGL" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Visual Studio" GENERATION_OPTIONS="-DBACKEND_OPENGL=ON" />
       <configuration PROFILE_NAME="Debug-DirectX" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Visual Studio" GENERATION_OPTIONS="-DBACKEND_DIRECTX=ON -DCMAKE_CXX_FLAGS=&quot;/W3&quot;" />
     </configurations>

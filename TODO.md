@@ -27,6 +27,9 @@
 - WebGL support
 - CICD
 
+- Bugs
+  - OpenGL, triangle primitive doesn't work when sprites are shown.
+
 ## Games
 
 ### Pong
