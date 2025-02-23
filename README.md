@@ -30,4 +30,11 @@ xcrun -sdk macosc metallib -o shader.metallib shader.air
 
 ## Linux
 
-
+Build and run
+```bash
+mkdir build
+cd build
+cmake ..
+make
+./GameEngine
+```
