@@ -1,7 +1,7 @@
 #ifndef GAMEENGINE_PLATFORM_H
 #define GAMEENGINE_PLATFORM_H
 
-#include "../engine/vector.h"
+#include "../engine/gameobject.h"
 
 enum class KeyCode {
     Unknown = 0,

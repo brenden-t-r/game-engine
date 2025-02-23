@@ -1,7 +1,7 @@
 #ifndef GAMEENGINE_TEXT_H
 #define GAMEENGINE_TEXT_H
 
-#include "vector.h"
+#include "gameobject.h"
 
 int CharToAtlasColumn(char c) {
     switch (c) {

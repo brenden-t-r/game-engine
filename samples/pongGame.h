@@ -5,7 +5,7 @@
 #include "../constants.h"
 #include "../engine/game.h"
 #include "../engine/collision.h"
-#include "../engine/vector.h"
+#include "../engine/gameobject.h"
 #include "../platform/platform.h"
 
 class PongGame : public Game {
@@ -41,7 +41,7 @@ public:
         ball->transform.pos.y = ballPos.y;
 
         tests_getUnitVectorFromAngleDegrees();
-        srand(100);
+        srand(101);
 
         ballDirVec = vector2{0.707,0.707};
     }
