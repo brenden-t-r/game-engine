@@ -1,90 +1,59 @@
 #ifndef GAMEENGINE_VECTOR_H
 #define GAMEENGINE_VECTOR_H
 
-#include <cstdio>
-#include <vector>
-#include "../constants.h"
+#include "cmath"
 
-class Vector3 {
-public:
+constexpr float PI = 3.14159265358979323846f;
+constexpr float DEGREES_TO_RADIANS = PI/180;
+
+struct vector3 {
     float x;
     float y;
     float z;
 };
-
-class Transform {
-public:
-    Vector3 pos = {0, 0, 0};
-    Vector3 rot = {0, 0, 0};
-    Vector3 scale = {1, 1, 1};
-    float width = 1;
-    float height = 1;
-
-    void Translate(Vector3 vector){}
-    void Rotate(float degrees){}
+struct vector2 {
+    float x;
+    float y;
 };
 
-class Component {
-public:
-    virtual void Init() = 0;
-    virtual void Update() = 0;
-};
+/*
+ * Take an angle in degrees (counter-clockwise from origin),
+ * convert it to a unit vector direction.
+ * (ex) 75 degrees => (0.2588, 0.966)
+ *
+ *     15d
+ *     /|
+ * c=1/ |
+ *   /  | y
+ *  /___|
+ * 75d  90d
+ *    x
+ *
+ * law of cosines
+ * y = sqrt(x^2 + c^2 - 2xc*cos75)
+ * y = sqrt(x^2 + 1 - 2x*cos75)
+ * y = sqrt(0.268^2 + 1 - 2(0.268)cos75) = 0.966
+ *
+ * law of sines
+ * x = c sin(a)/sin(b)
+ * x = 1 sin(15)/sin(90) = 0.2588
+ */
+static vector2 get_unit_vector_from_angle_degrees(float angle) {
+    float radians = angle * DEGREES_TO_RADIANS;
+    float radians90 = 90 * DEGREES_TO_RADIANS;
+    float x = 1 * (float)sinf(radians90-radians) / (float)sinf(radians90);
+    float y = sqrtf(powf(x, 2) + 1 - 2*x*1*cosf(radians));
+    return vector2{
+            x, y
+    };
+}
 
-class GameObject {
-public:
-    Transform transform{};
-    std::vector<Component*> components{};
+static int getRandomInt(int start, int end) {
+    return start + (rand() % (end - start + 1));
+}
 
-    virtual void Update() {
-        for (auto & component : components) {
-            component->Update();
-        }
-    }
-};
-
-class Triangle : public GameObject {
-public:
-    Vector3 vertex1 = { 1.0f,  -1.0f, 0.0f};
-    Vector3 vertex2 = {-1.0f, -1.0f, 0.0f};
-    Vector3 vertex3 = {0, 1.0f, 0.0f};
-
-    void Update() override {
-        GameObject::Update();
-        vertex1.x = transform.pos.x + transform.width/2;
-        vertex1.y = transform.pos.y - transform.height/2;
-        vertex2.x = transform.pos.x - transform.width/2;
-        vertex2.y = transform.pos.y - transform.height/2;
-        vertex3.x = transform.pos.x;
-        vertex3.y = transform.pos.y + transform.height/2;
-    }
-};
-
-class Sprite : public GameObject {
-public:
-    Vector3 vertex1 = {-0.5f,  0.5f, 0.0f};  // top left
-    Vector3 vertex2 = {0.5f,  0.5f, 0.0f};  // top right
-    Vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
-    Vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
-
-    bool useAtlas = false;
-    int atlasNumRows = 0;
-    int atlasRow = 0;
-    int atlasColumn = 1;
-    float atlasCellSize = 0.125f;
-
-    void Update() override {
-        GameObject::Update();
-        vertex1.x = transform.pos.x - transform.width/2;
-        vertex1.y = transform.pos.y + transform.height/2;
-        vertex2.x = transform.pos.x + transform.width/2;
-        vertex2.y = transform.pos.y + transform.height/2;
-        vertex3.x = transform.pos.x + transform.width/2;
-        vertex3.y = transform.pos.y - transform.height/2;
-        vertex4.x = transform.pos.x - transform.width/2;
-        vertex4.y = transform.pos.y - transform.height/2;
-    }
-};
-
-
+static float getRandomFloat(float start, float end) {
+    return start + static_cast<float>(rand()) / RAND_MAX * (end - start);
+}
 
 #endif //GAMEENGINE_VECTOR_H

@@ -18,6 +18,7 @@
 #include "samples/audioGame.h"
 #include "samples/blankSceneGame.h"
 #include "samples/fontGame.h"
+#include "samples/collisionGame.h"
 
 class SampleGame : public Game {
 public:
@@ -48,11 +49,12 @@ int RealMain(Platform* platform) {
 //    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
 //    Game* game = new SpriteGame(platform);
-//    Game* game = new PongGame(platform);
+    Game* game = new PongGame(platform);
 //    Game* game = new AudioGame(platform);
 //    Game* game = new InputGame(platform);
 //    Game* game = new BlankSceneGame(platform);
-    Game* game = new FontGame(platform);
+//    Game* game = new FontGame(platform);
+//    Game* game = new CollisionGame(platform);
     game->Start();
 
     printf("Running...\n");
@@ -76,7 +78,7 @@ int RealMain(Platform* platform) {
 #elif defined(PLATFORM_WINDOWS) && defined(BACKEND_DIRECTX)
 #include "platform/directx/directx.h"
 #elif defined(PLATFORM_LINUX)
-#include "platform/opengl.h"
+#include "platform/opengl/opengl.h"
 #elif defined(PLATFORM_APPLE)
 #else
 // No backend selected
