@@ -1,19 +1,11 @@
 #ifndef GAMEENGINE_GAMEOBJECT_H
 #define GAMEENGINE_GAMEOBJECT_H
 
+#include "../constants.h"
+#include "vector.h"
+
 #include <cstdio>
 #include <vector>
-#include "../constants.h"
-
-struct vector3 {
-    float x;
-    float y;
-    float z;
-};
-struct vector2 {
-    float x;
-    float y;
-};
 
 class Transform {
 public:
