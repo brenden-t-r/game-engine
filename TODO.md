@@ -33,11 +33,8 @@
 ## Games
 
 ### Pong
-- Ball collision (basic)
 - Ball collision (advanced, angle and speed)
 - Opponent movement
-- Scenes
-- Score
 
 ### Asteroids
 
