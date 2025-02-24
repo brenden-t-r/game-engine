@@ -3,8 +3,7 @@
 
 #include "../engine/gameobject.h"
 
-enum class KeyCode {
-    Unknown = 0,
+enum KeyCode {
     Up,
     Down,
     Left,
@@ -37,6 +36,7 @@ public:
     virtual Sprite* CreateSprite(const char* path) = 0;
 
     virtual bool IsKeyPressed(KeyCode key) = 0;
+    virtual bool IsKeyReleased(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
     virtual bool IsMouseReleased(MouseButton button) = 0;
     virtual vector3 GetMousePos() = 0;

@@ -19,7 +19,7 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-class MouseState {
+class InputState {
 public:
     bool LButtonDown;
     bool RButtonDown;
@@ -29,6 +29,7 @@ public:
     bool MButtonUp;
     double posX;
     double posY;
+    bool keyUp[10];
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
@@ -47,8 +48,13 @@ public:
             default: return false;
         }
     }
+
+    bool isKeyUp(KeyCode key) const {
+        int index = key;
+        return keyUp[index];
+    }
 };
-static MouseState mouseState;
+static InputState inputState;
 
 class PlatformDirectX : public Platform {
 public:
@@ -128,7 +134,7 @@ public:
                 func(ctx);
 
                 // Reset mouse state, needed for clearing button releases
-                mouseState = {};
+                inputState = {};
 
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
@@ -140,11 +146,14 @@ public:
         auto keyCode = GetWindowsKey(key);
         return KeyState[keyCode];
     }
+    bool IsKeyReleased(KeyCode key) override {
+        return inputState.isKeyUp(key);
+    }
     bool IsMousePressed(MouseButton button) override {
-        return mouseState.isButtonDown(button);
+        return inputState.isButtonDown(button);
     }
     bool IsMouseReleased(MouseButton button) override {
-        return mouseState.isButtonUp(button);
+        return inputState.isButtonUp(button);
     }
     vector3 GetMousePos() override {
         RECT rect;
@@ -408,6 +417,7 @@ private:
                 if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
                     break;
 
+                inputState = {};
                 auto raw = (RAWINPUT*)buffer.data();
                 if (raw->header.dwType == RIM_TYPEKEYBOARD) {
                     RAWKEYBOARD& rawKb = raw->data.keyboard;
@@ -420,12 +430,10 @@ private:
                     if (isKeyDown) {
                         KeyState[key] = true;
                     } else if (isKeyUp) {
-                        KeyState[key] = false;
+                        inputState.keyUp[GetKeyCode(key)] = true;
                     }
                 } else if (raw->header.dwType == RIM_TYPEMOUSE) {
                     RAWMOUSE& rawM = raw->data.mouse;
-
-                    mouseState = {};
 
                     // Check mouse movement
                     int dx = rawM.lLastX;
@@ -433,34 +441,34 @@ private:
 
                     printf("%d",dx);
                     printf("%d",dy);
-                    mouseState.posX = dx;
-                    mouseState.posY = dy;
+                    inputState.posX = dx;
+                    inputState.posY = dy;
 
                     // Check button states
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
                         printf("Left button down\n");
-                        mouseState.LButtonDown = true;
+                        inputState.LButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
                         printf("Left button up\n");
-                        mouseState.LButtonUp = true;
+                        inputState.LButtonUp = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
                         printf("Right button down\n");
-                        mouseState.RButtonDown = true;
+                        inputState.RButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
                         printf("Right button up\n");
-                        mouseState.RButtonUp = true;
+                        inputState.RButtonUp = true;
 
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
                         printf("Middle button down\n");
-                        mouseState.MButtonDown = true;
+                        inputState.MButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
                         printf("Middle button up\n");
-                        mouseState.MButtonUp = true;
+                        inputState.MButtonUp = true;
                     }
                 }
                 break;
@@ -643,7 +651,7 @@ private:
 
     // Keyboard input map
     static std::unordered_map<int, bool> KeyState;
-    static int GetWindowsKey(KeyCode keyCode) {
+    static USHORT GetWindowsKey(KeyCode keyCode) {
         switch (keyCode) {
             case KeyCode::Up:       return VK_UP;
             case KeyCode::Down:     return VK_DOWN;
@@ -654,6 +662,19 @@ private:
             case KeyCode::S:        return 'S';
             case KeyCode::D:        return 'D';
             default:                return -1;
+        }
+    }
+    static int GetKeyCode(USHORT keyCode) {
+        switch (keyCode) {
+            case VK_UP:       return KeyCode::Up;
+            case VK_DOWN:     return KeyCode::Down;
+            case VK_LEFT:     return KeyCode::Left;
+            case VK_RIGHT:    return KeyCode::Right;
+            case 'W':         return KeyCode::W;
+            case 'A':         return KeyCode::A;
+            case 'S':         return KeyCode::S;
+            case 'D':         return KeyCode::D;
+            default:          return -1;
         }
     }
 };

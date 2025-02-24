@@ -17,7 +17,7 @@
 GLuint compileShader(const char* source, GLenum type);
 GLuint loadTexture(const char* path);
 
-class MouseState {
+class InputState {
 public:
     bool LButtonDown;
     bool RButtonDown;
@@ -62,17 +62,17 @@ public:
         }
     }
 };
-static MouseState mouseState;
+static InputState inputState;
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        mouseState.LButtonUp = true;
+        inputState.LButtonUp = true;
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-        mouseState.RButtonUp = true;
+        inputState.RButtonUp = true;
     }
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
-        mouseState.MButtonUp = true;
+        inputState.MButtonUp = true;
     }
 }
 
@@ -226,7 +226,7 @@ public:
         return state == GLFW_PRESS;
     }
     bool IsMouseReleased(MouseButton button) override {
-        return mouseState.isButtonUp(button);
+        return inputState.isButtonUp(button);
     }
     vector3 GetMousePos() override {
         double cursorX, cursorY;

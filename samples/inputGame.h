@@ -47,6 +47,11 @@ public:
         triangleCursor->transform.height = 0.07f;
         triangleCursor->transform.pos.x = 0;
         triangleCursor->transform.pos.y = 0;
+        triangleKeyUp = platform->CreateTriangle();
+        triangleKeyUp->transform.width = 0.07f;
+        triangleKeyUp->transform.height = 0.07f;
+        triangleKeyUp->transform.pos.x = 0.9;
+        triangleKeyUp->transform.pos.y = 0.9;
     }
 
     void Update() override {
@@ -78,6 +83,10 @@ public:
             triangleM2->Update();
         }
 
+        if (platform->IsKeyReleased(KeyCode::W)) {
+            triangleKeyUp->Update();
+        }
+
         auto pos = platform->GetMousePos();
         triangleCursor->transform.pos.x = pos.x;
         triangleCursor->transform.pos.y = pos.y;
@@ -92,6 +101,7 @@ private:
     GameObject* triangleR2;
     GameObject* triangleM2;
     GameObject* triangleCursor;
+    GameObject* triangleKeyUp;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H
