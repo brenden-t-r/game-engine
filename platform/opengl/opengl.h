@@ -17,6 +17,32 @@
 GLuint compileShader(const char* source, GLenum type);
 GLuint loadTexture(const char* path);
 
+static int GetGLFWKey(KeyCode keyCode) {
+    switch (keyCode) {
+        case KeyCode::Up:       return GLFW_KEY_UP;
+        case KeyCode::Down:     return GLFW_KEY_DOWN;
+        case KeyCode::Left:     return GLFW_KEY_LEFT;
+        case KeyCode::Right:    return GLFW_KEY_RIGHT;
+        case KeyCode::W:        return GLFW_KEY_W;
+        case KeyCode::A:        return GLFW_KEY_A;
+        case KeyCode::S:        return GLFW_KEY_S;
+        case KeyCode::D:        return GLFW_KEY_D;
+        default:                return -1;
+    }
+}
+static int GetKeyCode(int glfwKey) {
+    switch (glfwKey) {
+        case GLFW_KEY_UP:       return KeyCode::Up;
+        case GLFW_KEY_DOWN:     return KeyCode::Down;
+        case GLFW_KEY_LEFT:     return KeyCode::Left;
+        case GLFW_KEY_RIGHT:    return KeyCode::Right;
+        case GLFW_KEY_W:        return KeyCode::W;
+        case GLFW_KEY_A:        return KeyCode::A;
+        case GLFW_KEY_S:        return KeyCode::S;
+        case GLFW_KEY_D:        return KeyCode::D;
+        default:                return -1;
+    }
+}
 class InputState {
 public:
     bool LButtonDown;
@@ -25,6 +51,7 @@ public:
     bool LButtonUp;
     bool RButtonUp;
     bool MButtonUp;
+    bool keyUp[10];
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
@@ -61,6 +88,14 @@ public:
             default: return false;
         }
     }
+
+    bool isKeyUp(KeyCode key) {
+        int index = key;
+        if (keyUp[index]) {
+            keyUp[index] = false;
+            return true;
+        } else return false;
+    }
 };
 static InputState inputState;
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -73,6 +108,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
         inputState.MButtonUp = true;
+    }
+}
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS) {
+//        printf("key %d pressed\n", key);
+    } else if (action == GLFW_RELEASE) {
+        inputState.keyUp[GetKeyCode(key)] = true;
+        printf("Key %d released\n", key);
     }
 }
 
@@ -198,6 +241,7 @@ public:
 
     void Run(void (*func)(void*), void* ctx) override{
         glfwSetMouseButtonCallback(window, mouse_button_callback);
+        glfwSetKeyCallback(window, key_callback);
 
         do{
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -220,6 +264,9 @@ public:
         int state = glfwGetKey(window, keyCode);
         return state == GLFW_PRESS;
     }
+    bool IsKeyReleased(KeyCode key) override {
+        return inputState.isKeyUp(key);
+    }
     bool IsMousePressed(MouseButton button) override {
         auto btn = GetGLFWMouseButton(button);
         int state = glfwGetMouseButton(window, btn);
@@ -238,20 +285,7 @@ public:
         return {ndcX, ndcY, 0};
     }
 
-    // Keyboard input map
-    static int GetGLFWKey(KeyCode keyCode) {
-        switch (keyCode) {
-            case KeyCode::Up:       return GLFW_KEY_UP;
-            case KeyCode::Down:     return GLFW_KEY_DOWN;
-            case KeyCode::Left:     return GLFW_KEY_LEFT;
-            case KeyCode::Right:    return GLFW_KEY_RIGHT;
-            case KeyCode::W:        return GLFW_KEY_W;
-            case KeyCode::A:        return GLFW_KEY_A;
-            case KeyCode::S:        return GLFW_KEY_S;
-            case KeyCode::D:        return GLFW_KEY_D;
-            default:                return -1;
-        }
-    }
+
     static int GetGLFWMouseButton(MouseButton button) {
         switch(button) {
             case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
