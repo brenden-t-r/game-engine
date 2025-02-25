@@ -214,7 +214,7 @@ class PongTitleScene : public Scene {
     }
 
     void Update() override {
-        if (platform->IsKeyPressed(KeyCode::W)) {
+        if (platform->IsKeyReleased(KeyCode::W)) {
             nextScene = PONG_MAIN;
         }
 

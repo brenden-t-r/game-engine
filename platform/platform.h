@@ -3,7 +3,8 @@
 
 #include "../engine/gameobject.h"
 
-enum KeyCode {
+enum class KeyCode {
+    Unknown = 0,
     Up,
     Down,
     Left,
@@ -39,6 +40,8 @@ public:
     virtual bool IsKeyReleased(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
     virtual bool IsMouseReleased(MouseButton button) = 0;
+//    virtual void SetMouseReleasedCallback(void (*func)(void*), MouseButton button);
+    virtual void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) = 0;
     virtual vector3 GetMousePos() = 0;
 
     virtual void Shutdown() = 0;

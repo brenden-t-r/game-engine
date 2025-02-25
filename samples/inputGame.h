@@ -52,10 +52,25 @@ public:
         triangleKeyUp->transform.height = 0.07f;
         triangleKeyUp->transform.pos.x = 0.9;
         triangleKeyUp->transform.pos.y = 0.9;
+
+        platform->SetKeyReleasedCallback(&InputGame::StaticKeyReleasedCallback, this);
+    }
+
+    static void StaticKeyReleasedCallback(KeyCode key, void* context) {
+        static_cast<InputGame*>(context)->KeyReleasedCallback(key);
+    }
+
+    void KeyReleasedCallback(KeyCode key) {
+        if (key == KeyCode::W) {
+            printf("W pressed\n");
+        } else if (key == KeyCode::S) {
+            printf("S pressed\n");
+        }
+        triangleKeyUp->Update();
     }
 
     void Update() override {
-        printf(".");
+//        printf(".");
 
         if (platform->IsMousePressed(MouseButton::Left)) {
             printf("\nLeft Pressed!");
@@ -83,9 +98,9 @@ public:
             triangleM2->Update();
         }
 
-        if (platform->IsKeyReleased(KeyCode::W)) {
-            triangleKeyUp->Update();
-        }
+//        if (platform->IsKeyReleased(KeyCode::W)) {
+//            triangleKeyUp->Update();
+//        }
 
         auto pos = platform->GetMousePos();
         triangleCursor->transform.pos.x = pos.x;

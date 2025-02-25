@@ -50,11 +50,13 @@ public:
     }
 
     bool isKeyUp(KeyCode key) const {
-        int index = key;
+        int index = (int)key;
         return keyUp[index];
     }
 };
 static InputState inputState;
+void static(*keyUpCallback)(KeyCode, void*);
+static void* keyCallbackContext;
 
 class PlatformDirectX : public Platform {
 public:
@@ -382,6 +384,11 @@ public:
         CleanD3D();
     }
 
+    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
+        keyUpCallback = func;
+        keyCallbackContext = context;
+    }
+
 private:
     // Entry-point args
     HWND hwnd = nullptr;
@@ -430,7 +437,10 @@ private:
                     if (isKeyDown) {
                         KeyState[key] = true;
                     } else if (isKeyUp) {
-                        inputState.keyUp[GetKeyCode(key)] = true;
+                        if (keyUpCallback) {
+                            keyUpCallback(GetKeyCode(key), keyCallbackContext);
+                        }
+                        inputState.keyUp[(int)GetKeyCode(key)] = true;
                     }
                 } else if (raw->header.dwType == RIM_TYPEMOUSE) {
                     RAWMOUSE& rawM = raw->data.mouse;
@@ -439,35 +449,35 @@ private:
                     int dx = rawM.lLastX;
                     int dy = rawM.lLastY;
 
-                    printf("%d",dx);
-                    printf("%d",dy);
+//                    printf("%d\n",dx);
+//                    printf("%d\n",dy);
                     inputState.posX = dx;
                     inputState.posY = dy;
 
                     // Check button states
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
-                        printf("Left button down\n");
+//                        printf("Left button down\n");
                         inputState.LButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
-                        printf("Left button up\n");
+//                        printf("Left button up\n");
                         inputState.LButtonUp = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
-                        printf("Right button down\n");
+//                        printf("Right button down\n");
                         inputState.RButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
-                        printf("Right button up\n");
+//                        printf("Right button up\n");
                         inputState.RButtonUp = true;
 
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
-                        printf("Middle button down\n");
+//                        printf("Middle button down\n");
                         inputState.MButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
-                        printf("Middle button up\n");
+//                        printf("Middle button up\n");
                         inputState.MButtonUp = true;
                     }
                 }
@@ -542,7 +552,6 @@ private:
         // Register both devices
         if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
             printf("Failed to register raw input device.");
-
         }
     }
 
@@ -664,7 +673,7 @@ private:
             default:                return -1;
         }
     }
-    static int GetKeyCode(USHORT keyCode) {
+    static KeyCode GetKeyCode(USHORT keyCode) {
         switch (keyCode) {
             case VK_UP:       return KeyCode::Up;
             case VK_DOWN:     return KeyCode::Down;
@@ -674,9 +683,10 @@ private:
             case 'A':         return KeyCode::A;
             case 'S':         return KeyCode::S;
             case 'D':         return KeyCode::D;
-            default:          return -1;
+            default:          return KeyCode::Unknown;
         }
     }
+
 };
 
 
