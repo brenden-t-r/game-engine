@@ -79,8 +79,9 @@ int RealMain(Platform* platform) {
 #include "platform/directx/directx.h"
 #elif defined(PLATFORM_LINUX)
 #include "platform/opengl/opengl.h"
-#elif defined(PLATFORM_APPLE)
+#elif defined(PLATFORM_APPLE) && defined(BACKEND_OPENGL)
 #include "platform/opengl/opengl.h"
+#elif defined(PLATFORM_APPLE) && defined(BACKEND_METAL)
 #else
 // No backend selected
 int main() {

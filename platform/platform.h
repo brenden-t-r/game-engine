@@ -34,7 +34,7 @@ public:
 
     virtual GameObject* CreateGameObject(){ return new GameObject(); };
     virtual GameObject* CreateTriangle() = 0;
-    virtual Sprite* CreateSprite(const char* path){};// = 0;
+    virtual Sprite* CreateSprite(const char* path) = 0;
 
     virtual bool IsKeyPressed(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;

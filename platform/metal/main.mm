@@ -205,6 +205,12 @@ public:
         }
     }
 
+    virtual bool IsKeyPressed(KeyCode key) override {return false; }
+    virtual bool IsMousePressed(MouseButton button) override {return false;}
+    virtual bool IsMouseReleased(MouseButton button) override {return false;}
+    virtual vec3 GetMousePos() override {return {};}
+    Sprite* CreateSprite(const char* path) override { return nullptr; }
+
     class SpriteMetal : public GameObject {
     public:
          ~SpriteMetal() {
