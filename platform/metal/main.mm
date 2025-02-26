@@ -98,7 +98,7 @@ void mouseCursorCallback(GLFWwindow* window, double xpos, double ypos) {
 
 
 
-class PlatformMetal : public GamePlatform {
+class PlatformMetal : public Platform {
 public:
     void Init() override {
 
@@ -358,7 +358,7 @@ private:
         }
 };
 
-int RealMain(GamePlatform* platform);
+int RealMain(Platform* platform);
 
 int main() {
 	printf("Hello world\n");

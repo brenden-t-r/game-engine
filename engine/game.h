@@ -5,7 +5,7 @@
 
 class Game {
 public:
-    explicit Game(GamePlatform* platform) {
+    explicit Game(Platform* platform) {
         this->platform = platform;
     };
     virtual ~Game() = default;
@@ -14,12 +14,12 @@ public:
     virtual void Update() = 0;
 
 protected:
-    GamePlatform* platform;
+    Platform* platform;
 };
 
 class Scene {
 public:
-    explicit Scene(GamePlatform* platform) {
+    explicit Scene(Platform* platform) {
         this->platform = platform;
     };
     virtual ~Scene() = default;
@@ -31,10 +31,10 @@ public:
     int nextScene = -1;
 
 protected:
-    GamePlatform* platform;
+    Platform* platform;
 };
 
-static void LoadNextScene(GamePlatform* platform, Scene** currentScene, Scene* (*sceneSwitchFn)(GamePlatform*, int)) {
+static void LoadNextScene(Platform* platform, Scene** currentScene, Scene* (*sceneSwitchFn)(Platform*, int)) {
     if ((*currentScene)->nextScene == -1) return;
     auto nextScene = sceneSwitchFn(platform, (*currentScene)->nextScene);
     nextScene->Start();

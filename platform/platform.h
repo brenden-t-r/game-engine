@@ -23,10 +23,10 @@ enum class MouseButton {
     Right
 };
 
-class GamePlatform {
+class Platform {
 public:
-    GamePlatform() = default;
-    virtual ~GamePlatform() = default;
+    Platform() = default;
+    virtual ~Platform() = default;
 
     virtual void Init() = 0;
     virtual void LoadShaders() = 0;
@@ -39,7 +39,7 @@ public:
     virtual bool IsKeyPressed(KeyCode key){};// = 0;
     virtual bool IsMousePressed(MouseButton button){};// = 0;
     virtual bool IsMouseReleased(MouseButton button){};// = 0;
-    virtual engine_vector3 GetMousePos(){};// = 0;
+    virtual vec3 GetMousePos(){};// = 0;
 
     virtual void Shutdown() = 0;
 };

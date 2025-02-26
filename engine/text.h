@@ -146,7 +146,7 @@ enum ParagraphAlignment{
     LEFT, MIDDLE, RIGHT
 };
 struct ParagraphSettings{
-    engine_vector3 pos;
+    vec3 pos;
     ParagraphAlignment alignment;
     float fontSize;
     float tracking;

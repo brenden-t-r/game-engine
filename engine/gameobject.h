@@ -9,13 +9,13 @@
 
 class Transform {
 public:
-    engine_vector3 pos = {0, 0, 0};
-    engine_vector3 rot = {0, 0, 0};
-    engine_vector3 scale = {1, 1, 1};
+    vec3 pos = {0, 0, 0};
+    vec3 rot = {0, 0, 0};
+    vec3 scale = {1, 1, 1};
     float width = 1;
     float height = 1;
 
-    void Translate(engine_vector3 vector){}
+    void Translate(vec3 vector){}
     void Rotate(float degrees){}
 };
 
@@ -39,9 +39,9 @@ public:
 
 class Triangle : public GameObject {
 public:
-    engine_vector3 vertex1 = {1.0f, -1.0f, 0.0f};
-    engine_vector3 vertex2 = {-1.0f, -1.0f, 0.0f};
-    engine_vector3 vertex3 = {0, 1.0f, 0.0f};
+    vec3 vertex1 = {1.0f, -1.0f, 0.0f};
+    vec3 vertex2 = {-1.0f, -1.0f, 0.0f};
+    vec3 vertex3 = {0, 1.0f, 0.0f};
 
     void Update() override {
         GameObject::Update();
@@ -56,10 +56,10 @@ public:
 
 class Sprite : public GameObject {
 public:
-    engine_vector3 vertex1 = {-0.5f, 0.5f, 0.0f};  // top left
-    engine_vector3 vertex2 = {0.5f, 0.5f, 0.0f};  // top right
-    engine_vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
-    engine_vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
+    vec3 vertex1 = {-0.5f, 0.5f, 0.0f};  // top left
+    vec3 vertex2 = {0.5f, 0.5f, 0.0f};  // top right
+    vec3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
+    vec3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
 
     bool useAtlas = false;
     int atlasNumRows = 0;

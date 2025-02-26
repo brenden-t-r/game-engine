@@ -41,7 +41,7 @@ void GameUpdateFn(void* context) {
     ((Game*)(context))->Update();
 }
 
-int RealMain(GamePlatform* platform) {
+int RealMain(Platform* platform) {
     printf("Hello from PlatformMain!\n");
 
     platform->Init();

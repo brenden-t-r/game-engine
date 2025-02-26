@@ -34,7 +34,7 @@ public:
         player2Paddle->transform.pos.x = 1 - (PaddleWidth/2);
         player2Paddle->transform.pos.y = 1 - (PaddleHeight/2);
 
-        ballPos = engine_vector3{0, -0.5, 0};
+        ballPos = vec3{0, -0.5, 0};
         ballDirVec = get_unit_vector_from_angle_degrees(45);
         ball = platform->CreateSprite("assets/sprites/ball.png");
         ball->transform.width = BallWidth;
@@ -167,8 +167,8 @@ private:
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;
-    engine_vector2 ballDirVec = engine_vector2{};
-    engine_vector3 ballPos{};
+    vec2 ballDirVec = vec2{};
+    vec3 ballPos{};
     bool isQuick;
 
     static constexpr float PaddlePixelWidth = 32.0 * 2;
