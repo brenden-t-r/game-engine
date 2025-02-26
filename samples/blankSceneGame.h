@@ -43,7 +43,7 @@ class BlankScene2 : public Scene {
     int counter = 0;
 };
 
-static Scene* GetSceneFn(Platform* platform, int sceneToLoad) {
+static Scene* GetSceneFn(GamePlatform* platform, int sceneToLoad) {
     switch (sceneToLoad) {
         case SCENE_MAIN: return new BlankScene(platform);
         case SCENE_2: return new BlankScene2(platform);

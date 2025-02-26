@@ -163,7 +163,7 @@ public:
         texturePipelineDescriptor->release();
     }
 
-    void Run(const std::function<void()>& func) override{
+    void Run(void (*func)(void*), void* ctx) override{
         Texture* bgTexture = new Texture("assets/sprites/background.png", metalDevice);
         auto sprite = new SpriteMetal(metalDevice, textureRenderPSO, bgTexture);
 
@@ -192,7 +192,7 @@ public:
                 sprite->Update();
 
                 // Triangle
-                func();
+                func(ctx);
 
                 renderCommandEncoder->endEncoding();
                 metalCommandBuffer->presentDrawable(metalDrawable);

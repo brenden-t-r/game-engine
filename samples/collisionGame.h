@@ -17,15 +17,15 @@ public:
     void Start() override {
         platform->LoadShaders();
         objects[0] = platform->CreateSprite("assets/sprites/ball.png");
-        objects[0]->transform.pos = vector3{0, 0.9, 0};
+        objects[0]->transform.pos = engine_vector3{0, 0.9, 0};
         objects[0]->transform.width = 0.1f;
         objects[0]->transform.height = 0.1f;
         objects[1] = platform->CreateSprite("assets/sprites/background.png");
-        objects[1]->transform.pos = vector3{-0.3, 0, 0};
+        objects[1]->transform.pos = engine_vector3{-0.3, 0, 0};
         objects[1]->transform.width = 0.25f;
         objects[1]->transform.height = 0.25f;
         objects[2] = platform->CreateSprite("assets/sprites/paddle.png");
-        objects[2]->transform.pos = vector3{0, 0, 0};
+        objects[2]->transform.pos = engine_vector3{0, 0, 0};
         objects[2]->transform.width = 0.25f;
         objects[2]->transform.height = 0.25f;
     }

@@ -16,14 +16,14 @@ enum PIVOT {
 };
 
 struct box_collider {
-    struct vector2 pos;
+    struct engine_vector2 pos;
     float width;
     float height;
     enum PIVOT pivot;
 };
 
 static int AABB_collision(
-        struct vector2 p1, struct vector2 p2,
+        struct engine_vector2 p1, struct engine_vector2 p2,
         struct box_collider c1, struct box_collider c2
 ) {
     float c1x = p1.x + c1.pos.x;
@@ -51,10 +51,10 @@ static int AABB_collision(
 }
 
 static int AABB_collision(
-        struct vector3 p1, struct vector3 p2,
+        struct engine_vector3 p1, struct engine_vector3 p2,
         struct box_collider c1, struct box_collider c2
 ) {
-    return AABB_collision(vector2{p1.x, p1.y}, vector2{p2.x, p2.y}, c1, c2);
+    return AABB_collision(engine_vector2{p1.x, p1.y}, engine_vector2{p2.x, p2.y}, c1, c2);
 }
 
 static bool AABB_collision(GameObject* a, GameObject* b) {

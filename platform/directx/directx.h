@@ -146,7 +146,7 @@ public:
     bool IsMouseReleased(MouseButton button) override {
         return mouseState.isButtonUp(button);
     }
-    vector3 GetMousePos() override {
+    engine_vector3 GetMousePos() override {
         RECT rect;
         GetClientRect(hwnd, &rect);  // Get window size
         int width = rect.right - rect.left;

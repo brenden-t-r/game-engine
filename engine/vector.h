@@ -6,12 +6,12 @@
 constexpr float PI = 3.14159265358979323846f;
 constexpr float DEGREES_TO_RADIANS = PI/180;
 
-struct vector3 {
+struct engine_vector3 {
     float x;
     float y;
     float z;
 };
-struct vector2 {
+struct engine_vector2 {
     float x;
     float y;
 };
@@ -38,12 +38,12 @@ struct vector2 {
  * x = c sin(a)/sin(b)
  * x = 1 sin(15)/sin(90) = 0.2588
  */
-static vector2 get_unit_vector_from_angle_degrees(float angle) {
+static engine_vector2 get_unit_vector_from_angle_degrees(float angle) {
     float radians = angle * DEGREES_TO_RADIANS;
     float radians90 = 90 * DEGREES_TO_RADIANS;
     float x = 1 * (float)sinf(radians90-radians) / (float)sinf(radians90);
     float y = sqrtf(powf(x, 2) + 1 - 2*x*1*cosf(radians));
-    return vector2{
+    return engine_vector2{
             x, y
     };
 }
