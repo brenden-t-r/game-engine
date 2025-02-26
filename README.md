@@ -21,11 +21,29 @@ cmake --build .
 
 ## MacOS
 
+Prerequisites
+```bash
+brew install cmake
+brew install glfw
+```
+
+Build and run
+```bash
+mkdir build
+cd build
+cmake ..
+make
+./GameEngine
+```
+
 Compile shaders:
 
 ```bash
-xcrun -sdk macosc metal -o shader.air -c shader.metal
-xcrun -sdk macosc metallib -o shader.metallib shader.air
+cd assets/shaders
+xcrun -sdk macosx metal -o triangle.air -c triangle.metal
+xcrun -sdk macosx metallib -o triangle.metallib triangle.air
+xcrun -sdk macosx metal -o square.air -c square.metal
+xcrun -sdk macosx metallib -o square.metallib square.air
 ```
 
 ## Linux

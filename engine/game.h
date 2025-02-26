@@ -5,7 +5,7 @@
 
 class Game {
 public:
-    explicit Game(Platform* platform) {
+    explicit Game(GamePlatform* platform) {
         this->platform = platform;
     };
     virtual ~Game() = default;
@@ -14,7 +14,7 @@ public:
     virtual void Update() = 0;
 
 protected:
-    Platform* platform;
+    GamePlatform* platform;
 };
 
 class Scene {

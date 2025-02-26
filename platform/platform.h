@@ -23,10 +23,10 @@ enum class MouseButton {
     Right
 };
 
-class Platform {
+class GamePlatform {
 public:
-    Platform() = default;
-    virtual ~Platform() = default;
+    GamePlatform() = default;
+    virtual ~GamePlatform() = default;
 
     virtual void Init() = 0;
     virtual void LoadShaders() = 0;
