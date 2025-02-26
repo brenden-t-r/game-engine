@@ -3,7 +3,7 @@
  * Choose backend
  *  Windows => OpenGL, DirectX
  *  Linux   => OpenGL
- *  Apple   => Metal
+ *  Apple   => OpenGL, Metal
  * */
 //#define BACKEND_DIRECTX
 //#define BACKEND_OPENGL
@@ -80,6 +80,7 @@ int RealMain(Platform* platform) {
 #elif defined(PLATFORM_LINUX)
 #include "platform/opengl/opengl.h"
 #elif defined(PLATFORM_APPLE)
+#include "platform/opengl/opengl.h"
 #else
 // No backend selected
 int main() {

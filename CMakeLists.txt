@@ -37,8 +37,11 @@ elseif (APPLE)
     set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
     set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
     include_directories(${GLFW_INCLUDE_DIR})
-    list(APPEND SOURCES platform/metal/mtl_implementation.cpp platform/metal/main.mm platform/metal/stbi_image.cpp)
-
+    set(GLEW_INCLUDE_DIR /opt/homebrew/Cellar/glew/2.2.0_1/include)
+    set(GLEW_LIBRARY /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib)
+    include_directories(${GLEW_INCLUDE_DIR})
+#    list(APPEND SOURCES platform/metal/mtl_implementation.cpp platform/metal/main.mm platform/metal/stbi_image.cpp)
+    list(APPEND SOURCES platform/opengl/opengl.h)
 endif()
 
 # Add executable
@@ -79,7 +82,7 @@ elseif (UNIX AND NOT APPLE) # For Linux
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
 elseif (APPLE)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)
-    target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY}
+    target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY} ${GLEW_LIBRARY}
             "-framework Metal"
             "-framework Foundation"
             "-framework QuartzCore"
@@ -89,7 +92,7 @@ elseif (APPLE)
             "-framework CoreVideo"
     )
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
 endif()
 
 file(GLOB ASSETS_FOLDER

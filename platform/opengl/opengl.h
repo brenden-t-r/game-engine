@@ -228,7 +228,7 @@ public:
     bool IsMouseReleased(MouseButton button) override {
         return mouseState.isButtonUp(button);
     }
-    engine_vector3 GetMousePos() override {
+    vec3 GetMousePos() override {
         double cursorX, cursorY;
         int width, height;
         glfwGetCursorPos(window, &cursorX, &cursorY);
