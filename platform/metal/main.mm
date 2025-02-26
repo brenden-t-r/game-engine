@@ -96,7 +96,64 @@ void mouseCursorCallback(GLFWwindow* window, double xpos, double ypos) {
     printf("Cursor position: (%.2f, %.2f)\n", xpos, ypos);
 }
 
+class MouseState {
+public:
+    bool LButtonDown;
+    bool RButtonDown;
+    bool MButtonDown;
+    bool LButtonUp;
+    bool RButtonUp;
+    bool MButtonUp;
 
+    bool isButtonDown(MouseButton btn) const {
+        switch (btn) {
+            case MouseButton::Left: return LButtonDown;
+            case MouseButton::Right: return RButtonDown;
+            case MouseButton::Middle: return MButtonDown;
+            default: return false;
+        }
+    }
+
+    bool isButtonUp(MouseButton btn) {
+        switch (btn) {
+            case MouseButton::Left: {
+                if (LButtonUp) {
+                    LButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            case MouseButton::Right: {
+                if (RButtonUp) {
+                    RButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            case MouseButton::Middle: {
+                if (MButtonUp) {
+                    MButtonUp = false;
+                    return true;
+                }
+                return false;
+            }
+            default: return false;
+        }
+    }
+};
+static MouseState mouseState;
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        mouseState.LButtonUp = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+        mouseState.RButtonUp = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
+        mouseState.MButtonUp = true;
+    }
+}
 
 class PlatformMetal : public Platform {
 public:
@@ -205,10 +262,51 @@ public:
         }
     }
 
-    virtual bool IsKeyPressed(KeyCode key) override {return false; }
-    virtual bool IsMousePressed(MouseButton button) override {return false;}
-    virtual bool IsMouseReleased(MouseButton button) override {return false;}
-    virtual vec3 GetMousePos() override {return {};}
+    bool IsKeyPressed(KeyCode key) override {
+        auto keyCode = GetGLFWKey(key);
+        int state = glfwGetKey(glfwWindow, keyCode);
+        return state == GLFW_PRESS;
+    }
+    bool IsMousePressed(MouseButton button) override {
+        auto btn = GetGLFWMouseButton(button);
+        int state = glfwGetMouseButton(glfwWindow, btn);
+        return state == GLFW_PRESS;
+    }
+    bool IsMouseReleased(MouseButton button) override {
+        return mouseState.isButtonUp(button);
+    }
+    vec3 GetMousePos() override {
+        double cursorX, cursorY;
+        int width, height;
+        glfwGetCursorPos(glfwWindow, &cursorX, &cursorY);
+        glfwGetWindowSize(glfwWindow, &width, &height);
+        float ndcX = (2.0 * cursorX) / width - 1.0;
+        float ndcY = 1.0 - (2.0 * cursorY) / height;  // Flip Y axis
+        return {ndcX, ndcY, 0};
+    }
+    // Keyboard input map
+    static int GetGLFWKey(KeyCode keyCode) {
+        switch (keyCode) {
+            case KeyCode::Up:       return GLFW_KEY_UP;
+            case KeyCode::Down:     return GLFW_KEY_DOWN;
+            case KeyCode::Left:     return GLFW_KEY_LEFT;
+            case KeyCode::Right:    return GLFW_KEY_RIGHT;
+            case KeyCode::W:        return GLFW_KEY_W;
+            case KeyCode::A:        return GLFW_KEY_A;
+            case KeyCode::S:        return GLFW_KEY_S;
+            case KeyCode::D:        return GLFW_KEY_D;
+            default:                return -1;
+        }
+    }
+    static int GetGLFWMouseButton(MouseButton button) {
+        switch(button) {
+            case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
+            case MouseButton::Right: return GLFW_MOUSE_BUTTON_RIGHT;
+            case MouseButton::Middle: return GLFW_MOUSE_BUTTON_MIDDLE;
+            default: -1;
+        }
+    }
+
     Sprite* CreateSprite(const char* path) override { return nullptr; }
 
     class SpriteMetal : public GameObject {
