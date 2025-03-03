@@ -221,9 +221,6 @@ public:
     }
 
     void Run(void (*func)(void*), void* ctx) override{
-        Texture* bgTexture = new Texture("assets/sprites/background.png", metalDevice);
-        auto sprite = new SpriteMetal(metalDevice, textureRenderPSO, bgTexture);
-
         // Game loop
         while (!glfwWindowShouldClose(glfwWindow)) {
             @autoreleasepool {
@@ -243,12 +240,10 @@ public:
                 for (TriangleMetal* gameObject : gameObjects) {
                     gameObject->SetRenderCommandEncoder(renderCommandEncoder);
                 }
+                for (SpriteMetal* gameObject : spriteGameObjects) {
+                    gameObject->SetRenderCommandEncoder(renderCommandEncoder);
+                }
 
-                // Quad
-                sprite->SetRenderCommandEncoder(renderCommandEncoder);
-                sprite->Update();
-
-                // Triangle
                 func(ctx);
 
                 renderCommandEncoder->endEncoding();
@@ -307,9 +302,14 @@ public:
         }
     }
 
-    Sprite* CreateSprite(const char* path) override { return nullptr; }
+    Sprite* CreateSprite(const char* path) override {
+        auto texture = new Texture(path, metalDevice);
+        auto sprite = new SpriteMetal(metalDevice, textureRenderPSO, texture);
+        spriteGameObjects.push_back(sprite);
+        return sprite;
+    }
 
-    class SpriteMetal : public GameObject {
+    class SpriteMetal : public Sprite {
     public:
          ~SpriteMetal() {
             vertexBuffer->release();
@@ -325,15 +325,27 @@ public:
         }
 
         void Update() override {
-            VertexData vertices[] {
-                {{-1, -1,  0, 1}, {0.0f, 0.0f}}, // Top left
-                {{-1,  1,  0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{ 1,  1,  0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{-1, -1,  0, 1}, {0.0f, 0.0f}}, // Top left
-                {{ 1,  1,  0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{ 1, -1,  0, 1}, {1.0f, 0.0f}}  // Top right
+            Sprite::Update();
+            VertexData newVertices[] {
+                {{vertex1.x, vertex1.y}, {0.0f, 0.0f}}, // Top left
+                {{vertex4.x, vertex4.y}, {0.0f, 1.0f}}, // Bottom left
+                {{vertex3.x, vertex3.y}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex1.x, vertex1.y}, {0.0f, 0.0f}}, // Top left
+                {{vertex3.x, vertex3.y}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex2.x, vertex2.y}, {1.0f, 0.0f}}  // Top right
             };
-            vertexBuffer = metalDevice->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
+            /*
+            float newVertices[] = {
+                    // Positions                 // Texture Coords
+                    vertex1.x, vertex1.y, 0.0f,  0.0f, 1.0f, // Top-left
+                    vertex2.x, vertex2.y, 0.0f,  1.0f, 1.0f, // Top-right
+                    vertex3.x, vertex3.y, 0.0f,  1.0f, 0.0f, // Bottom-right
+                    vertex4.x, vertex4.y, 0.0f,  0.0f, 0.0f  // Bottom-left
+            };*/
+
+            // TODO: Sprite atlas
+
+            vertexBuffer = metalDevice->newBuffer(&newVertices, sizeof(newVertices), MTL::ResourceStorageModeShared);
             renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
             renderCommandEncoder->setVertexBuffer(vertexBuffer, 0, 0);
             renderCommandEncoder->setFragmentTexture(texture->texture, 0);
@@ -376,10 +388,11 @@ public:
         }
 
         void Update() override {
+            Triangle::Update();
             simd::float3 vertices[3] = {
-                {transform.pos.x - 0.5f, -0.5f, 0.0f},
-                {transform.pos.x + 0.5f, -0.5f, 0.0f},
-                {transform.pos.x,  0.5f, 0.0f}
+                {vertex1.x, vertex1.y, 0.0f},
+                {vertex2.x, vertex2.y, 0.0f},
+                {vertex3.x, vertex3.y, 0.0f}
             };
             vertexBuffer = metalDevice->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
             renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
@@ -432,6 +445,7 @@ private:
         MTL::RenderPipelineState* textureRenderPSO;
 
         std::vector<TriangleMetal*> gameObjects = {};
+        std::vector<SpriteMetal*> spriteGameObjects = {};
 
         MTL::RenderPipelineDescriptor* LoadShader(NS::String* path) {
             NS::Error* error = nullptr;
