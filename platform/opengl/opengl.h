@@ -6,9 +6,9 @@
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -30,6 +30,14 @@ static int GetGLFWKey(KeyCode keyCode) {
         default:                return -1;
     }
 }
+static int GetGLFWMouseButton(MouseButton button) {
+    switch(button) {
+        case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
+        case MouseButton::Right: return GLFW_MOUSE_BUTTON_RIGHT;
+        case MouseButton::Middle: return GLFW_MOUSE_BUTTON_MIDDLE;
+        default: -1;
+    }
+}
 static KeyCode GetKeyCode(int glfwKey) {
     switch (glfwKey) {
         case GLFW_KEY_UP:       return KeyCode::Up;
@@ -43,61 +51,6 @@ static KeyCode GetKeyCode(int glfwKey) {
         default:                return KeyCode::Unknown;
     }
 }
-class InputState {
-public:
-    bool LButtonDown;
-    bool RButtonDown;
-    bool MButtonDown;
-    bool LButtonUp;
-    bool RButtonUp;
-    bool MButtonUp;
-    bool keyUp[10];
-
-    bool isButtonDown(MouseButton btn) const {
-        switch (btn) {
-            case MouseButton::Left: return LButtonDown;
-            case MouseButton::Right: return RButtonDown;
-            case MouseButton::Middle: return MButtonDown;
-            default: return false;
-        }
-    }
-
-    bool isButtonUp(MouseButton btn) {
-        switch (btn) {
-            case MouseButton::Left: {
-                if (LButtonUp) {
-                    LButtonUp = false;
-                    return true;
-                }
-                return false;
-            }
-            case MouseButton::Right: {
-                if (RButtonUp) {
-                    RButtonUp = false;
-                    return true;
-                }
-                return false;
-            }
-            case MouseButton::Middle: {
-                if (MButtonUp) {
-                    MButtonUp = false;
-                    return true;
-                }
-                return false;
-            }
-            default: return false;
-        }
-    }
-
-    bool isKeyUp(KeyCode key) {
-        int index = static_cast<int>(key);
-        if (keyUp[index]) {
-            keyUp[index] = false;
-            return true;
-        } else return false;
-    }
-};
-static InputState inputState;
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
@@ -106,30 +59,21 @@ static void* mouseCallbackContext;
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        inputState.LButtonUp = true;
         mouseUpCallback(MouseButton::Left, mouseCallbackContext);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-        inputState.RButtonUp = true;
         mouseUpCallback(MouseButton::Right, mouseCallbackContext);
     }
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
-        inputState.MButtonUp = true;
         mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
     }
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_RELEASE) {
-        inputState.keyUp[(int)GetKeyCode(key)] = true;
         keyUpCallback(GetKeyCode(key), keyCallbackContext);
-        printf("Key %d released\n", key);
     }
 }
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    std::cout << "Window resized: " << width << "x" << height << "\n";
-
-    // Adjust viewport (for OpenGL)
     glViewport(0, 0, width, height);
 }
 
@@ -271,35 +215,21 @@ public:
         int state = glfwGetKey(window, keyCode);
         return state == GLFW_PRESS;
     }
-    bool IsKeyReleased(KeyCode key) override {
-        return inputState.isKeyUp(key);
-    }
     bool IsMousePressed(MouseButton button) override {
         auto btn = GetGLFWMouseButton(button);
         int state = glfwGetMouseButton(window, btn);
         return state == GLFW_PRESS;
-    }
-    bool IsMouseReleased(MouseButton button) override {
-        return inputState.isButtonUp(button);
     }
     vector3 GetMousePos() override {
         double cursorX, cursorY;
         int width, height;
         glfwGetCursorPos(window, &cursorX, &cursorY);
         glfwGetWindowSize(window, &width, &height);
-        float ndcX = (2.0 * cursorX) / width - 1.0;
-        float ndcY = 1.0 - (2.0 * cursorY) / height;  // Flip Y axis
+        float ndcX = 2.0f * (float)cursorX / (float)width - 1.0f;
+        float ndcY = 1.0f - (2.0f * (float)cursorY) / (float)height;  // Flip Y axis
         return {ndcX, ndcY, 0};
     }
 
-    static int GetGLFWMouseButton(MouseButton button) {
-        switch(button) {
-            case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
-            case MouseButton::Right: return GLFW_MOUSE_BUTTON_RIGHT;
-            case MouseButton::Middle: return GLFW_MOUSE_BUTTON_MIDDLE;
-            default: -1;
-        }
-    }
 
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
         keyUpCallback = func;
