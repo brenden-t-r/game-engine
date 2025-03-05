@@ -5,9 +5,7 @@
 ## Engine
 
 - Input
-  - Key release
   - Gamepad
-  - Callbacks (OnClick, OnHover)
 - Primitives
   - Line
   - Rectangle

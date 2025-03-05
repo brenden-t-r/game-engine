@@ -55,18 +55,18 @@ void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mouseUpCallback) {
         mouseUpCallback(MouseButton::Left, mouseCallbackContext);
     }
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && mouseUpCallback) {
         mouseUpCallback(MouseButton::Right, mouseCallbackContext);
     }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && mouseUpCallback) {
         mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
     }
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_RELEASE) {
+    if (action == GLFW_RELEASE && keyUpCallback) {
         keyUpCallback(GetKeyCode(key), keyCallbackContext);
     }
 }
