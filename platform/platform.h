@@ -23,7 +23,7 @@ enum class MouseButton {
     Right
 };
 
-static enum Callback {
+enum Callback {
     KEY_RELEASED,
     MOUSE_RELEASED,
 };
