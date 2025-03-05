@@ -19,22 +19,11 @@ public:
     void Rotate(float degrees){}
 };
 
-//class Component {
-//public:
-//    virtual void Init() = 0;
-//    virtual void Update() = 0;
-//};
-
 class GameObject {
 public:
     Transform transform{};
-//    std::vector<Component*> components{};
 
-    virtual void Update() {
-//        for (auto & component : components) {
-//            component->Update();
-//        }
-    }
+    virtual void Update() {}
 };
 
 class Triangle : public GameObject {
@@ -79,7 +68,5 @@ public:
         vertex4.y = transform.pos.y - transform.height/2;
     }
 };
-
-
 
 #endif //GAMEENGINE_GAMEOBJECT_H

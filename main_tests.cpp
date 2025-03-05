@@ -3,7 +3,7 @@
 #include <cassert>
 
 static void tests_getUnitVectorFromAngleDegrees() {
-    engine_vector2 vec = get_unit_vector_from_angle_degrees(45);
+    vec2 vec = get_unit_vector_from_angle_degrees(45);
     assert(fabsf(vec.x - 0.707f) < 0.001f);
     assert(fabsf(vec.y - 0.707f) < 0.001f);
     vec = get_unit_vector_from_angle_degrees(75);
