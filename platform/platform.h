@@ -57,6 +57,24 @@ public:
         object->transform.height = height;
         return object;
     }
+    Sprite* CreateSprite(const char* path, float posX, float posY, float width, float height) {
+        auto object = CreateSprite(path);
+        object->transform.pos = { posX, posY, 0 };
+        object->transform.width = width;
+        object->transform.height = height;
+        return object;
+    }
+    Sprite* CreateSpriteAtlas(const char* path, float posX, float posY, float width, float height,
+                              int atlasNumRows, float atlasCellSize) {
+        auto object = CreateSprite(path, posX, posY, width, height);
+        object->transform.pos = { posX, posY, 0 };
+        object->useAtlas = true;
+        object->atlasNumRows = atlasNumRows;
+        object->atlasCellSize = atlasCellSize;
+        object->atlasRow = 0;
+        object->atlasColumn = 0;
+        return object;
+    }
 };
 
 #endif //GAMEENGINE_PLATFORM_H
