@@ -19,30 +19,6 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-class InputState {
-public:
-    bool LButtonDown;
-    bool RButtonDown;
-    bool MButtonDown;
-    double posX;
-    double posY;
-    bool keyDown[10];
-
-    bool isButtonDown(MouseButton btn) const {
-        switch (btn) {
-            case MouseButton::Left: return LButtonDown;
-            case MouseButton::Right: return RButtonDown;
-            case MouseButton::Middle: return MButtonDown;
-            default: return false;
-        }
-    }
-
-    bool isKeyDown(KeyCode key) const {
-        int index = (int)key;
-        return keyDown[index];
-    }
-};
-static InputState inputState;
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
@@ -132,10 +108,16 @@ public:
 
     bool IsKeyPressed(KeyCode key) override {
         auto keyCode = GetWindowsKey(key);
-        return inputState.isKeyDown(key);
+        return (GetAsyncKeyState(keyCode) & 0x8000) != 0;
     }
     bool IsMousePressed(MouseButton button) override {
-        return inputState.isButtonDown(button);
+        int btn = -1;
+        switch (button) {
+            case MouseButton::Left: btn = VK_LBUTTON; break;
+            case MouseButton::Right: btn = VK_RBUTTON; break;
+            case MouseButton::Middle: btn = VK_MBUTTON; break;
+        }
+        return (GetAsyncKeyState(btn) & 0x8000) != 0;
     }
     vector3 GetMousePos() override {
         RECT rect;
@@ -417,48 +399,26 @@ private:
                     int key = rawKb.VKey;
 
                     // Update your key state table
-                    if (isKeyDown) {
-                        inputState.keyDown[(int)GetKeyCode(key)] = true;
-                    } else if (isKeyUp) {
+                   if (isKeyUp) {
                         if (keyUpCallback) {
                             keyUpCallback(GetKeyCode(key), keyCallbackContext);
                         }
-                        inputState.keyDown[(int)GetKeyCode(key)] = false;
-                    }
+                   }
                 } else if (raw->header.dwType == RIM_TYPEMOUSE) {
                     RAWMOUSE& rawM = raw->data.mouse;
 
-                    // Check mouse movement
-                    int dx = rawM.lLastX;
-                    int dy = rawM.lLastY;
-
-                    inputState.posX = dx;
-                    inputState.posY = dy;
-
                     // Check button states
-                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
-                        inputState.LButtonDown = true;
-                    }
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
-                        inputState.LButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Left, mouseCallbackContext);
                         }
                     }
-                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
-                        inputState.RButtonDown = true;
-                    }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
-                        inputState.RButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Right, mouseCallbackContext);
                         }
                     }
-                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
-                        inputState.MButtonDown = true;
-                    }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
-                        inputState.MButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
                         }
