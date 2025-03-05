@@ -12,65 +12,41 @@ public:
 
     void Start() override {
         platform->LoadShaders();
-        triangleL = platform->CreateTriangle();
-        triangleL->transform.width = 0.05f;
-        triangleL->transform.height = 0.05f;
-        triangleL->transform.pos.x = -0.5f;
-        triangleL->transform.pos.y = 0.5f;
-        triangleR = platform->CreateTriangle();
-        triangleR->transform.width = 0.05f;
-        triangleR->transform.height = 0.05f;
-        triangleR->transform.pos.x = 0;
-        triangleR->transform.pos.y = 0.5f;
-        triangleM = platform->CreateTriangle();
-        triangleM->transform.width = 0.05f;
-        triangleM->transform.height = 0.05f;
-        triangleM->transform.pos.x = 0.5f;
-        triangleM->transform.pos.y = 0.5f;
-        triangleL2 = platform->CreateTriangle();
-        triangleL2->transform.width = 0.05f;
-        triangleL2->transform.height = 0.05f;
-        triangleL2->transform.pos.x = -0.5f;
-        triangleL2->transform.pos.y = -0.5f;
-        triangleR2 = platform->CreateTriangle();
-        triangleR2->transform.width = 0.05f;
-        triangleR2->transform.height = 0.05f;
-        triangleR2->transform.pos.x = 0;
-        triangleR2->transform.pos.y = -0.5f;
-        triangleM2 = platform->CreateTriangle();
-        triangleM2->transform.width = 0.05f;
-        triangleM2->transform.height = 0.05f;
-        triangleM2->transform.pos.x = 0.5f;
-        triangleM2->transform.pos.y = -0.5f;
-        triangleCursor = platform->CreateTriangle();
-        triangleCursor->transform.width = 0.07f;
-        triangleCursor->transform.height = 0.07f;
-        triangleCursor->transform.pos.x = 0;
-        triangleCursor->transform.pos.y = 0;
-        triangleKeyUp = platform->CreateTriangle();
-        triangleKeyUp->transform.width = 0.07f;
-        triangleKeyUp->transform.height = 0.07f;
-        triangleKeyUp->transform.pos.x = 0.9;
-        triangleKeyUp->transform.pos.y = 0.9;
+        triangleL = platform->CreateTriangle(-0.5f, 0.5f, 0.05, 0.05);
+        triangleR = platform->CreateTriangle(0, 0.5f, 0.05, 0.05);
+        triangleM = platform->CreateTriangle(0.5f, 0.5f, 0.05, 0.05);
+        triangleL2 = platform->CreateTriangle(-0.5f, -0.5f, 0.05, 0.05);
+        triangleR2 = platform->CreateTriangle(0, -0.5, 0.05, 0.05);
+        triangleM2 = platform->CreateTriangle(0.5, -0.5, 0.05, 0.05);
+        triangleCursor = platform->CreateTriangle(0, 0, 0.07, 0.07);
+        triangleKeyUp = platform->CreateTriangle(0.2, 0.2, 0.09, 0.09);
 
-        platform->SetKeyReleasedCallback(&InputGame::StaticKeyReleasedCallback, this);
+        this->EnableCallback(Callback::KEY_RELEASED);
+        this->EnableCallback(Callback::MOUSE_RELEASED);
     }
 
-    static void StaticKeyReleasedCallback(KeyCode key, void* context) {
-        static_cast<InputGame*>(context)->KeyReleasedCallback(key);
-    }
-
-    void KeyReleasedCallback(KeyCode key) {
+    bool shouldShowKeyReleasedTriangle = false;
+    void KeyReleasedCallback(KeyCode key) override {
         if (key == KeyCode::W) {
-            printf("W pressed\n");
+            printf("W pressed impl\n");
         } else if (key == KeyCode::S) {
-            printf("S pressed\n");
+            printf("S pressed impl\n");
         }
-        triangleKeyUp->Update();
+        triangleKeyUp->transform.pos.x -= 0.01;
+        shouldShowKeyReleasedTriangle = true;
+    }
+    void MouseReleasedCallback(MouseButton button) override {
+        triangleKeyUp->transform.pos.y -= 0.02;
+        shouldShowKeyReleasedTriangle = true;
     }
 
     void Update() override {
-//        printf(".");
+        printf(".");
+
+        if (shouldShowKeyReleasedTriangle) {
+            triangleKeyUp->Update();
+        }
+        shouldShowKeyReleasedTriangle = false;
 
         if (platform->IsMousePressed(MouseButton::Left)) {
             printf("\nLeft Pressed!");
@@ -84,7 +60,6 @@ public:
             printf("\nMiddle Pressed!");
             triangleM->Update();
         }
-
         if (platform->IsMouseReleased(MouseButton::Left)) {
             printf("\nLeft Released!");
             triangleL2->Update();
@@ -97,10 +72,6 @@ public:
             printf("\nMiddle Released!");
             triangleM2->Update();
         }
-
-//        if (platform->IsKeyReleased(KeyCode::W)) {
-//            triangleKeyUp->Update();
-//        }
 
         auto pos = platform->GetMousePos();
         triangleCursor->transform.pos.x = pos.x;

@@ -57,6 +57,8 @@ public:
 static InputState inputState;
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
+void static(*mouseUpCallback)(MouseButton, void*);
+static void* mouseCallbackContext;
 
 class PlatformDirectX : public Platform {
 public:
@@ -115,7 +117,6 @@ public:
         // Input init
         RegisterRawInput(hwnd);
     }
-
 
     void Run(void (*func)(void*), void* ctx) override {
         // Enter the message loop
@@ -388,6 +389,10 @@ public:
         keyUpCallback = func;
         keyCallbackContext = context;
     }
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+        mouseUpCallback = func;
+        mouseCallbackContext = context;
+    }
 
 private:
     // Entry-point args
@@ -449,36 +454,36 @@ private:
                     int dx = rawM.lLastX;
                     int dy = rawM.lLastY;
 
-//                    printf("%d\n",dx);
-//                    printf("%d\n",dy);
                     inputState.posX = dx;
                     inputState.posY = dy;
 
                     // Check button states
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
-//                        printf("Left button down\n");
                         inputState.LButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
-//                        printf("Left button up\n");
                         inputState.LButtonUp = true;
+                        if (mouseUpCallback) {
+                            mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+                        }
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
-//                        printf("Right button down\n");
                         inputState.RButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
-//                        printf("Right button up\n");
                         inputState.RButtonUp = true;
-
+                        if (mouseUpCallback) {
+                            mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+                        }
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
-//                        printf("Middle button down\n");
                         inputState.MButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
-//                        printf("Middle button up\n");
                         inputState.MButtonUp = true;
+                        if (mouseUpCallback) {
+                            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+                        }
                     }
                 }
                 break;
@@ -688,7 +693,6 @@ private:
     }
 
 };
-
 
 // Inline definition of the static member variable
 inline std::unordered_map<int, bool> PlatformDirectX::KeyState;

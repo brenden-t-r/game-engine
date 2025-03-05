@@ -7,11 +7,29 @@ class Game {
 public:
     explicit Game(Platform* platform) {
         this->platform = platform;
-    };
+    }
+
     virtual ~Game() = default;
 
     virtual void Start() = 0;
     virtual void Update() = 0;
+    virtual void KeyReleasedCallback(KeyCode key) {}
+    virtual void MouseReleasedCallback(MouseButton key) {}
+
+    void EnableCallback(Callback callbackType) {
+        switch (callbackType) {
+            case Callback::KEY_RELEASED: platform->SetKeyReleasedCallback(KeyReleasedCallback, this);
+            case Callback::MOUSE_RELEASED: platform->SetMouseReleasedCallback(MouseReleasedCallback, this);
+        }
+    }
+    static void KeyReleasedCallback(KeyCode key, void* context) {
+        auto _this = (Game*)context;
+        _this->KeyReleasedCallback(key);
+    }
+    static void MouseReleasedCallback(MouseButton button, void* context) {
+        auto _this = (Game*)context;
+        _this->MouseReleasedCallback(button);
+    }
 
 protected:
     Platform* platform;
