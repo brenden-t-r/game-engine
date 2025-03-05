@@ -1,28 +1,59 @@
 #ifndef GAMEENGINE_DIRECTX_H
 #define GAMEENGINE_DIRECTX_H
 
-// Include constants
 #include "../../constants.h"
 #include "../platform.h"
+#include "file_util.h"
+#include "math.h"
 
-// Windows/DirectX imports
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <iostream>
-#include "file_util.h"
-#include "math.h"
-#include <unordered_map>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
+static USHORT GetWindowsKey(KeyCode keyCode) {
+    switch (keyCode) {
+        case KeyCode::Up:       return VK_UP;
+        case KeyCode::Down:     return VK_DOWN;
+        case KeyCode::Left:     return VK_LEFT;
+        case KeyCode::Right:    return VK_RIGHT;
+        case KeyCode::W:        return 'W';
+        case KeyCode::A:        return 'A';
+        case KeyCode::S:        return 'S';
+        case KeyCode::D:        return 'D';
+        default:                return -1;
+    }
+}
+static KeyCode GetKeyCode(USHORT keyCode) {
+    switch (keyCode) {
+        case VK_UP:       return KeyCode::Up;
+        case VK_DOWN:     return KeyCode::Down;
+        case VK_LEFT:     return KeyCode::Left;
+        case VK_RIGHT:    return KeyCode::Right;
+        case 'W':         return KeyCode::W;
+        case 'A':         return KeyCode::A;
+        case 'S':         return KeyCode::S;
+        case 'D':         return KeyCode::D;
+        default:          return KeyCode::Unknown;
+    }
+}
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
+
+static const WCHAR* convertToWCHAR(const char* str) {
+    if (!str) return nullptr;
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+    auto* wstr = new WCHAR[size_needed];
+    MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, size_needed);
+    return wstr; // Remember to free with `delete[]` when done.
+}
 
 class PlatformDirectX : public Platform {
 public:
@@ -106,6 +137,7 @@ public:
         }
     }
 
+    // region Input Handling
     bool IsKeyPressed(KeyCode key) override {
         auto keyCode = GetWindowsKey(key);
         return (GetAsyncKeyState(keyCode) & 0x8000) != 0;
@@ -118,6 +150,14 @@ public:
             case MouseButton::Middle: btn = VK_MBUTTON; break;
         }
         return (GetAsyncKeyState(btn) & 0x8000) != 0;
+    }
+    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
+        keyUpCallback = func;
+        keyCallbackContext = context;
+    }
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+        mouseUpCallback = func;
+        mouseCallbackContext = context;
     }
     vector3 GetMousePos() override {
         RECT rect;
@@ -134,7 +174,9 @@ public:
             return {ndcX, ndcY};
         }
     }
+    // endregion
 
+    //region GameObjects
     class TriangleD3D : public Triangle {
     public:
         explicit TriangleD3D(ID3D11DeviceContext* d3dContext, ID3D11Device* d3dDevice, ID3D11InputLayout* inputLayout,
@@ -324,15 +366,6 @@ public:
         };
     };
 
-    static const WCHAR* convertToWCHAR(const char* str) {
-        if (!str) return nullptr;
-
-        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-        auto* wstr = new WCHAR[size_needed];
-        MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, size_needed);
-        return wstr; // Remember to free with `delete[]` when done.
-    }
-
     Sprite* CreateSprite(const char * path) override {
         auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture);
         gameObject->CreateBuffer();
@@ -341,21 +374,44 @@ public:
         delete[] wchar;
         return gameObject;
     }
+    //endregion
+
+    void LoadShaders() override {
+        const WCHAR * SHADER_TEXTURE = L"assets/shaders/TextureShader.hlsl";
+
+        // Compile and create the vertex shader
+        ID3DBlob* vsBlob = nullptr;
+        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderTexture);
+
+        // Compile and create the pixel shader
+        ID3DBlob* psBlob = nullptr;
+        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
+        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderTexture);
+
+        // Define the input layout (add texture coordinates)
+        D3D11_INPUT_ELEMENT_DESC layout[] =
+                {
+                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+                        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+                };
+
+        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutTexture);
+        d3dContext->IASetInputLayout(inputLayoutTexture);
+
+        // Clean up shader blobs
+        vsBlob->Release();
+        psBlob->Release();
+
+        LoadSimpleShader();
+    }
 
     void Shutdown() override {
         CleanD3D();
     }
 
-    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
-        keyUpCallback = func;
-        keyCallbackContext = context;
-    }
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
-        mouseUpCallback = func;
-        mouseCallbackContext = context;
-    }
-
 private:
+    // region Private Variables
     // Entry-point args
     HWND hwnd = nullptr;
     HINSTANCE hInstance = nullptr;
@@ -376,51 +432,50 @@ private:
     ID3D11PixelShader* pixelShaderTexture = nullptr;
     ID3D11VertexShader* vertexShaderSimple = nullptr;
     ID3D11PixelShader* pixelShaderSimple = nullptr;
+    // endregion
 
-    // Window procedure function
     static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch (message)
         {
             case WM_INPUT: {
-                UINT dwSize;
-                GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER));
-                std::vector<BYTE> buffer(dwSize);
+                BYTE rawData[sizeof(RAWINPUT)];
+                UINT dataSize = sizeof(rawData);
+                if (GetRawInputData((HRAWINPUT) lParam, RID_INPUT, rawData, &dataSize, sizeof(RAWINPUTHEADER)) > 0) {
+                    auto raw = reinterpret_cast<RAWINPUT*>(rawData);
 
-                if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
-                    break;
+                    if (raw->header.dwType == RIM_TYPEKEYBOARD) {
+                        RAWKEYBOARD &rawKb = raw->data.keyboard;
+                        bool isKeyDown = (rawKb.Message == WM_KEYDOWN || rawKb.Message == WM_SYSKEYDOWN);
+                        bool isKeyUp = (rawKb.Message == WM_KEYUP || rawKb.Message == WM_SYSKEYUP);
 
-                auto raw = (RAWINPUT*)buffer.data();
-                if (raw->header.dwType == RIM_TYPEKEYBOARD) {
-                    RAWKEYBOARD& rawKb = raw->data.keyboard;
-                    bool isKeyDown = (rawKb.Message == WM_KEYDOWN || rawKb.Message == WM_SYSKEYDOWN);
-                    bool isKeyUp = (rawKb.Message == WM_KEYUP || rawKb.Message == WM_SYSKEYUP);
+                        int key = rawKb.VKey;
 
-                    int key = rawKb.VKey;
-
-                    // Update your key state table
-                   if (isKeyUp) {
-                        if (keyUpCallback) {
-                            keyUpCallback(GetKeyCode(key), keyCallbackContext);
-                        }
-                   }
-                } else if (raw->header.dwType == RIM_TYPEMOUSE) {
-                    RAWMOUSE& rawM = raw->data.mouse;
-
-                    // Check button states
-                    if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
-                        if (mouseUpCallback) {
-                            mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+                        // Update your key state table
+                        if (isKeyUp) {
+                            if (keyUpCallback) {
+                                keyUpCallback(GetKeyCode(key), keyCallbackContext);
+                            }
                         }
                     }
-                    if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
-                        if (mouseUpCallback) {
-                            mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+                    else if (raw->header.dwType == RIM_TYPEMOUSE) {
+                        RAWMOUSE &rawM = raw->data.mouse;
+
+                        // Check button states
+                        if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
+                            if (mouseUpCallback) {
+                                mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+                            }
                         }
-                    }
-                    if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
-                        if (mouseUpCallback) {
-                            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+                        if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
+                            if (mouseUpCallback) {
+                                mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+                            }
+                        }
+                        if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
+                            if (mouseUpCallback) {
+                                mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+                            }
                         }
                     }
                 }
@@ -435,7 +490,27 @@ private:
         }
     }
 
-    // Initialize Direct3D
+    static void RegisterRawInput(HWND hwnd) {
+        RAWINPUTDEVICE rid[2];
+
+        // Register keyboard
+        rid[0].usUsagePage = 0x01;  // Generic Desktop Controls
+        rid[0].usUsage = 0x06;      // Keyboard
+        rid[0].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid[0].hwndTarget = hwnd;
+
+        // Register mouse
+        rid[1].usUsagePage = 0x01;  // Generic Desktop Controls
+        rid[1].usUsage = 0x02;      // Mouse
+        rid[1].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
+        rid[1].hwndTarget = hwnd;
+
+        // Register both devices
+        if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
+            printf("Failed to register raw input device.");
+        }
+    }
+
     void InitD3D(HWND hwnd)
     {
         // Swap chain descriptor
@@ -477,85 +552,6 @@ private:
         d3dContext->RSSetViewports(1, &viewport);
     }
 
-    static void RegisterRawInput(HWND hwnd) {
-        RAWINPUTDEVICE rid[2];
-
-        // Register keyboard
-        rid[0].usUsagePage = 0x01;  // Generic Desktop Controls
-        rid[0].usUsage = 0x06;      // Keyboard
-        rid[0].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
-        rid[0].hwndTarget = hwnd;
-
-        // Register mouse
-        rid[1].usUsagePage = 0x01;  // Generic Desktop Controls
-        rid[1].usUsage = 0x02;      // Mouse
-        rid[1].dwFlags = RIDEV_INPUTSINK; // Receive input even if not focused
-        rid[1].hwndTarget = hwnd;
-
-        // Register both devices
-        if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
-            printf("Failed to register raw input device.");
-        }
-    }
-
-    void LoadShaders() override {
-        const WCHAR * SHADER_TEXTURE = L"assets/shaders/TextureShader.hlsl";
-
-        // Compile and create the vertex shader
-        ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderTexture);
-
-        // Compile and create the pixel shader
-        ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderTexture);
-
-        // Define the input layout (add texture coordinates)
-        D3D11_INPUT_ELEMENT_DESC layout[] =
-                {
-                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-                };
-
-        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutTexture);
-        d3dContext->IASetInputLayout(inputLayoutTexture);
-
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
-
-        LoadSimpleShader();
-    }
-
-    void LoadSimpleShader() {
-        const WCHAR * shader = L"assets/shaders/SimpleShader.hlsl";
-
-        // Compile and create the vertex shader
-        ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(shader, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderSimple);
-
-        // Compile and create the pixel shader
-        ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(shader, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderSimple);
-
-        // Define the input layout (add texture coordinates)
-        D3D11_INPUT_ELEMENT_DESC layout[] =
-                {
-                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                };
-
-        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutSimple);
-        d3dContext->IASetInputLayout(inputLayoutSimple);
-
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
-    }
-
-    // Initialize graphics pipeline
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
@@ -585,7 +581,6 @@ private:
         d3dDevice->CreateBlendState(&blendDesc, &blendState);
     }
 
-    // Clean up Direct3D objects
     void CleanD3D()
     {
         if (vertexBuffer) {
@@ -601,34 +596,32 @@ private:
         d3dContext->Release();
     }
 
-    // Keyboard input map
-    static USHORT GetWindowsKey(KeyCode keyCode) {
-        switch (keyCode) {
-            case KeyCode::Up:       return VK_UP;
-            case KeyCode::Down:     return VK_DOWN;
-            case KeyCode::Left:     return VK_LEFT;
-            case KeyCode::Right:    return VK_RIGHT;
-            case KeyCode::W:        return 'W';
-            case KeyCode::A:        return 'A';
-            case KeyCode::S:        return 'S';
-            case KeyCode::D:        return 'D';
-            default:                return -1;
-        }
-    }
-    static KeyCode GetKeyCode(USHORT keyCode) {
-        switch (keyCode) {
-            case VK_UP:       return KeyCode::Up;
-            case VK_DOWN:     return KeyCode::Down;
-            case VK_LEFT:     return KeyCode::Left;
-            case VK_RIGHT:    return KeyCode::Right;
-            case 'W':         return KeyCode::W;
-            case 'A':         return KeyCode::A;
-            case 'S':         return KeyCode::S;
-            case 'D':         return KeyCode::D;
-            default:          return KeyCode::Unknown;
-        }
-    }
+    void LoadSimpleShader() {
+        const WCHAR * shader = L"assets/shaders/SimpleShader.hlsl";
 
+        // Compile and create the vertex shader
+        ID3DBlob* vsBlob = nullptr;
+        D3DCompileFromFile(shader, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderSimple);
+
+        // Compile and create the pixel shader
+        ID3DBlob* psBlob = nullptr;
+        D3DCompileFromFile(shader, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
+        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderSimple);
+
+        // Define the input layout (add texture coordinates)
+        D3D11_INPUT_ELEMENT_DESC layout[] =
+                {
+                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+                };
+
+        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutSimple);
+        d3dContext->IASetInputLayout(inputLayoutSimple);
+
+        // Clean up shader blobs
+        vsBlob->Release();
+        psBlob->Release();
+    }
 };
 
 // Entrypoint
