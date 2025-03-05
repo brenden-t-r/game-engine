@@ -24,12 +24,9 @@ public:
     bool LButtonDown;
     bool RButtonDown;
     bool MButtonDown;
-    bool LButtonUp;
-    bool RButtonUp;
-    bool MButtonUp;
     double posX;
     double posY;
-    bool keyUp[10];
+    bool keyDown[10];
 
     bool isButtonDown(MouseButton btn) const {
         switch (btn) {
@@ -40,18 +37,9 @@ public:
         }
     }
 
-    bool isButtonUp(MouseButton btn) const {
-        switch (btn) {
-            case MouseButton::Left: return LButtonUp;
-            case MouseButton::Right: return RButtonUp;
-            case MouseButton::Middle: return MButtonUp;
-            default: return false;
-        }
-    }
-
-    bool isKeyUp(KeyCode key) const {
+    bool isKeyDown(KeyCode key) const {
         int index = (int)key;
-        return keyUp[index];
+        return keyDown[index];
     }
 };
 static InputState inputState;
@@ -136,9 +124,6 @@ public:
 
                 func(ctx);
 
-                // Reset mouse state, needed for clearing button releases
-                inputState = {};
-
                 // Present the back buffer to the screen
                 swapChain->Present(1, 0);
             }
@@ -147,16 +132,10 @@ public:
 
     bool IsKeyPressed(KeyCode key) override {
         auto keyCode = GetWindowsKey(key);
-        return KeyState[keyCode];
-    }
-    bool IsKeyReleased(KeyCode key) override {
-        return inputState.isKeyUp(key);
+        return inputState.isKeyDown(key);
     }
     bool IsMousePressed(MouseButton button) override {
         return inputState.isButtonDown(button);
-    }
-    bool IsMouseReleased(MouseButton button) override {
-        return inputState.isButtonUp(button);
     }
     vector3 GetMousePos() override {
         RECT rect;
@@ -429,7 +408,6 @@ private:
                 if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
                     break;
 
-                inputState = {};
                 auto raw = (RAWINPUT*)buffer.data();
                 if (raw->header.dwType == RIM_TYPEKEYBOARD) {
                     RAWKEYBOARD& rawKb = raw->data.keyboard;
@@ -440,12 +418,12 @@ private:
 
                     // Update your key state table
                     if (isKeyDown) {
-                        KeyState[key] = true;
+                        inputState.keyDown[(int)GetKeyCode(key)] = true;
                     } else if (isKeyUp) {
                         if (keyUpCallback) {
                             keyUpCallback(GetKeyCode(key), keyCallbackContext);
                         }
-                        inputState.keyUp[(int)GetKeyCode(key)] = true;
+                        inputState.keyDown[(int)GetKeyCode(key)] = false;
                     }
                 } else if (raw->header.dwType == RIM_TYPEMOUSE) {
                     RAWMOUSE& rawM = raw->data.mouse;
@@ -462,7 +440,7 @@ private:
                         inputState.LButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
-                        inputState.LButtonUp = true;
+                        inputState.LButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Left, mouseCallbackContext);
                         }
@@ -471,7 +449,7 @@ private:
                         inputState.RButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
-                        inputState.RButtonUp = true;
+                        inputState.RButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Right, mouseCallbackContext);
                         }
@@ -480,7 +458,7 @@ private:
                         inputState.MButtonDown = true;
                     }
                     if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
-                        inputState.MButtonUp = true;
+                        inputState.MButtonDown = false;
                         if (mouseUpCallback) {
                             mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
                         }
@@ -664,7 +642,6 @@ private:
     }
 
     // Keyboard input map
-    static std::unordered_map<int, bool> KeyState;
     static USHORT GetWindowsKey(KeyCode keyCode) {
         switch (keyCode) {
             case KeyCode::Up:       return VK_UP;
@@ -693,9 +670,6 @@ private:
     }
 
 };
-
-// Inline definition of the static member variable
-inline std::unordered_map<int, bool> PlatformDirectX::KeyState;
 
 // Entrypoint
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {

@@ -17,7 +17,7 @@
 #include "samples/inputGame.h"
 #include "samples/audioGame.h"
 #include "samples/blankSceneGame.h"
-#include "samples/fontGame.h"
+//#include "samples/fontGame.h"
 #include "samples/collisionGame.h"
 
 class SampleGame : public Game {
