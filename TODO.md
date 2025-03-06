@@ -23,6 +23,9 @@
   - Shadow effect
   - SDF
 - MacOS support
+    - Texture transparency
+    - Clean exit
+    - Sprite atlas
 - iOS support
 - WebGL support
 - CICD
