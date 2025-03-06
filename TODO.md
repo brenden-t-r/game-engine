@@ -5,9 +5,7 @@
 ## Engine
 
 - Input
-  - Key release
   - Gamepad
-  - Callbacks (OnClick, OnHover)
 - Primitives
   - Line
   - Rectangle
@@ -27,14 +25,14 @@
 - WebGL support
 - CICD
 
+- Bugs
+  - OpenGL, triangle primitive doesn't work when sprites are shown.
+
 ## Games
 
 ### Pong
-- Ball collision (basic)
 - Ball collision (advanced, angle and speed)
 - Opponent movement
-- Scenes
-- Score
 
 ### Asteroids
 

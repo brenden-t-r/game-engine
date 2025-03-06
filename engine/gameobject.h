@@ -80,6 +80,4 @@ public:
     }
 };
 
-
-
 #endif //GAMEENGINE_GAMEOBJECT_H

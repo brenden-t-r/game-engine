@@ -12,45 +12,39 @@ public:
 
     void Start() override {
         platform->LoadShaders();
-        triangleL = platform->CreateTriangle();
-        triangleL->transform.width = 0.05f;
-        triangleL->transform.height = 0.05f;
-        triangleL->transform.pos.x = -0.5f;
-        triangleL->transform.pos.y = 0.5f;
-        triangleR = platform->CreateTriangle();
-        triangleR->transform.width = 0.05f;
-        triangleR->transform.height = 0.05f;
-        triangleR->transform.pos.x = 0;
-        triangleR->transform.pos.y = 0.5f;
-        triangleM = platform->CreateTriangle();
-        triangleM->transform.width = 0.05f;
-        triangleM->transform.height = 0.05f;
-        triangleM->transform.pos.x = 0.5f;
-        triangleM->transform.pos.y = 0.5f;
-        triangleL2 = platform->CreateTriangle();
-        triangleL2->transform.width = 0.05f;
-        triangleL2->transform.height = 0.05f;
-        triangleL2->transform.pos.x = -0.5f;
-        triangleL2->transform.pos.y = -0.5f;
-        triangleR2 = platform->CreateTriangle();
-        triangleR2->transform.width = 0.05f;
-        triangleR2->transform.height = 0.05f;
-        triangleR2->transform.pos.x = 0;
-        triangleR2->transform.pos.y = -0.5f;
-        triangleM2 = platform->CreateTriangle();
-        triangleM2->transform.width = 0.05f;
-        triangleM2->transform.height = 0.05f;
-        triangleM2->transform.pos.x = 0.5f;
-        triangleM2->transform.pos.y = -0.5f;
-        triangleCursor = platform->CreateTriangle();
-        triangleCursor->transform.width = 0.07f;
-        triangleCursor->transform.height = 0.07f;
-        triangleCursor->transform.pos.x = 0;
-        triangleCursor->transform.pos.y = 0;
+        triangleL = platform->CreateTriangle(-0.5f, 0.5f, 0.05, 0.05);
+        triangleR = platform->CreateTriangle(0, 0.5f, 0.05, 0.05);
+        triangleM = platform->CreateTriangle(0.5f, 0.5f, 0.05, 0.05);
+        triangleCursor = platform->CreateTriangle(0, 0, 0.07, 0.07);
+        triangleKeyUp = platform->CreateTriangle(0.2, 0.2, 0.09, 0.09);
+        triangleKeyDown = platform->CreateTriangle(0, 0, 0.05, 0.05);
+
+        this->EnableCallback(Callback::KEY_RELEASED);
+        this->EnableCallback(Callback::MOUSE_RELEASED);
+    }
+
+    bool shouldShowCallbackTriangle = false;
+    void KeyReleasedCallback(KeyCode key) override {
+        if (key == KeyCode::W) {
+            printf("W pressed impl\n");
+        } else if (key == KeyCode::S) {
+            printf("S pressed impl\n");
+        }
+        triangleKeyUp->transform.pos.x -= 0.01;
+        shouldShowCallbackTriangle = true;
+    }
+    void MouseReleasedCallback(MouseButton button) override {
+        triangleKeyUp->transform.pos.y -= 0.02;
+        shouldShowCallbackTriangle = true;
     }
 
     void Update() override {
         printf(".");
+
+        if (shouldShowCallbackTriangle) {
+            triangleKeyUp->Update();
+        }
+        shouldShowCallbackTriangle = false;
 
         if (platform->IsMousePressed(MouseButton::Left)) {
             printf("\nLeft Pressed!");
@@ -64,19 +58,19 @@ public:
             printf("\nMiddle Pressed!");
             triangleM->Update();
         }
-
-        if (platform->IsMouseReleased(MouseButton::Left)) {
-            printf("\nLeft Released!");
-            triangleL2->Update();
+        if (platform->IsKeyPressed(KeyCode::W)) {
+            triangleKeyDown->transform.pos.y += 0.01;
         }
-        if (platform->IsMouseReleased(MouseButton::Right)) {
-            printf("\nRight Released!");
-            triangleR2->Update();
+        if (platform->IsKeyPressed(KeyCode::S)) {
+            triangleKeyDown->transform.pos.y -= 0.01;
         }
-        if (platform->IsMouseReleased(MouseButton::Middle)) {
-            printf("\nMiddle Released!");
-            triangleM2->Update();
+        if (platform->IsKeyPressed(KeyCode::A)) {
+            triangleKeyDown->transform.pos.x -= 0.01;
         }
+        if (platform->IsKeyPressed(KeyCode::D)) {
+            triangleKeyDown->transform.pos.x += 0.01;
+        }
+        triangleKeyDown->Update();
 
         auto pos = platform->GetMousePos();
         triangleCursor->transform.pos.x = pos.x;
@@ -88,10 +82,9 @@ private:
     GameObject* triangleL;
     GameObject* triangleR;
     GameObject* triangleM;
-    GameObject* triangleL2;
-    GameObject* triangleR2;
-    GameObject* triangleM2;
     GameObject* triangleCursor;
+    GameObject* triangleKeyUp;
+    GameObject* triangleKeyDown;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H
