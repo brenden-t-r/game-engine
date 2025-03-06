@@ -201,6 +201,7 @@ public:
                     vertex2.x, vertex2.y, 0.0f,
                     vertex3.x, vertex3.y, 0.0f,
             };
+            glDisable(GL_BLEND);
             glUseProgram(shaderProgram); // Use appropriate shader
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject); // Bind the triangle's VBO
