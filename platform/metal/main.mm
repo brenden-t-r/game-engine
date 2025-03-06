@@ -326,22 +326,14 @@ public:
 
         void Update() override {
             Sprite::Update();
-            VertexData newVertices[] {
-                {{vertex1.x, vertex1.y}, {0.0f, 0.0f}}, // Top left
-                {{vertex4.x, vertex4.y}, {0.0f, 1.0f}}, // Bottom left
-                {{vertex3.x, vertex3.y}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex1.x, vertex1.y}, {0.0f, 0.0f}}, // Top left
-                {{vertex3.x, vertex3.y}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex2.x, vertex2.y}, {1.0f, 0.0f}}  // Top right
+            VertexData newVertices[]{
+                    {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                    {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                    {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                    {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                    {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                    {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
             };
-            /*
-            float newVertices[] = {
-                    // Positions                 // Texture Coords
-                    vertex1.x, vertex1.y, 0.0f,  0.0f, 1.0f, // Top-left
-                    vertex2.x, vertex2.y, 0.0f,  1.0f, 1.0f, // Top-right
-                    vertex3.x, vertex3.y, 0.0f,  1.0f, 0.0f, // Bottom-right
-                    vertex4.x, vertex4.y, 0.0f,  0.0f, 0.0f  // Bottom-left
-            };*/
 
             // TODO: Sprite atlas
 
