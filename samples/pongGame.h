@@ -62,6 +62,18 @@ public:
 
     bool freeze = false;
 
+    void reflectX() {
+        float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
+        ballDirVec.x *= -1 * stutter;
+        if (ballDirVec.x > 1) ballDirVec.x = 1;
+        if (ballDirVec.x < -1) ballDirVec.x = -1;
+        if (ballDirVec.y >= 0) {
+            ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
+        } else {
+            ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+        }
+    }
+
     void Update() override {
         player1Paddle->Update();
         player2Paddle->Update();
@@ -119,7 +131,6 @@ public:
                     isQuick = false;
                 }
 
-                vector3 paddlePos = player1Paddle->transform.pos;
                 auto hitEdge = aabb_get_hit_edge(ball, player1Paddle);
 
                 if (hitEdge.right) {
@@ -127,18 +138,10 @@ public:
                     ballPos.x = -1 + PaddleWidth + BallWidth/2;
                     ball->transform.pos = ballPos;
                     dbg_triangle2->transform.pos = {ballPos.x - BallWidth/2, ballPos.y,0};
-
-                    float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                    ballDirVec.x *= -1 * stutter;
-                    if (ballDirVec.x > 1) ballDirVec.x = 1;
-                    if (ballDirVec.x < -1) ballDirVec.x = -1;
-                    if (ballDirVec.y >= 0) {
-                        ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                    } else {
-                        ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
-                    }
+                    reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
+                    vector3 paddlePos = player1Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
@@ -165,7 +168,6 @@ public:
                     isQuick = false;
                 }
 
-                vector3 paddlePos = player2Paddle->transform.pos;
                 auto hitEdge = aabb_get_hit_edge(ball, player2Paddle);
 
                 if (hitEdge.left) {
@@ -173,18 +175,10 @@ public:
                     ballPos.x = 1 - PaddleWidth - BallWidth/2;
                     ball->transform.pos = ballPos;
                     dbg_triangle2->transform.pos = {ballPos.x + BallWidth/2, ballPos.y,0};
-
-                    float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                    ballDirVec.x *= -1 * stutter;
-                    if (ballDirVec.x > 1) ballDirVec.x = 1;
-                    if (ballDirVec.x < -1) ballDirVec.x = -1;
-                    if (ballDirVec.y >= 0) {
-                        ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                    } else {
-                        ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
-                    }
+                    reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
+                    vector3 paddlePos = player2Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
