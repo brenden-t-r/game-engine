@@ -151,11 +151,6 @@ public:
 
                     ball->transform.pos = ballPos;
                     ballDirVec.y *= -1;
-                    if (ballDirVec.x >= 0) {
-                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
-                    } else {
-                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
-                    }
                 }
                 else {
                     assert(false);
@@ -202,11 +197,6 @@ public:
 
                     ball->transform.pos = ballPos;
                     ballDirVec.y *= -1;
-                    if (ballDirVec.x >= 0) {
-                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
-                    } else {
-                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
-                    }
                 }
                 else {
                     assert(false);
