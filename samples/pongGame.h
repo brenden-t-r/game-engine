@@ -51,13 +51,27 @@ public:
         ball->transform.pos.x = ballPos.x;
         ball->transform.pos.y = ballPos.y;
 
+        dbg_triangle = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
+        dbg_triangle2 = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
+
         srand(101); // NOLINT(*-msc51-cpp); fixed seed for consistency in sample
     }
+
+    bool freeze = false;
 
     void Update() override {
         player1Paddle->Update();
         player2Paddle->Update();
         ball->Update();
+
+        dbg_triangle->Update();
+        dbg_triangle2->Update();
+        if (platform->IsKeyPressed(KeyCode::D)) {
+            nextScene = pong_scenes::PONG_TITLE;
+        }
+        if (freeze) {
+            return;
+        }
 
         // Ball movement
         {
@@ -90,6 +104,9 @@ public:
                 }
             }
         }
+
+        vector3 prevPos = ballPos;
+        vector2 prevVel = ballDirVec;
 
         // Collision of ball with left and right paddles
         {
@@ -125,17 +142,79 @@ public:
                 }
 
                 float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                ballDirVec.x *= -1 * stutter;
-                if (ballDirVec.x > 1) ballDirVec.x = 1;
-                if (ballDirVec.x < -1) ballDirVec.x = -1;
-                if (ballDirVec.y >= 0) {
-                    ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                } else {
-                    ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+
+
+                vector3 paddlePos = player2Paddle->transform.pos;
+                float paddleTy = (paddlePos.y + PaddleHeight/2);
+                float paddleBy = (paddlePos.y - PaddleHeight/2);
+                float paddleLx = (paddlePos.x - PaddleWidth/2);
+
+                float ballRx = (ballPos.x + BallWidth/2);
+                float ballTy = (ballPos.y + BallHeight/2);
+                float ballBy = (ballPos.y - BallHeight/2);
+                float overlap_distance_l = ballRx - paddleLx;
+                float overlap_distance_b = ballTy - paddleBy;
+                float overlap_distance_t = paddleTy - ballBy;
+
+                bool hitFromSide = (overlap_distance_l <= overlap_distance_b) && (overlap_distance_l <= overlap_distance_t);
+                bool hitFromBottom = (overlap_distance_b <= overlap_distance_l) && (overlap_distance_b <= overlap_distance_t);
+                bool hitFromTop = (overlap_distance_t <= overlap_distance_l) && (overlap_distance_b <= overlap_distance_b);
+
+                // if we hit it straight on
+                if (hitFromSide) {
+                    dbg_triangle->transform.pos = {ballRx, ballPos.y,0};
+                    printf("SIDE\n");
+                    if (ballPos.x > (1 - PaddleWidth - BallWidth/2)) {
+                        ballPos.x = 1 - PaddleWidth - BallWidth/2;
+                        ball->transform.pos = ballPos;
+                    }
+                    dbg_triangle2->transform.pos = {ballPos.x, ballPos.y,0};
+
+                    ballDirVec.x *= -1 * stutter;
+                    if (ballDirVec.x > 1) ballDirVec.x = 1;
+                    if (ballDirVec.x < -1) ballDirVec.x = -1;
+                    if (ballDirVec.y >= 0) {
+                        ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
+                    } else {
+                        ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+                    }
                 }
-                if (ballPos.x > (1 - PaddleWidth - BallWidth)) {
-                    ballPos.x = 1 - PaddleWidth - BallWidth;
+                // we hit the bottom
+                else if(hitFromTop) {
+                    dbg_triangle->transform.pos = {paddlePos.x, ballBy,0};
+                    printf("TOP\n");
+                    ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
+                    dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y,0};
+
+                    ball->transform.pos = ballPos;
+                    ballDirVec.y *= -1;
+                    if (ballDirVec.x >= 0) {
+                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
+                    } else {
+                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
+                    }
                 }
+                // we hit the top
+                else if (hitFromBottom) {
+                    dbg_triangle->transform.pos = {paddlePos.x, ballTy, 0};
+                    printf("BOTTOM\n");
+                    ballPos.y = paddlePos.y - PaddleHeight/2 - BallHeight/2;
+                    dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y,0};
+
+
+                    ball->transform.pos = ballPos;
+                    ballDirVec.y *= -1;
+                    if (ballDirVec.x >= 0) {
+                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
+                    } else {
+                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
+                    }
+                }
+                else {
+                    assert(false);
+                }
+//                dbg_triangle->transform.pos = prevPos;
+//                dbg_triangle2->transform.pos = ballPos;
             }
         }
 
@@ -151,12 +230,14 @@ public:
             if (ballPos.x > 1.0) {
                 printf("Player 1 wins");
                 player_who_won = 1;
-                nextScene = PONG_TITLE;
+                freeze = true;
+//                nextScene = PONG_TITLE;
             }
             if (ballPos.x < -1.0) {
                 printf("Player 2 wins");
                 player_who_won = 2;
-                nextScene = PONG_TITLE;
+                freeze = true;
+//                nextScene = PONG_TITLE;
             }
         }
 
@@ -175,6 +256,9 @@ private:
     Sprite* player1Paddle{};
     Sprite* player2Paddle{};
     Sprite* ball{};
+
+    GameObject* dbg_triangle;
+    GameObject* dbg_triangle2;
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;
