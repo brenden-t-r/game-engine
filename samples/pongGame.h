@@ -54,6 +54,9 @@ public:
         dbg_triangle = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
         dbg_triangle2 = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
 
+        printf("%f\n",PaddleWidth);
+        printf("%f\b", player1Paddle->transform.width);
+
         srand(101); // NOLINT(*-msc51-cpp); fixed seed for consistency in sample
     }
 
@@ -105,9 +108,6 @@ public:
             }
         }
 
-        vector3 prevPos = ballPos;
-        vector2 prevVel = ballDirVec;
-
         // Collision of ball with left and right paddles
         {
             if (AABB_collision(ball, player1Paddle)) {
@@ -119,57 +119,16 @@ public:
                     isQuick = false;
                 }
 
-                float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                ballDirVec.x *= -1 * stutter;
-                if (ballDirVec.x > 1) ballDirVec.x = 1;
-                if (ballDirVec.x < -1) ballDirVec.x = -1;
-                if (ballDirVec.y >= 0) {
-                    ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                } else {
-                    ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
-                }
-                if (ballPos.x <= (-1 + PaddleWidth)) {
-                    ballPos.x = -1 + PaddleWidth + BallWidth;
-                }
-            }
-            if (AABB_collision(ball, player2Paddle)) {
-                if (platform->IsKeyPressed(KeyCode::Down)) {
-                    isQuick = ballDirVec.y < 0;
-                } else if (platform->IsKeyPressed(KeyCode::Up)) {
-                    isQuick = ballDirVec.y >= 0;
-                } else {
-                    isQuick = false;
-                }
+                vector3 paddlePos = player1Paddle->transform.pos;
+                auto hitEdge = aabb_get_hit_edge(ball, player1Paddle);
 
-                float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
+                if (hitEdge.right) {
+                    dbg_triangle->transform.pos = {ballPos.x - BallWidth/2, ballPos.y,0};
+                    ballPos.x = -1 + PaddleWidth + BallWidth/2;
+                    ball->transform.pos = ballPos;
+                    dbg_triangle2->transform.pos = {ballPos.x - BallWidth/2, ballPos.y,0};
 
-
-                vector3 paddlePos = player2Paddle->transform.pos;
-                float paddleTy = (paddlePos.y + PaddleHeight/2);
-                float paddleBy = (paddlePos.y - PaddleHeight/2);
-                float paddleLx = (paddlePos.x - PaddleWidth/2);
-
-                float ballRx = (ballPos.x + BallWidth/2);
-                float ballTy = (ballPos.y + BallHeight/2);
-                float ballBy = (ballPos.y - BallHeight/2);
-                float overlap_distance_l = ballRx - paddleLx;
-                float overlap_distance_b = ballTy - paddleBy;
-                float overlap_distance_t = paddleTy - ballBy;
-
-                bool hitFromSide = (overlap_distance_l <= overlap_distance_b) && (overlap_distance_l <= overlap_distance_t);
-                bool hitFromBottom = (overlap_distance_b <= overlap_distance_l) && (overlap_distance_b <= overlap_distance_t);
-                bool hitFromTop = (overlap_distance_t <= overlap_distance_l) && (overlap_distance_b <= overlap_distance_b);
-
-                // if we hit it straight on
-                if (hitFromSide) {
-                    dbg_triangle->transform.pos = {ballRx, ballPos.y,0};
-                    printf("SIDE\n");
-                    if (ballPos.x > (1 - PaddleWidth - BallWidth/2)) {
-                        ballPos.x = 1 - PaddleWidth - BallWidth/2;
-                        ball->transform.pos = ballPos;
-                    }
-                    dbg_triangle2->transform.pos = {ballPos.x, ballPos.y,0};
-
+                    float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
                     ballDirVec.x *= -1 * stutter;
                     if (ballDirVec.x > 1) ballDirVec.x = 1;
                     if (ballDirVec.x < -1) ballDirVec.x = -1;
@@ -179,28 +138,16 @@ public:
                         ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
                     }
                 }
-                // we hit the bottom
-                else if(hitFromTop) {
-                    dbg_triangle->transform.pos = {paddlePos.x, ballBy,0};
-                    printf("TOP\n");
-                    ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
-                    dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y,0};
-
-                    ball->transform.pos = ballPos;
-                    ballDirVec.y *= -1;
-                    if (ballDirVec.x >= 0) {
-                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
+                else if(hitEdge.bottom || hitEdge.top) {
+                    if (hitEdge.top) {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                        ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                     } else {
-                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                        ballPos.y = paddlePos.y - PaddleHeight / 2 - BallHeight / 2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
                     }
-                }
-                // we hit the top
-                else if (hitFromBottom) {
-                    dbg_triangle->transform.pos = {paddlePos.x, ballTy, 0};
-                    printf("BOTTOM\n");
-                    ballPos.y = paddlePos.y - PaddleHeight/2 - BallHeight/2;
-                    dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y,0};
-
 
                     ball->transform.pos = ballPos;
                     ballDirVec.y *= -1;
@@ -213,8 +160,57 @@ public:
                 else {
                     assert(false);
                 }
-//                dbg_triangle->transform.pos = prevPos;
-//                dbg_triangle2->transform.pos = ballPos;
+            }
+            if (AABB_collision(ball, player2Paddle)) {
+                if (platform->IsKeyPressed(KeyCode::Down)) {
+                    isQuick = ballDirVec.y < 0;
+                } else if (platform->IsKeyPressed(KeyCode::Up)) {
+                    isQuick = ballDirVec.y >= 0;
+                } else {
+                    isQuick = false;
+                }
+
+                vector3 paddlePos = player2Paddle->transform.pos;
+                auto hitEdge = aabb_get_hit_edge(ball, player2Paddle);
+
+                if (hitEdge.left) {
+                    dbg_triangle->transform.pos = {ballPos.x + BallWidth/2, ballPos.y,0};
+                    ballPos.x = 1 - PaddleWidth - BallWidth/2;
+                    ball->transform.pos = ballPos;
+                    dbg_triangle2->transform.pos = {ballPos.x + BallWidth/2, ballPos.y,0};
+
+                    float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
+                    ballDirVec.x *= -1 * stutter;
+                    if (ballDirVec.x > 1) ballDirVec.x = 1;
+                    if (ballDirVec.x < -1) ballDirVec.x = -1;
+                    if (ballDirVec.y >= 0) {
+                        ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
+                    } else {
+                        ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+                    }
+                }
+                else if(hitEdge.bottom || hitEdge.top) {
+                    if (hitEdge.top) {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                        ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                    } else {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                        ballPos.y = paddlePos.y - PaddleHeight / 2 - BallHeight / 2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                    }
+
+                    ball->transform.pos = ballPos;
+                    ballDirVec.y *= -1;
+                    if (ballDirVec.x >= 0) {
+                        ballDirVec.x = sqrtf(1 - powf(ballDirVec.y, 2));
+                    } else {
+                        ballDirVec.x = -sqrtf(1 - powf(ballDirVec.y, 2));
+                    }
+                }
+                else {
+                    assert(false);
+                }
             }
         }
 

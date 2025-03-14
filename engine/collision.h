@@ -63,4 +63,42 @@ static bool AABB_collision(GameObject* a, GameObject* b) {
     return AABB_collision(a->transform.pos, b->transform.pos, obj1_collider, obj2_collider);
 }
 
+struct aabb_hit_edge {
+    bool left;
+    bool right;
+    bool top;
+    bool bottom;
+};
+
+static aabb_hit_edge aabb_get_hit_edge(GameObject* a, GameObject* b) {
+    vector3 aPos = a->transform.pos;
+    vector3 bPos = b->transform.pos;
+    float b_x_left = (bPos.x - b->transform.width / 2);
+    float b_x_right = (bPos.x + b->transform.width / 2);
+    float b_y_top = (bPos.y + b->transform.height / 2);
+    float b_y_bottom = (bPos.y - b->transform.height / 2);
+    float a_x_left = (aPos.x - a->transform.width / 2);
+    float a_x_right = (aPos.x + a->transform.width / 2);
+    float a_y_top = (aPos.y + a->transform.height / 2);
+    float a_y_bottom = (aPos.y - a->transform.height / 2);
+
+    float difference_l = a_x_right - b_x_left;
+    float difference_r = b_x_right - a_x_left;
+    float difference_b = a_y_top - b_y_bottom;
+    float difference_t = b_y_top - a_y_bottom;
+
+    if (difference_l < 0) difference_l = 1;
+    if (difference_r < 0) difference_l = 1;
+    if (difference_b < 0) difference_b = 1;
+    if (difference_t < 0) difference_t = 1;
+
+    bool hitFromLeft = (difference_l <= difference_b) && (difference_l <= difference_t) && (difference_l <= difference_r);
+    bool hitFromRight = (difference_r <= difference_b) && (difference_r <= difference_t) && (difference_r <= difference_l);
+    bool hitFromBottom = (difference_b <= difference_l) && (difference_b <= difference_t) && (difference_b <= difference_r);
+    bool hitFromTop = (difference_t <= difference_l) && (difference_t <= difference_b) && (difference_t <= difference_r);
+    return {
+        hitFromLeft, hitFromRight, hitFromTop, hitFromBottom
+    };
+}
+
 #endif // GAMEENGINE_COLLISION_H
