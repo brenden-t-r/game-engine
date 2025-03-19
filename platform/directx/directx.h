@@ -11,6 +11,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <iostream>
+#include <Xinput.h>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
@@ -40,6 +41,25 @@ static KeyCode GetKeyCode(USHORT keyCode) {
         case 'S':         return KeyCode::S;
         case 'D':         return KeyCode::D;
         default:          return KeyCode::Unknown;
+    }
+}
+static USHORT GetWindowsGamepadButton(GamepadButton button) {
+    switch (button) {
+        case GamepadButton::North: return XINPUT_GAMEPAD_Y;
+        case GamepadButton::South: return XINPUT_GAMEPAD_A;
+        case GamepadButton::East: return XINPUT_GAMEPAD_B;
+        case GamepadButton::West: return XINPUT_GAMEPAD_X;
+        case GamepadButton::RB: return XINPUT_GAMEPAD_RIGHT_SHOULDER;
+        case GamepadButton::LB: return XINPUT_GAMEPAD_LEFT_SHOULDER;
+        case GamepadButton::R3: return XINPUT_GAMEPAD_RIGHT_THUMB;
+        case GamepadButton::L3: return XINPUT_GAMEPAD_LEFT_THUMB;
+        case GamepadButton::Start: return XINPUT_GAMEPAD_START;
+        case GamepadButton::Select: return XINPUT_GAMEPAD_BACK;
+        case GamepadButton::DLeft: return XINPUT_GAMEPAD_DPAD_LEFT;
+        case GamepadButton::DRight: return XINPUT_GAMEPAD_DPAD_RIGHT;
+        case GamepadButton::DUp: return XINPUT_GAMEPAD_DPAD_UP;
+        case GamepadButton::DDown: return XINPUT_GAMEPAD_DPAD_DOWN;
+        default: return -1;
     }
 }
 void static(*keyUpCallback)(KeyCode, void*);
@@ -113,6 +133,14 @@ public:
         RegisterRawInput(hwnd);
     }
 
+    void SetGamepadVibration(int amountLeft, int amountRight) override {
+        XINPUT_VIBRATION vibration;
+        ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+        vibration.wLeftMotorSpeed = amountLeft; // use any value between 0-65535 here
+        vibration.wRightMotorSpeed = amountRight; // use any value between 0-65535 here
+        XInputSetState(0, &vibration);
+    }
+
     void Run(void (*func)(void*), void* ctx) override {
         // Enter the message loop
         MSG msg = { nullptr };
@@ -150,6 +178,12 @@ public:
             case MouseButton::Middle: btn = VK_MBUTTON; break;
         }
         return (GetAsyncKeyState(btn) & 0x8000) != 0;
+    }
+    bool IsGamepadButtonPressed(GamepadButton button) override {
+        XINPUT_STATE state;
+        if (XInputGetState(0, &state) != ERROR_SUCCESS) return false;
+        auto btn = GetWindowsGamepadButton(button);
+        return state.Gamepad.wButtons & btn;
     }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
         keyUpCallback = func;

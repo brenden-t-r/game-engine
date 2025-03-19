@@ -51,6 +51,7 @@ public:
     virtual bool IsKeyPressed(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
     virtual bool IsGamepadButtonPressed(GamepadButton button) = 0;
+    virtual void SetGamepadVibration(int amountLeft, int amountRight){};
     virtual void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) = 0;
     virtual void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) = 0;
     virtual vector3 GetMousePos() = 0;

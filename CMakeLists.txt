@@ -62,7 +62,7 @@ endif()
 if (WIN32)
     # DirectX
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            d3d11 dxgi D3DCompiler
+            d3d11 dxgi D3DCompiler XInput
     )
 
     # (Optional) OpenGL
