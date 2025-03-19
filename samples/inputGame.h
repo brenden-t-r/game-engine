@@ -23,7 +23,6 @@ public:
         this->EnableCallback(Callback::MOUSE_RELEASED);
     }
 
-    bool shouldShowCallbackTriangle = false;
     void KeyReleasedCallback(KeyCode key) override {
         if (key == KeyCode::W) {
             printf("W pressed impl\n");
@@ -70,6 +69,18 @@ public:
         if (platform->IsKeyPressed(KeyCode::D)) {
             triangleKeyDown->transform.pos.x += 0.01;
         }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
+            triangleKeyDown->transform.pos.y += 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
+            triangleKeyDown->transform.pos.y -= 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
+            triangleKeyDown->transform.pos.x -= 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
+            triangleKeyDown->transform.pos.x += 0.01;
+        }
         triangleKeyDown->Update();
 
         auto pos = platform->GetMousePos();
@@ -85,6 +96,7 @@ private:
     GameObject* triangleCursor;
     GameObject* triangleKeyUp;
     GameObject* triangleKeyDown;
+    bool shouldShowCallbackTriangle = false;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H

@@ -36,6 +36,25 @@ static int GetGLFWMouseButton(MouseButton button) {
         default: -1;
     }
 }
+static int GetGLFWGamepadButton(GamepadButton button) {
+    switch (button) {
+        case GamepadButton::North: return GLFW_GAMEPAD_BUTTON_Y;
+        case GamepadButton::South: return GLFW_GAMEPAD_BUTTON_A;
+        case GamepadButton::East: return GLFW_GAMEPAD_BUTTON_B;
+        case GamepadButton::West: return GLFW_GAMEPAD_BUTTON_X;
+        case GamepadButton::RB: return GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER;
+        case GamepadButton::LB: return GLFW_GAMEPAD_BUTTON_LEFT_BUMPER;
+        case GamepadButton::R3: return GLFW_GAMEPAD_BUTTON_RIGHT_THUMB;
+        case GamepadButton::L3: return GLFW_GAMEPAD_BUTTON_LEFT_THUMB;
+        case GamepadButton::Start: return GLFW_GAMEPAD_BUTTON_START;
+        case GamepadButton::Select: return GLFW_GAMEPAD_BUTTON_BACK;
+        case GamepadButton::DLeft: return GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
+        case GamepadButton::DRight: return GLFW_GAMEPAD_BUTTON_DPAD_RIGHT;
+        case GamepadButton::DUp: return GLFW_GAMEPAD_BUTTON_DPAD_UP;
+        case GamepadButton::DDown: return GLFW_GAMEPAD_BUTTON_DPAD_DOWN;
+        default: return -1;
+    }
+}
 static KeyCode GetKeyCode(int glfwKey) {
     switch (glfwKey) {
         case GLFW_KEY_UP:       return KeyCode::Up;
@@ -166,6 +185,13 @@ public:
         auto btn = GetGLFWMouseButton(button);
         int state = glfwGetMouseButton(window, btn);
         return state == GLFW_PRESS;
+    }
+    bool IsGamepadButtonPressed(GamepadButton button) override {
+        if (!glfwJoystickPresent(0)) return false;
+        GLFWgamepadstate state;
+        if (!glfwGetGamepadState(0, &state)) return false;
+        auto btn = GetGLFWGamepadButton(button);
+        return state.buttons[btn] == GLFW_PRESS;
     }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
         keyUpCallback = func;
