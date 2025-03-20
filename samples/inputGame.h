@@ -21,6 +21,7 @@ public:
 
         this->EnableCallback(Callback::KEY_RELEASED);
         this->EnableCallback(Callback::MOUSE_RELEASED);
+        this->EnableCallback(Callback::GAMEPAD_RELEASED);
     }
 
     void KeyReleasedCallback(KeyCode key) override {
@@ -48,6 +49,10 @@ public:
 
     }
     void MouseReleasedCallback(MouseButton button) override {
+        triangleKeyUp->transform.pos.y -= 0.02;
+        shouldShowCallbackTriangle = true;
+    }
+    void GamepadReleasedCallback(GamepadButton button) override {
         triangleKeyUp->transform.pos.y -= 0.02;
         shouldShowCallbackTriangle = true;
     }

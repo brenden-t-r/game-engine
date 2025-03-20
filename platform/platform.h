@@ -33,6 +33,7 @@ enum class GamepadButton {
 enum Callback {
     KEY_RELEASED,
     MOUSE_RELEASED,
+    GAMEPAD_RELEASED
 };
 
 class Platform {
@@ -54,6 +55,7 @@ public:
     virtual void SetGamepadVibration(int amountLeft, int amountRight){};
     virtual void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) = 0;
     virtual void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) = 0;
+    virtual void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) = 0;
     virtual vector3 GetMousePos() = 0;
 
     virtual void Shutdown() = 0;

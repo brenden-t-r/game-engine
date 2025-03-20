@@ -15,11 +15,13 @@ public:
     virtual void Update() = 0;
     virtual void KeyReleasedCallback(KeyCode key) {}
     virtual void MouseReleasedCallback(MouseButton key) {}
+    virtual void GamepadReleasedCallback(GamepadButton key) {}
 
     void EnableCallback(Callback callbackType) {
         switch (callbackType) {
             case Callback::KEY_RELEASED: platform->SetKeyReleasedCallback(KeyReleasedCallback, this);
             case Callback::MOUSE_RELEASED: platform->SetMouseReleasedCallback(MouseReleasedCallback, this);
+            case Callback::GAMEPAD_RELEASED: platform->SetGamepadReleasedCallback(GamepadReleasedCallback, this);
         }
     }
     static void KeyReleasedCallback(KeyCode key, void* context) {
@@ -29,6 +31,10 @@ public:
     static void MouseReleasedCallback(MouseButton button, void* context) {
         auto _this = (Game*)context;
         _this->MouseReleasedCallback(button);
+    }
+    static void GamepadReleasedCallback(GamepadButton button, void* context) {
+        auto _this = (Game*)context;
+        _this->GamepadReleasedCallback(button);
     }
 
 protected:

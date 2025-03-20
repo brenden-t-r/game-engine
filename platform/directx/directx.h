@@ -66,6 +66,8 @@ void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
+void static(*gamepadUpCallback)(GamepadButton, void*);
+static void* gamepadCallbackContext;
 
 static const WCHAR* convertToWCHAR(const char* str) {
     if (!str) return nullptr;
@@ -142,6 +144,9 @@ public:
     }
 
     void Run(void (*func)(void*), void* ctx) override {
+        GamepadState gamepadStateA = {};
+        GamepadState gamepadStateB = {};
+
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -153,6 +158,23 @@ public:
             }
             else
             {
+                XINPUT_STATE state;
+                if (XInputGetState(0, &state) == ERROR_SUCCESS) {
+                    gamepadStateB = gamepadStateA;
+                    gamepadStateA = {
+                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y),
+                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_A),
+                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_B),
+                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_X),
+                    };
+                    if (!gamepadStateA.NORTH && gamepadStateB.NORTH) {
+                        // Button released event
+                        if (gamepadUpCallback && gamepadCallbackContext) {
+                            gamepadUpCallback(GamepadButton::North, gamepadCallbackContext);
+                        }
+                    }
+                }
+
                 // Clear the back buffer
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
@@ -179,6 +201,9 @@ public:
         }
         return (GetAsyncKeyState(btn) & 0x8000) != 0;
     }
+    struct GamepadState {
+        bool NORTH, SOUTH, EAST, WEST/*, DPADDOWN, DPADUP, DPADLEFT, DPADRIGHT, START, BACK*/;
+    };
     bool IsGamepadButtonPressed(GamepadButton button) override {
         XINPUT_STATE state;
         if (XInputGetState(0, &state) != ERROR_SUCCESS) return false;
@@ -192,6 +217,10 @@ public:
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
+    }
+    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
+        gamepadUpCallback = func;
+        gamepadCallbackContext = context;
     }
     vector3 GetMousePos() override {
         RECT rect;
