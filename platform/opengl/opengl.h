@@ -55,6 +55,10 @@ static int GetGLFWGamepadButton(GamepadButton button) {
         default: return -1;
     }
 }
+GamepadButton GAMEPAD_BUTTONS[] = {GamepadButton::North, GamepadButton::South, GamepadButton::East, GamepadButton::West,
+                                   GamepadButton::RB, GamepadButton::LB, GamepadButton::R3, GamepadButton::L3,
+                                   GamepadButton::Start, GamepadButton::Select,
+                                   GamepadButton::DLeft, GamepadButton::DRight, GamepadButton::DUp, GamepadButton::DDown};
 static KeyCode GetKeyCode(int glfwKey) {
     switch (glfwKey) {
         case GLFW_KEY_UP:       return KeyCode::Up;
@@ -72,6 +76,8 @@ void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
+void static(*gamepadUpCallback)(GamepadButton, void*);
+static void* gamepadCallbackContext;
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mouseUpCallback) {
@@ -160,6 +166,20 @@ public:
         glfwSetKeyCallback(window, key_callback);
 
         do{
+            GLFWgamepadstate state;
+            if (glfwGetGamepadState(0, &state)) {
+                gamepadStateB = gamepadStateA;
+                gamepadStateA = state;
+                for (auto & i : GAMEPAD_BUTTONS) {
+                    auto glfwButton = GetGLFWGamepadButton(i);
+                    if (gamepadStateA.buttons[glfwButton] == GLFW_RELEASE && gamepadStateB.buttons[glfwButton] == GLFW_PRESS) {
+                        if (gamepadUpCallback && gamepadCallbackContext) {
+                            gamepadUpCallback(i, gamepadCallbackContext);
+                        }
+                    }
+                }
+            }
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glfwPollEvents();
@@ -200,6 +220,10 @@ public:
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
+    }
+    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
+        gamepadUpCallback = func;
+        gamepadCallbackContext = context;
     }
     vector3 GetMousePos() override {
         double cursorX, cursorY;
@@ -328,6 +352,8 @@ private:
     GLuint quadVAO = 0;
     GLuint quadVBO = 0;
     GLuint textureShader = 0;
+    GLFWgamepadstate gamepadStateA = {};
+    GLFWgamepadstate gamepadStateB = {};
 
     void setupVAOs() {
         // Triangle Data

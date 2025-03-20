@@ -62,8 +62,11 @@ public:
 
         if (shouldShowCallbackTriangle) {
             triangleKeyUp->Update();
+            counter++;
         }
-        shouldShowCallbackTriangle = false;
+        if (counter > 5) {
+            shouldShowCallbackTriangle = false; counter = 0;
+        }
 
         if (platform->IsMousePressed(MouseButton::Left)) {
             printf("\nLeft Pressed!");
@@ -130,6 +133,7 @@ private:
     bool shouldShowCallbackTriangle = false;
     int vibrationSpeedL = 0;
     int vibrationSpeedR = 0;
+    int counter = 0;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H
