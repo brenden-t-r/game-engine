@@ -62,6 +62,10 @@ static USHORT GetWindowsGamepadButton(GamepadButton button) {
         default: return -1;
     }
 }
+GamepadButton GAMEPAD_BUTTONS[] = {GamepadButton::North, GamepadButton::South, GamepadButton::East, GamepadButton::West,
+                                 GamepadButton::RB, GamepadButton::LB, GamepadButton::R3, GamepadButton::L3,
+                                 GamepadButton::Start, GamepadButton::Select,
+                                 GamepadButton::DLeft, GamepadButton::DRight, GamepadButton::DUp, GamepadButton::DDown};
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
@@ -144,9 +148,6 @@ public:
     }
 
     void Run(void (*func)(void*), void* ctx) override {
-        GamepadState gamepadStateA = {};
-        GamepadState gamepadStateB = {};
-
         // Enter the message loop
         MSG msg = { nullptr };
         while (msg.message != WM_QUIT)
@@ -161,16 +162,13 @@ public:
                 XINPUT_STATE state;
                 if (XInputGetState(0, &state) == ERROR_SUCCESS) {
                     gamepadStateB = gamepadStateA;
-                    gamepadStateA = {
-                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y),
-                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_A),
-                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_B),
-                            static_cast<bool>(state.Gamepad.wButtons & XINPUT_GAMEPAD_X),
-                    };
-                    if (!gamepadStateA.NORTH && gamepadStateB.NORTH) {
-                        // Button released event
-                        if (gamepadUpCallback && gamepadCallbackContext) {
-                            gamepadUpCallback(GamepadButton::North, gamepadCallbackContext);
+                    gamepadStateA = state;
+                    for (auto & i : GAMEPAD_BUTTONS) {
+                        auto xButton = GetWindowsGamepadButton(i);
+                        if (!(gamepadStateA.Gamepad.wButtons & xButton) && gamepadStateB.Gamepad.wButtons & xButton) {
+                            if (gamepadUpCallback && gamepadCallbackContext) {
+                                gamepadUpCallback(i, gamepadCallbackContext);
+                            }
                         }
                     }
                 }
@@ -495,6 +493,10 @@ private:
     ID3D11PixelShader* pixelShaderTexture = nullptr;
     ID3D11VertexShader* vertexShaderSimple = nullptr;
     ID3D11PixelShader* pixelShaderSimple = nullptr;
+
+    // State vars
+    XINPUT_STATE gamepadStateA = {};
+    XINPUT_STATE gamepadStateB = {};
     // endregion
 
     static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
