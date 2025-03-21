@@ -21,9 +21,9 @@ public:
 
         this->EnableCallback(Callback::KEY_RELEASED);
         this->EnableCallback(Callback::MOUSE_RELEASED);
+        this->EnableCallback(Callback::GAMEPAD_RELEASED);
     }
 
-    bool shouldShowCallbackTriangle = false;
     void KeyReleasedCallback(KeyCode key) override {
         if (key == KeyCode::W) {
             printf("W pressed impl\n");
@@ -32,8 +32,27 @@ public:
         }
         triangleKeyUp->transform.pos.x -= 0.01;
         shouldShowCallbackTriangle = true;
+
+//        if (key == KeyCode::Up) {
+//            vibrationSpeedL += 10000;
+//        }
+//        if (key == KeyCode::Down) {
+//            vibrationSpeedL -= 10000;
+//        }
+//        if (key == KeyCode::Left) {
+//            vibrationSpeedR += 10000;
+//        }
+//        if (key == KeyCode::Right) {
+//            vibrationSpeedR -= 10000;
+//        }
+//        platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
+
     }
     void MouseReleasedCallback(MouseButton button) override {
+        triangleKeyUp->transform.pos.y -= 0.02;
+        shouldShowCallbackTriangle = true;
+    }
+    void GamepadReleasedCallback(GamepadButton button) override {
         triangleKeyUp->transform.pos.y -= 0.02;
         shouldShowCallbackTriangle = true;
     }
@@ -43,8 +62,11 @@ public:
 
         if (shouldShowCallbackTriangle) {
             triangleKeyUp->Update();
+            counter++;
         }
-        shouldShowCallbackTriangle = false;
+        if (counter > 5) {
+            shouldShowCallbackTriangle = false; counter = 0;
+        }
 
         if (platform->IsMousePressed(MouseButton::Left)) {
             printf("\nLeft Pressed!");
@@ -70,7 +92,30 @@ public:
         if (platform->IsKeyPressed(KeyCode::D)) {
             triangleKeyDown->transform.pos.x += 0.01;
         }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
+            triangleKeyDown->transform.pos.y += 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
+            triangleKeyDown->transform.pos.y -= 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
+            triangleKeyDown->transform.pos.x -= 0.01;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
+            triangleKeyDown->transform.pos.x += 0.01;
+        }
         triangleKeyDown->Update();
+
+        if (platform->IsGamepadButtonPressed(GamepadButton::South)) {
+            if (vibrationSpeedL <= 64000) vibrationSpeedL += 1000;
+            printf("%d\n", vibrationSpeedL);
+            platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::East)) {
+            if (vibrationSpeedL > 0) vibrationSpeedL -= 1000;
+            if (vibrationSpeedL < 0) vibrationSpeedL = 0;
+            platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
+        }
 
         auto pos = platform->GetMousePos();
         triangleCursor->transform.pos.x = pos.x;
@@ -85,6 +130,10 @@ private:
     GameObject* triangleCursor;
     GameObject* triangleKeyUp;
     GameObject* triangleKeyDown;
+    bool shouldShowCallbackTriangle = false;
+    int vibrationSpeedL = 0;
+    int vibrationSpeedR = 0;
+    int counter = 0;
 };
 
 #endif //GAMEENGINE_INPUTGAME_H

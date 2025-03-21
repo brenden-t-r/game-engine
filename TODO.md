@@ -4,8 +4,6 @@
 
 ## Engine
 
-- Input
-  - Gamepad
 - Primitives
   - Line
   - Rectangle

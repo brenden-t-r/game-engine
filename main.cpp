@@ -49,9 +49,9 @@ int RealMain(Platform* platform) {
 //    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
 //    Game* game = new SpriteGame(platform);
-    Game* game = new PongGame(platform);
+//    Game* game = new PongGame(platform);
 //    Game* game = new AudioGame(platform);
-//    Game* game = new InputGame(platform);
+    Game* game = new InputGame(platform);
 //    Game* game = new BLANK_GAME::BlankSceneGame(platform);
 //    Game* game = new FontGame(platform);
 //    Game* game = new CollisionGame(platform);

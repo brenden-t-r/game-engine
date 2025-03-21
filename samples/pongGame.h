@@ -51,13 +51,42 @@ public:
         ball->transform.pos.x = ballPos.x;
         ball->transform.pos.y = ballPos.y;
 
+        dbg_triangle = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
+        dbg_triangle2 = platform->CreateTriangle(0, 0, 0.01f, 0.01f);
+
+        printf("%f\n",PaddleWidth);
+        printf("%f\b", player1Paddle->transform.width);
+
         srand(101); // NOLINT(*-msc51-cpp); fixed seed for consistency in sample
+    }
+
+    bool freeze = false;
+
+    void reflectX() {
+        float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
+        ballDirVec.x *= -1 * stutter;
+        if (ballDirVec.x > 1) ballDirVec.x = 1;
+        if (ballDirVec.x < -1) ballDirVec.x = -1;
+        if (ballDirVec.y >= 0) {
+            ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
+        } else {
+            ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+        }
     }
 
     void Update() override {
         player1Paddle->Update();
         player2Paddle->Update();
         ball->Update();
+
+        dbg_triangle->Update();
+        dbg_triangle2->Update();
+        if (platform->IsKeyPressed(KeyCode::D)) {
+            nextScene = pong_scenes::PONG_TITLE;
+        }
+        if (freeze) {
+            return;
+        }
 
         // Ball movement
         {
@@ -102,17 +131,32 @@ public:
                     isQuick = false;
                 }
 
-                float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                ballDirVec.x *= -1 * stutter;
-                if (ballDirVec.x > 1) ballDirVec.x = 1;
-                if (ballDirVec.x < -1) ballDirVec.x = -1;
-                if (ballDirVec.y >= 0) {
-                    ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                } else {
-                    ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+                auto hitEdge = aabb_get_hit_edge(ball, player1Paddle);
+
+                if (hitEdge.right) {
+                    dbg_triangle->transform.pos = {ballPos.x - BallWidth/2, ballPos.y,0};
+                    ballPos.x = -1 + PaddleWidth + BallWidth/2;
+                    ball->transform.pos = ballPos;
+                    dbg_triangle2->transform.pos = {ballPos.x - BallWidth/2, ballPos.y,0};
+                    reflectX();
                 }
-                if (ballPos.x <= (-1 + PaddleWidth)) {
-                    ballPos.x = -1 + PaddleWidth + BallWidth;
+                else if(hitEdge.bottom || hitEdge.top) {
+                    vector3 paddlePos = player1Paddle->transform.pos;
+                    if (hitEdge.top) {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                        ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                    } else {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                        ballPos.y = paddlePos.y - PaddleHeight / 2 - BallHeight / 2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                    }
+
+                    ball->transform.pos = ballPos;
+                    ballDirVec.y *= -1;
+                }
+                else {
+                    assert(false);
                 }
             }
             if (AABB_collision(ball, player2Paddle)) {
@@ -124,17 +168,32 @@ public:
                     isQuick = false;
                 }
 
-                float stutter = getRandomFloat(1 - stutterAmt, 1 + stutterAmt);
-                ballDirVec.x *= -1 * stutter;
-                if (ballDirVec.x > 1) ballDirVec.x = 1;
-                if (ballDirVec.x < -1) ballDirVec.x = -1;
-                if (ballDirVec.y >= 0) {
-                    ballDirVec.y = sqrtf(1 - powf(ballDirVec.x, 2));
-                } else {
-                    ballDirVec.y = -sqrtf(1 - powf(ballDirVec.x, 2));
+                auto hitEdge = aabb_get_hit_edge(ball, player2Paddle);
+
+                if (hitEdge.left) {
+                    dbg_triangle->transform.pos = {ballPos.x + BallWidth/2, ballPos.y,0};
+                    ballPos.x = 1 - PaddleWidth - BallWidth/2;
+                    ball->transform.pos = ballPos;
+                    dbg_triangle2->transform.pos = {ballPos.x + BallWidth/2, ballPos.y,0};
+                    reflectX();
                 }
-                if (ballPos.x > (1 - PaddleWidth - BallWidth)) {
-                    ballPos.x = 1 - PaddleWidth - BallWidth;
+                else if(hitEdge.bottom || hitEdge.top) {
+                    vector3 paddlePos = player2Paddle->transform.pos;
+                    if (hitEdge.top) {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                        ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
+                    } else {
+                        dbg_triangle->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                        ballPos.y = paddlePos.y - PaddleHeight / 2 - BallHeight / 2;
+                        dbg_triangle2->transform.pos = {paddlePos.x, ballPos.y + BallHeight/2, 0};
+                    }
+
+                    ball->transform.pos = ballPos;
+                    ballDirVec.y *= -1;
+                }
+                else {
+                    assert(false);
                 }
             }
         }
@@ -151,12 +210,14 @@ public:
             if (ballPos.x > 1.0) {
                 printf("Player 1 wins");
                 player_who_won = 1;
-                nextScene = PONG_TITLE;
+                freeze = true;
+//                nextScene = PONG_TITLE;
             }
             if (ballPos.x < -1.0) {
                 printf("Player 2 wins");
                 player_who_won = 2;
-                nextScene = PONG_TITLE;
+                freeze = true;
+//                nextScene = PONG_TITLE;
             }
         }
 
@@ -175,6 +236,9 @@ private:
     Sprite* player1Paddle{};
     Sprite* player2Paddle{};
     Sprite* ball{};
+
+    GameObject* dbg_triangle;
+    GameObject* dbg_triangle2;
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;

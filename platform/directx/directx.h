@@ -11,6 +11,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <iostream>
+#include <Xinput.h>
 
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
@@ -42,10 +43,35 @@ static KeyCode GetKeyCode(USHORT keyCode) {
         default:          return KeyCode::Unknown;
     }
 }
+static USHORT GetWindowsGamepadButton(GamepadButton button) {
+    switch (button) {
+        case GamepadButton::North: return XINPUT_GAMEPAD_Y;
+        case GamepadButton::South: return XINPUT_GAMEPAD_A;
+        case GamepadButton::East: return XINPUT_GAMEPAD_B;
+        case GamepadButton::West: return XINPUT_GAMEPAD_X;
+        case GamepadButton::RB: return XINPUT_GAMEPAD_RIGHT_SHOULDER;
+        case GamepadButton::LB: return XINPUT_GAMEPAD_LEFT_SHOULDER;
+        case GamepadButton::R3: return XINPUT_GAMEPAD_RIGHT_THUMB;
+        case GamepadButton::L3: return XINPUT_GAMEPAD_LEFT_THUMB;
+        case GamepadButton::Start: return XINPUT_GAMEPAD_START;
+        case GamepadButton::Select: return XINPUT_GAMEPAD_BACK;
+        case GamepadButton::DLeft: return XINPUT_GAMEPAD_DPAD_LEFT;
+        case GamepadButton::DRight: return XINPUT_GAMEPAD_DPAD_RIGHT;
+        case GamepadButton::DUp: return XINPUT_GAMEPAD_DPAD_UP;
+        case GamepadButton::DDown: return XINPUT_GAMEPAD_DPAD_DOWN;
+        default: return -1;
+    }
+}
+GamepadButton GAMEPAD_BUTTONS[] = {GamepadButton::North, GamepadButton::South, GamepadButton::East, GamepadButton::West,
+                                 GamepadButton::RB, GamepadButton::LB, GamepadButton::R3, GamepadButton::L3,
+                                 GamepadButton::Start, GamepadButton::Select,
+                                 GamepadButton::DLeft, GamepadButton::DRight, GamepadButton::DUp, GamepadButton::DDown};
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
+void static(*gamepadUpCallback)(GamepadButton, void*);
+static void* gamepadCallbackContext;
 
 static const WCHAR* convertToWCHAR(const char* str) {
     if (!str) return nullptr;
@@ -113,6 +139,14 @@ public:
         RegisterRawInput(hwnd);
     }
 
+    void SetGamepadVibration(int amountLeft, int amountRight) override {
+        XINPUT_VIBRATION vibration;
+        ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+        vibration.wLeftMotorSpeed = amountLeft; // use any value between 0-65535 here
+        vibration.wRightMotorSpeed = amountRight; // use any value between 0-65535 here
+        XInputSetState(0, &vibration);
+    }
+
     void Run(void (*func)(void*), void* ctx) override {
         // Enter the message loop
         MSG msg = { nullptr };
@@ -125,6 +159,20 @@ public:
             }
             else
             {
+                XINPUT_STATE state;
+                if (XInputGetState(0, &state) == ERROR_SUCCESS) {
+                    gamepadStateB = gamepadStateA;
+                    gamepadStateA = state;
+                    for (auto & i : GAMEPAD_BUTTONS) {
+                        auto xButton = GetWindowsGamepadButton(i);
+                        if (!(gamepadStateA.Gamepad.wButtons & xButton) && gamepadStateB.Gamepad.wButtons & xButton) {
+                            if (gamepadUpCallback && gamepadCallbackContext) {
+                                gamepadUpCallback(i, gamepadCallbackContext);
+                            }
+                        }
+                    }
+                }
+
                 // Clear the back buffer
                 float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
@@ -151,6 +199,15 @@ public:
         }
         return (GetAsyncKeyState(btn) & 0x8000) != 0;
     }
+    struct GamepadState {
+        bool NORTH, SOUTH, EAST, WEST/*, DPADDOWN, DPADUP, DPADLEFT, DPADRIGHT, START, BACK*/;
+    };
+    bool IsGamepadButtonPressed(GamepadButton button) override {
+        XINPUT_STATE state;
+        if (XInputGetState(0, &state) != ERROR_SUCCESS) return false;
+        auto btn = GetWindowsGamepadButton(button);
+        return state.Gamepad.wButtons & btn;
+    }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
         keyUpCallback = func;
         keyCallbackContext = context;
@@ -158,6 +215,10 @@ public:
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
+    }
+    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
+        gamepadUpCallback = func;
+        gamepadCallbackContext = context;
     }
     vector3 GetMousePos() override {
         RECT rect;
@@ -432,6 +493,10 @@ private:
     ID3D11PixelShader* pixelShaderTexture = nullptr;
     ID3D11VertexShader* vertexShaderSimple = nullptr;
     ID3D11PixelShader* pixelShaderSimple = nullptr;
+
+    // State vars
+    XINPUT_STATE gamepadStateA = {};
+    XINPUT_STATE gamepadStateB = {};
     // endregion
 
     static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
