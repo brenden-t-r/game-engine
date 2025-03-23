@@ -47,12 +47,12 @@ public:
 
     void Update() override {
         GameObject::Update();
-        vertex1.x = transform.pos.x + transform.width/2;
-        vertex1.y = transform.pos.y - transform.height/2;
-        vertex2.x = transform.pos.x - transform.width/2;
-        vertex2.y = transform.pos.y - transform.height/2;
-        vertex3.x = transform.pos.x;
-        vertex3.y = transform.pos.y + transform.height/2;
+//        vertex1.x = transform.pos.x + transform.width/2;
+//        vertex1.y = transform.pos.y - transform.height/2;
+//        vertex2.x = transform.pos.x - transform.width/2;
+//        vertex2.y = transform.pos.y - transform.height/2;
+//        vertex3.x = transform.pos.x;
+//        vertex3.y = transform.pos.y + transform.height/2;
     }
 };
 
@@ -71,14 +71,14 @@ public:
 
     void Update() override {
         GameObject::Update();
-        vertex1.x = transform.pos.x - transform.width/2;
+/*        vertex1.x = transform.pos.x - transform.width/2;
         vertex1.y = transform.pos.y + transform.height/2;
         vertex2.x = transform.pos.x + transform.width/2;
         vertex2.y = transform.pos.y + transform.height/2;
         vertex3.x = transform.pos.x + transform.width/2;
         vertex3.y = transform.pos.y - transform.height/2;
         vertex4.x = transform.pos.x - transform.width/2;
-        vertex4.y = transform.pos.y - transform.height/2;
+        vertex4.y = transform.pos.y - transform.height/2;*/
     }
 };
 
