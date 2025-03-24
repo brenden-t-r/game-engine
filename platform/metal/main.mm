@@ -1,368 +1,214 @@
-#if defined(PLATFORM_APPLE)
-#define GLFW_INCLUDE_NONE
-#import <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_COCOA
-#import <GLFW/glfw3native.h>
-
-#include <Metal/Metal.hpp>
-#include <Metal/Metal.h>
-#include <QuartzCore/CAMetalLayer.hpp>
-#include <QuartzCore/CAMetalLayer.h>
-#include <QuartzCore/QuartzCore.hpp>
-#include <simd/simd.h>
-#include <cstdio>
-#include <vector>
+#import <Cocoa/Cocoa.h>
+#import <QuartzCore/CAMetalLayer.h>
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 
 #include "../platform.h"
-#include "../../constants.h"
+#include "../../engine/vector.h"
 
-#include "stb_image.h"
+#include <cstdio>
 
-struct VertexData {
-    simd::float4 position;
-    simd::float2 textureCoordinate;
+//region Shader Source
+static const char *vertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+struct VertexOut {
+    float4 position [[position]];
 };
 
-class Texture {
-public:
-    Texture(const char* filepath, MTL::Device* metalDevice) {
-        device = metalDevice;
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                             constant float4 *vertices [[buffer(0)]]) {
+    VertexOut out;
+    out.position = vertices[vertexID];
+    return out;
+}
+)";
+static const char *fragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
 
-        stbi_set_flip_vertically_on_load(true);
-        unsigned char* image = stbi_load(filepath, &width, &height, &channels, STBI_rgb_alpha);
-        assert(image != NULL);
+fragment float4 fragment_main() {
+    return float4(1.0, 0, 0.0, 1.0); // Red color
+}
+)";
+//endregion
 
-        MTL::TextureDescriptor* textureDescriptor = MTL::TextureDescriptor::alloc()->init();
-        textureDescriptor->setPixelFormat(MTL::PixelFormatRGBA8Unorm);
-        textureDescriptor->setWidth(width);
-        textureDescriptor->setHeight(height);
+//region: MetalView
+@interface MetalView : MTKView <MTKViewDelegate>
+@property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
+@property (nonatomic, strong) id<MTLRenderPipelineState> pipelineState;
+@property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
+@property (nonatomic, assign) void *funcContext;
+@property (nonatomic, assign) void (*func)(void *);
+@end
+@implementation MetalView
+- (instancetype)initWithFrame:(NSRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.device = MTLCreateSystemDefaultDevice();
+        self.delegate = self;
+        [self setupPipeline];
+    }
+    return self;
+}
 
-        texture = device->newTexture(textureDescriptor);
+- (void)setupPipeline {
+    self.commandQueue = [self.device newCommandQueue];
 
-        MTL::Region region = MTL::Region(0, 0, 0, width, height, 1);
-        NS::UInteger bytesPerRow = 4 * width;
-
-        texture->replaceRegion(region, 0, image, bytesPerRow);
-
-        textureDescriptor->release();
-        stbi_image_free(image);
+    // Compile shaders
+    NSError *error = nil;
+    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
+    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexShaderSrc, fragmentShaderSrc];
+    id<MTLLibrary> library = [self.device newLibraryWithSource:shaderSource options:options error:&error];
+    if (!library) {
+        NSLog(@"Shader compilation error: %@", error.localizedDescription);
+        return;
+    } else {
+        NSLog(@"Compiled library");
+        NSLog(@"%@", library.functionNames[0]);
+        NSLog(@"%@", library.functionNames[1]);
     }
 
-    ~Texture() {
-        texture->release();
-    }
+    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
+    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
 
-    MTL::Texture* texture;
-    int width, height, channels;
+    // Create pipeline state
+    MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineDesc.vertexFunction = vertexFunction;
+    pipelineDesc.fragmentFunction = fragmentFunction;
+    pipelineDesc.colorAttachments[0].pixelFormat = self.colorPixelFormat;
 
-private:
-    MTL::Device* device;
-};
-
-void encodeRenderCommandTriangle(MTL::RenderCommandEncoder* renderCommandEncoder, MTL::RenderPipelineState* metalRenderPSO, MTL::Buffer* vertexBuffer) {
-    renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
-    renderCommandEncoder->setVertexBuffer(vertexBuffer, 0, 0);
-    MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
-    NS::UInteger vertexStart = 0;
-    NS::UInteger vertexCount = 3;
-    renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
-}
-
-void encodeRenderCommandQuad(MTL::RenderCommandEncoder* renderCommandEncoder, MTL::RenderPipelineState* metalRenderPSO, MTL::Buffer* vertexBuffer, Texture* texture) {
-    renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
-    renderCommandEncoder->setVertexBuffer(vertexBuffer, 0, 0);
-    MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
-    NS::UInteger vertexStart = 0;
-    NS::UInteger vertexCount = 6;
-    renderCommandEncoder->setFragmentTexture(texture->texture, 0);
-    renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
-}
-
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        printf("key %d pressed\n", key);
-    } else if (action == GLFW_RELEASE) {
-        printf("Key %d released\n", key);
+    self.pipelineState = [self.device newRenderPipelineStateWithDescriptor:pipelineDesc error:&error];
+    if (!self.pipelineState) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
     }
 }
 
-void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        printf("mouse button %d pressed\n", button);
-    }
+- (void)drawInMTKView:(MTKView *)view {
+    id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
+
+    MTLRenderPassDescriptor *passDescriptor = view.currentRenderPassDescriptor;
+    if (!passDescriptor) return;
+
+    passDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0); // Black background
+    passDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
+
+    static const float vertices[] = {
+            -0.5, -0.5, 0.0f, 1.0f,  // Top vertex
+            0.5f, -0.5f, 0.0f, 1.0f,  // Bottom left vertex
+            0.0f, 0.5f, 0.0f, 1.0f   // Bottom right vertex
+    };
+    self.vertexBuffer = [self.device newBufferWithBytes:&vertices length:sizeof(vertices) options:MTLResourceStorageModeShared];
+
+    id<MTLRenderCommandEncoder> encoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
+    [encoder setRenderPipelineState:self.pipelineState];
+    [encoder setVertexBuffer:self.vertexBuffer offset:0 atIndex:0];
+    [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+    [encoder endEncoding];
+
+    self.func(self.funcContext);
+
+    [commandBuffer presentDrawable:view.currentDrawable];
+    [commandBuffer commit];
 }
 
-void mouseCursorCallback(GLFWwindow* window, double xpos, double ypos) {
-    printf("Cursor position: (%.2f, %.2f)\n", xpos, ypos);
+- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size __attribute__((swift_attr("@UIActor"))) {
+    NSLog(@"resized");
 }
+@end
+//endregion
 
+//region: AppDelegate
+@interface MetalAppDelegate : NSObject <NSApplicationDelegate>
+@property (strong, nonatomic) NSWindow *window;
+@property (nonatomic, assign) void *funcContext;
+@property (nonatomic, assign) void (*func)(void *);
+//@property (nonatomic, strong) MetalView *metalView;
+@end
+@implementation MetalAppDelegate
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    NSRect frame = NSMakeRect(100, 100, 800, 600);
+    self.window = [[NSWindow alloc] initWithContentRect:frame
+                                              styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                                                         NSWindowStyleMaskResizable)
+                                                backing:NSBackingStoreBuffered
+                                                  defer:NO
+    ];
+    [self.window setTitle:@"Metal Triangle"];
 
+    MetalView *metalView = [[MetalView alloc] initWithFrame:frame];
+    self.window.contentView = metalView;
+    metalView = metalView;
+    metalView.func = self.func;
+    metalView.funcContext = self.funcContext;
 
-class PlatformMetal : public GamePlatform {
+    [self.window makeKeyAndOrderFront:nil];
+}
+@end
+
+class PlatformMetal : public Platform {
 public:
     void Init() override {
-
-        // Init Metal device
-        metalDevice = MTL::CreateSystemDefaultDevice();
-
-        // Init GLFW and create window
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindow = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Metal Engine", NULL, NULL);
-        if (!glfwWindow) {
-            printf("uhoh\n");
-            glfwTerminate();
-            exit(EXIT_FAILURE);
-        }
-        printf("GLFW initialized\n");
-
-        int width, height;
-        glfwGetFramebufferSize(glfwWindow, &width, &height);
-
-        metalWindow = glfwGetCocoaWindow(glfwWindow);
-        metalLayer = [CAMetalLayer layer];
-        metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
-        metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-        metalLayer.drawableSize = CGSizeMake(width, height);
-        metalWindow.contentView.layer = metalLayer;
-        metalWindow.contentView.wantsLayer = YES;
-        printf("Metal initialized\n");
-
-        glfwSetKeyCallback(glfwWindow, keyCallback);
-        glfwSetMouseButtonCallback(glfwWindow, mouseButtonCallback);
-        glfwSetCursorPosCallback(glfwWindow, mouseCursorCallback);
-
-        // Create command queue
-        metalCommandQueue = metalDevice->newCommandQueue();
+        printf("Hi from Init\n");
     }
-
+    void Run(void (*func)(void*), void* context) override {
+        printf("Hi from Run\n");
+        metalAppDelegate.func = func;
+        metalAppDelegate.funcContext = context;
+//        metalView = metalAppDelegate.metalView;
+        [app run];
+    }
     void LoadShaders() override {
-        // Triangle
-        NS::String* nsPath = NS::String::string("assets/shaders/triangle.metallib", NS::UTF8StringEncoding);
-        if (!nsPath) {
-            printf("error with path\n");
-            return;
-        }
-        trianglePipelineDescriptor = LoadShader(nsPath);
 
-        // Sprite
-        NS::String* nsPathSq = NS::String::string("assets/shaders/square.metallib", NS::UTF8StringEncoding);
-        if (!nsPathSq) {
-            printf("error with path\n");
-            return;
-        }
-        texturePipelineDescriptor = LoadShader(nsPathSq);
-
-        NS::Error* error = nullptr;
-        error = nullptr;
-        triangleRenderPSO = metalDevice->newRenderPipelineState(trianglePipelineDescriptor, &error);
-        error = nullptr;
-        textureRenderPSO = metalDevice->newRenderPipelineState(texturePipelineDescriptor, &error);
-
-        trianglePipelineDescriptor->release();
-        texturePipelineDescriptor->release();
     }
-
-    void Run(const std::function<void()>& func) override{
-        Texture* bgTexture = new Texture("assets/sprites/background.png", metalDevice);
-        auto sprite = new SpriteMetal(metalDevice, textureRenderPSO, bgTexture);
-
-        // Game loop
-        while (!glfwWindowShouldClose(glfwWindow)) {
-            @autoreleasepool {
-                metalDrawable = (__bridge CA::MetalDrawable*)[metalLayer nextDrawable];
-
-                metalCommandBuffer = metalCommandQueue->commandBuffer();
-                renderPassDescriptor = MTL::RenderPassDescriptor::alloc()->init();
-
-                MTL::RenderPassColorAttachmentDescriptor* cd = renderPassDescriptor->colorAttachments()->object(0);
-                cd->setTexture(metalDrawable->texture());
-                cd->setLoadAction(MTL::LoadActionClear);
-                cd->setClearColor(MTL::ClearColor(41.0f/255.0f, 42.0f/255.0f, 48.0f/255.0f, 1.0));
-                cd->setStoreAction(MTL::StoreActionStore);
-
-                MTL::RenderCommandEncoder* renderCommandEncoder = metalCommandBuffer->renderCommandEncoder(renderPassDescriptor);
-
-                for (TriangleMetal* gameObject : gameObjects) {
-                    gameObject->SetRenderCommandEncoder(renderCommandEncoder);
-                }
-
-                // Quad
-                sprite->SetRenderCommandEncoder(renderCommandEncoder);
-                sprite->Update();
-
-                // Triangle
-                func();
-
-                renderCommandEncoder->endEncoding();
-                metalCommandBuffer->presentDrawable(metalDrawable);
-                metalCommandBuffer->commit();
-                metalCommandBuffer->waitUntilCompleted();
-
-                renderPassDescriptor->release();
-            }
-            glfwPollEvents();
-        }
-    }
-
-    class SpriteMetal : public GameObject {
-    public:
-         ~SpriteMetal() {
-            vertexBuffer->release();
-        }
-        SpriteMetal(
-            MTL::Device* metalDevice,
-            MTL::RenderPipelineState* metalRenderPSO,
-            Texture* texture
-        ){
-            this->metalDevice = metalDevice;
-            this->metalRenderPSO = metalRenderPSO;
-            this->texture = texture;
-        }
-
-        void Update() override {
-            VertexData vertices[] {
-                {{-1, -1,  0, 1}, {0.0f, 0.0f}}, // Top left
-                {{-1,  1,  0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{ 1,  1,  0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{-1, -1,  0, 1}, {0.0f, 0.0f}}, // Top left
-                {{ 1,  1,  0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{ 1, -1,  0, 1}, {1.0f, 0.0f}}  // Top right
-            };
-            vertexBuffer = metalDevice->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
-            renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
-            renderCommandEncoder->setVertexBuffer(vertexBuffer, 0, 0);
-            renderCommandEncoder->setFragmentTexture(texture->texture, 0);
-            renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
-        }
-
-        void SetRenderCommandEncoder(MTL::RenderCommandEncoder* commandEncoder) {
-            this->renderCommandEncoder = commandEncoder;
-        }
-
-    private:
-        MTL::Device* metalDevice;
-        MTL::Buffer* vertexBuffer;
-        MTL::RenderPipelineState* metalRenderPSO;
-        MTL::RenderCommandEncoder* renderCommandEncoder;
-        Texture* texture;
-
-        MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
-        NS::UInteger vertexStart = 0;
-        NS::UInteger vertexCount = 6;
-    };
-
-    class TriangleMetal : public Triangle {
-    public:
-        ~TriangleMetal() {
-            vertexBuffer->release();
-        }
-        TriangleMetal(
-            MTL::Device* metalDevice,
-            MTL::RenderPipelineState* metalRenderPSO
-        ){
-            this->metalDevice = metalDevice;
-            this->metalRenderPSO = metalRenderPSO;
-            simd::float3 vertices[3] = {
-                {-0.5f, -0.5f, 0.0f},
-                { 0.5f, -0.5f, 0.0f},
-                { 0.0f,  0.5f, 0.0f}
-            };
-            vertexBuffer = metalDevice->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
-        }
-
-        void Update() override {
-            simd::float3 vertices[3] = {
-                {transform.pos.x - 0.5f, -0.5f, 0.0f},
-                {transform.pos.x + 0.5f, -0.5f, 0.0f},
-                {transform.pos.x,  0.5f, 0.0f}
-            };
-            vertexBuffer = metalDevice->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
-            renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
-            renderCommandEncoder->setVertexBuffer(vertexBuffer, 0, 0);
-            renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
-        }
-
-        void SetRenderCommandEncoder(MTL::RenderCommandEncoder* commandEncoder) {
-            this->renderCommandEncoder = commandEncoder;
-        }
-
-    private:
-        MTL::Device* metalDevice;
-        MTL::Buffer* vertexBuffer;
-        MTL::RenderPipelineState* metalRenderPSO;
-        MTL::RenderCommandEncoder* renderCommandEncoder;
-
-        MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
-        NS::UInteger vertexStart = 0;
-        NS::UInteger vertexCount = 3;
-    };
-
+    GameObject* CreateGameObject() override { return new GameObject(); };
     GameObject* CreateTriangle() override {
-        auto gameObject = new TriangleMetal(metalDevice, triangleRenderPSO);
-        gameObjects.push_back(gameObject);
-        return gameObject;
+            return nullptr;
     }
-
-    void Shutdown() override {
-        renderPassDescriptor->release();
+    Sprite* CreateSprite(const char* path) override {
+        return nullptr;
     }
+    bool IsKeyPressed(KeyCode key) override {
+        return false;
+    }
+    bool IsMousePressed(MouseButton button) override {
+        return false;
+    }
+    bool IsGamepadButtonPressed(GamepadButton button) override {
+        return false;
+    }
+    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
+        return;
+    }
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+        return;
+    }
+    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
+        return;
+    }
+    virtual vec3 GetMousePos() override { return {}; }
+    void Shutdown() override {}
 
-private:
-        MTL::Device* metalDevice;
-        GLFWwindow* glfwWindow;
-        NSWindow* metalWindow;
-        CAMetalLayer* metalLayer;
-        CA::MetalDrawable* metalDrawable;
-        MTL::Library* metalLibrary = nullptr;
-        MTL::CommandQueue* metalCommandQueue;
-        MTL::CommandBuffer* metalCommandBuffer;
-        MTL::RenderPipelineState* metalRenderPSO;
-        MTL::Buffer* triangleVertexBuffer;
-        MTL::Buffer* squareVertexBuffer;
-        MTL::RenderPassDescriptor* renderPassDescriptor;
-
-        MTL::RenderPipelineDescriptor* trianglePipelineDescriptor;
-        MTL::RenderPipelineDescriptor* texturePipelineDescriptor;
-        MTL::RenderPipelineState* triangleRenderPSO;
-        MTL::RenderPipelineState* textureRenderPSO;
-
-        std::vector<TriangleMetal*> gameObjects = {};
-
-        MTL::RenderPipelineDescriptor* LoadShader(NS::String* path) {
-            NS::Error* error = nullptr;
-            metalLibrary = metalDevice->newLibrary(path, &error);
-            if (error) {
-                printf("Error: %s\n", error->localizedDescription()->utf8String());
-            } else if (!metalLibrary) {
-                printf("failed to load shader library\n");
-            } else {
-                printf("shader library loaded successfully\n");
-            }
-
-            // Create render pipeline
-            MTL::Function* vertexShader = metalLibrary->newFunction(NS::String::string("vertexShader", NS::ASCIIStringEncoding));
-            assert(vertexShader);
-            MTL::Function* fragmentShader = metalLibrary->newFunction(NS::String::string("fragmentShader", NS::ASCIIStringEncoding));
-            assert(fragmentShader);
-
-            MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-            renderPipelineDescriptor->setLabel(NS::String::string("Triangle Rendering Pipeline", NS::ASCIIStringEncoding));
-            renderPipelineDescriptor->setVertexFunction(vertexShader);
-            renderPipelineDescriptor->setFragmentFunction(fragmentShader);
-            assert(renderPipelineDescriptor);
-            MTL::PixelFormat pixelFormat = (MTL::PixelFormat)metalLayer.pixelFormat;
-            renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(pixelFormat);
-
-            return renderPipelineDescriptor;
-        }
+    NSApplication* app;
+    MetalAppDelegate* metalAppDelegate;
+    MetalView* metalView;
 };
+//endregion
 
-int RealMain(GamePlatform* platform);
-
-int main() {
-	printf("Hello world\n");
-    auto platform = new PlatformMetal();
-    return RealMain(platform);
+//region: Main
+int RealMain(Platform* platform);
+int main(int argc, const char * argv[]) {
+    printf("Hello world\n");
+    @autoreleasepool {
+        NSApplication *app = [NSApplication sharedApplication];
+        MetalAppDelegate *delegate = [[MetalAppDelegate alloc] init];
+        [app setDelegate:delegate];
+        auto platform = new PlatformMetal();
+        platform->app = app;
+        platform->metalAppDelegate = delegate;
+        RealMain(platform);
+    }
+    return 0;
 }
-#endif
+//endregion

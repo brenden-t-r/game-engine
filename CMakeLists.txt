@@ -37,7 +37,7 @@ elseif (APPLE)
     set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
     set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
     include_directories(${GLFW_INCLUDE_DIR})
-    list(APPEND SOURCES platform/metal/mtl_implementation.cpp platform/metal/main.mm platform/metal/stbi_image.cpp)
+    list(APPEND SOURCES platform/metal/main.mm)
 
 endif()
 
@@ -87,6 +87,7 @@ elseif (APPLE)
             "-framework Cocoa"
             "-framework IOKit"
             "-framework CoreVideo"
+            "-framework MetalKit"
     )
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)

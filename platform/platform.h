@@ -56,7 +56,7 @@ public:
     virtual void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) = 0;
     virtual void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) = 0;
     virtual void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) = 0;
-    virtual vector3 GetMousePos() = 0;
+    virtual vec3 GetMousePos() = 0;
 
     virtual void Shutdown() = 0;
 

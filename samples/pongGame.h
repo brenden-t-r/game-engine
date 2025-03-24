@@ -43,7 +43,7 @@ public:
         player2Paddle->transform.pos.x = 1 - (PaddleWidth/2);
         player2Paddle->transform.pos.y = 1 - (PaddleHeight/2);
 
-        ballPos = vector3{0, -0.5, 0};
+        ballPos = vec3{0, -0.5, 0};
         ballDirVec = get_unit_vector_from_angle_degrees(45);
         ball = platform->CreateSprite("assets/sprites/ball.png");
         ball->transform.width = BallWidth;
@@ -141,7 +141,7 @@ public:
                     reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
-                    vector3 paddlePos = player1Paddle->transform.pos;
+                    vec3 paddlePos = player1Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
@@ -178,7 +178,7 @@ public:
                     reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
-                    vector3 paddlePos = player2Paddle->transform.pos;
+                    vec3 paddlePos = player2Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
@@ -242,8 +242,8 @@ private:
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;
-    vector2 ballDirVec = vector2{};
-    vector3 ballPos{};
+    vec2 ballDirVec = vec2{};
+    vec3 ballPos{};
     bool isQuick;
 
     static constexpr float PaddlePixelWidth = 32.0 * 2;
