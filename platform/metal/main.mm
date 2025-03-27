@@ -4,7 +4,6 @@
 #import <MetalKit/MetalKit.h>
 
 #include "../platform.h"
-#include "../../engine/vector.h"
 
 #include <cstdio>
 
@@ -124,7 +123,6 @@ fragment float4 fragment_main() {
 @property (strong, nonatomic) NSWindow *window;
 @property (nonatomic, assign) void *funcContext;
 @property (nonatomic, assign) void (*func)(void *);
-//@property (nonatomic, strong) MetalView *metalView;
 @end
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
@@ -156,7 +154,6 @@ public:
         printf("Hi from Run\n");
         metalAppDelegate.func = func;
         metalAppDelegate.funcContext = context;
-//        metalView = metalAppDelegate.metalView;
         [app run];
     }
     void LoadShaders() override {
@@ -192,7 +189,6 @@ public:
 
     NSApplication* app;
     MetalAppDelegate* metalAppDelegate;
-    MetalView* metalView;
 };
 //endregion
 
@@ -211,4 +207,4 @@ int main(int argc, const char * argv[]) {
     }
     return 0;
 }
-//endregion
+//endregions
