@@ -3,7 +3,7 @@ project(GameEngine)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set sources
 set(SOURCES main.cpp)
@@ -32,13 +32,28 @@ elseif (UNIX AND NOT APPLE) # For Linux
     link_directories(${GLFW3_LIBRARY_DIRS})
     link_directories(/usr/lib/x86_64-linux-gnu)
     add_definitions(-DGLEW_STATIC)
-elseif (APPLE)
+elseif (APPLE AND NOT PLATFORM_IOS)
     # GLFW
     set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
     set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
     include_directories(${GLFW_INCLUDE_DIR})
-    list(APPEND SOURCES platform/metal/main.mm)
 
+    option(BACKEND_DIRECTX "Use DirectX backend" OFF)
+    option(BACKEND_OPENGL "Use OpenGL backend" OFF)
+    if (BACKEND_OPENGL)
+        set(GLEW_INCLUDE_DIR /opt/homebrew/Cellar/glew/2.2.0_1/include)
+        set(GLEW_LIBRARY /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib)
+        include_directories(${GLEW_INCLUDE_DIR})
+        list(APPEND SOURCES platform/opengl/opengl.h)
+    elseif (BACKEND_METAL)
+        list(APPEND SOURCES platform/metal/main.mm)
+    else()
+        message(FATAL_ERROR "No backend specified! Use -DBACKEND_METAL or -DBACKEND_OPENGL.")
+    endif()
+elseif (PLATFORM_IOS)
+    set(CMAKE_SYSTEM_NAME iOS)
+    set(CMAKE_OSX_SYSROOT iphonesimulator)
+    set(CMAKE_OSX_ARCHITECTURES arm64)
 endif()
 
 # Add executable
@@ -78,19 +93,42 @@ elseif (UNIX AND NOT APPLE) # For Linux
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
 elseif (APPLE)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)
-    target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY}
-            "-framework Metal"
-            "-framework Foundation"
-            "-framework QuartzCore"
-            "-framework OpenGL"
-            "-framework Cocoa"
-            "-framework IOKit"
-            "-framework CoreVideo"
-            "-framework MetalKit"
-    )
+    if (PLATFORM_IOS)
+#        target_include_directories(${PROJECT_NAME} PUBLIC
+#                ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp
+#                ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp-extensions
+#        )
+        target_link_libraries(${PROJECT_NAME}
+                "-framework Metal"
+                "-framework Foundation"
+                "-framework MetalKit"
+                "-framework UIKit"
+                "-framework CoreGraphics"
+        )
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/ios/Info.plist)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_IOS)
+    else()
+        target_link_libraries(${PROJECT_NAME}
+                "-framework Metal"
+                "-framework Foundation"
+                "-framework QuartzCore"
+                "-framework OpenGL"
+                "-framework Cocoa"
+                "-framework IOKit"
+                "-framework CoreVideo"
+                "-framework MetalKit"
+        )
+    endif()
+
+    if(BACKEND_METAL)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
+    else()
+        target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
+    endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
 endif()
 
 file(GLOB ASSETS_FOLDER

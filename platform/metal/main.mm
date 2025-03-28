@@ -1,3 +1,4 @@
+#if defined(PLATFORM_APPLE) and defined(BACKEND_METAL) and not defined(PLATFORM_IOS)
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
@@ -134,6 +135,9 @@ fragment float4 fragment_main() {
                                                   defer:NO
     ];
     [self.window setTitle:@"Metal Triangle"];
+    [self.window makeKeyAndOrderFront:nil];
+    [self.window setLevel:NSFloatingWindowLevel];
+    [NSApp activateIgnoringOtherApps:YES];
 
     MetalView *metalView = [[MetalView alloc] initWithFrame:frame];
     self.window.contentView = metalView;
@@ -208,3 +212,4 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 //endregions
+#endif

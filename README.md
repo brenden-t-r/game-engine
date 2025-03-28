@@ -21,6 +21,28 @@ cmake --build .
 
 ## MacOS
 
+Prerequisites
+```bash
+brew install cmake
+brew install glfw
+brew install glew
+```
+
+Run with one of the following CMake options to choose a backend
+```bash
+-DBACKEND_METAL=ON
+-DBACKEND_OPENGL=ON
+```
+
+Build and run
+```bash
+mkdir build
+cd build
+cmake .. -DBACKEND_METAL=ON
+make
+./GameEngine
+```
+
 Compile shaders:
 
 ```bash
