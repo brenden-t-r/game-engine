@@ -1,3 +1,4 @@
+#if 0
 #define MINIAUDIO_IMPLEMENTATION
 #include "../dependencies/miniaudio.h"
 
@@ -55,3 +56,4 @@ public:
 
     ma_sound sound{};
 };
+#endif

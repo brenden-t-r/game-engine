@@ -82,6 +82,7 @@ int RealMain(Platform* platform) {
 #elif defined(PLATFORM_APPLE) && defined(BACKEND_OPENGL)
 #include "platform/opengl/opengl.h"
 #elif defined(PLATFORM_APPLE) && defined(BACKEND_METAL)
+#elif defined(PLATFORM_IOS)
 #else
 // No backend selected
 int main() {

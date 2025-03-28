@@ -51,6 +51,7 @@ elseif (APPLE AND NOT PLATFORM_IOS)
         message(FATAL_ERROR "No backend specified! Use -DBACKEND_METAL or -DBACKEND_OPENGL.")
     endif()
 elseif (PLATFORM_IOS)
+    list(APPEND SOURCES platform/ios/main.mm)
     set(CMAKE_SYSTEM_NAME iOS)
     set(CMAKE_OSX_SYSROOT iphonesimulator)
     set(CMAKE_OSX_ARCHITECTURES arm64)
@@ -104,6 +105,9 @@ elseif (APPLE)
                 "-framework MetalKit"
                 "-framework UIKit"
                 "-framework CoreGraphics"
+                "-framework QuartzCore"
+                "-framework IOKit"
+                "-framework CoreVideo"
         )
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
