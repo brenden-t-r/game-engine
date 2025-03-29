@@ -8,6 +8,9 @@
 
 #include <cstdio>
 
+static void *runFuncContext;
+static void (*runFunc)(void *);
+
 //region Shader Source
 static const char *vertexShaderSrc = R"(
 #include <metal_stdlib>
@@ -38,8 +41,7 @@ fragment float4 fragment_main() {
 @interface MetalView : MTKView <MTKViewDelegate>
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
-@property (nonatomic, assign) void *funcContext;
-@property (nonatomic, assign) void (*func)(void *);
+
 @end
 @interface MetalAppDelegate : NSObject <NSApplicationDelegate>
 @property (strong, nonatomic) NSWindow *window;
@@ -101,9 +103,9 @@ public:
     void Init() override {
         printf("Hi from Init\n");
     }
-    void Run(void (*func)(void*), void* context) override {
-        metalAppDelegate.metalView.func = func;
-        metalAppDelegate.metalView.funcContext = context;
+    void Run(void (*_func)(void*), void* context) override {
+        runFunc = _func;
+        runFuncContext = context;
         Running = true;
         while (Running) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
@@ -216,7 +218,7 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
     }
 
-    self.func(self.funcContext);
+    runFunc(runFuncContext);
 
     [renderCommandEncoder endEncoding];
     [commandBuffer presentDrawable:view.currentDrawable];
