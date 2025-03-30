@@ -11,6 +11,7 @@
 
 static void *runFuncContext;
 static void (*runFunc)(void *);
+static bool Running = false;
 
 struct VertexData {
     simd::float4 position;
@@ -123,7 +124,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @end
-@interface MetalAppDelegate : NSObject <NSApplicationDelegate>
+@interface MetalAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @property (strong, nonatomic) NSWindow *window;
 @property (strong, nonatomic) MetalView *metalView;
 @property (strong, nonatomic) id<MTLDevice> device;
@@ -225,7 +226,6 @@ private:
 //endregion
 
 //region: PlatformMetal
-static bool Running = false;
 std::vector<TriangleMetal*> triangles = std::vector<TriangleMetal*>();
 std::vector<SpriteMetal*> sprites = std::vector<SpriteMetal*>();
 class PlatformMetal : public Platform {
@@ -298,6 +298,7 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     if (self) {
         self.device = MTLCreateSystemDefaultDevice();
         self.delegate = self;
+        self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
         [self setupPipeline];
     }
     return self;
@@ -354,6 +355,8 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 }
 
 - (void)drawInMTKView:(MTKView *)view {
+    if (!Running) return;
+
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
 
     MTLRenderPassDescriptor *passDescriptor = view.currentRenderPassDescriptor;
@@ -366,9 +369,9 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
 
-//    for (TriangleMetal* gameObject : triangles) {
-//        gameObject->SetRenderCommandEncoder(renderCommandEncoder);
-//    }
+    for (TriangleMetal* gameObject : triangles) {
+        gameObject->SetRenderCommandEncoder(renderCommandEncoder);
+    }
     for (SpriteMetal* gameObject : sprites) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
     }
@@ -384,6 +387,10 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size __attribute__((swift_attr("@UIActor"))) {
     NSLog(@"resized");
 }
+
+- (BOOL)acceptsFirstResponder {
+    return NO;
+}
 @end
 //endregion
 
@@ -391,16 +398,18 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     NSLog(@"applicationDidFinishLaunching");
-    NSRect frame = NSMakeRect(100, 100, 800, 600);
+    NSRect frame = NSMakeRect(100, 100, 1280, 720);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                                                         NSWindowStyleMaskResizable)
+                                                         NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO
     ];
     [self.window setTitle:@"Metal Triangle"];
+    self.window.delegate = self;
+    [self.window setLevel:NSNormalWindowLevel];
     [self.window makeKeyAndOrderFront:nil];
-    [self.window setLevel:NSFloatingWindowLevel];
+    [self.window orderFrontRegardless];
     [NSApp activateIgnoringOtherApps:YES];
 
     MetalView *metalView = [[MetalView alloc] initWithFrame:frame];
@@ -408,7 +417,14 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     self.metalView = metalView;
     self.device = metalView.device;
 
-    RealMainMetal(self, self.metalView);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        RealMainMetal(self, self.metalView);
+    });
+}
+- (void)windowWillClose:(NSNotification *)notification {
+    NSLog(@"Window is closing");
+    [NSApp terminate:self]; // Optional: Quit the app when the window closes
+    Running = false;
 }
 @end
 //endregion
