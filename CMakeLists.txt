@@ -95,10 +95,6 @@ elseif (UNIX AND NOT APPLE) # For Linux
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
 elseif (APPLE)
     if (PLATFORM_IOS)
-#        target_include_directories(${PROJECT_NAME} PUBLIC
-#                ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp
-#                ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp-extensions
-#        )
         target_link_libraries(${PROJECT_NAME}
                 "-framework Metal"
                 "-framework Foundation"
@@ -112,6 +108,17 @@ elseif (APPLE)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/ios/Info.plist)
+
+        file(GLOB_RECURSE ASSET_FILES "${CMAKE_SOURCE_DIR}/assets/*")
+        foreach(ASSET ${ASSET_FILES})
+            file(RELATIVE_PATH ASSET_RELATIVE_PATH "${CMAKE_SOURCE_DIR}" ${ASSET})
+            get_filename_component(ASSET_DIR ${ASSET_RELATIVE_PATH} DIRECTORY)
+            message(STATUS "Asset: ${ASSET} will be placed at Resources/${ASSET_RELATIVE_PATH}")
+            set_source_files_properties(${ASSET} PROPERTIES
+                    MACOSX_PACKAGE_LOCATION "Resources/${ASSET_DIR}")
+        endforeach()
+        target_sources(${PROJECT_NAME} PRIVATE ${ASSET_FILES})
+
         target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_IOS)
     else()
         target_link_libraries(${PROJECT_NAME}
@@ -135,7 +142,9 @@ elseif (APPLE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
 endif()
 
+if (NOT PLATFORM_IOS)
 file(GLOB ASSETS_FOLDER
         "assets/*"
 )
 file(COPY ${ASSETS_FOLDER} DESTINATION assets)
+endif()

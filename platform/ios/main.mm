@@ -8,8 +8,13 @@
 static void* runFuncContext;
 static void (*runFunc)(void *);
 
+struct VertexData {
+    simd::float4 position;
+    simd::float2 textureCoordinate;
+};
+
 //region Shader Source
-static const char *vertexShaderSrc = R"(
+static const char* vertexShaderSrc = R"(
 #include <metal_stdlib>
 using namespace metal;
 
@@ -24,7 +29,7 @@ vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
     return out;
 }
 )";
-static const char *fragmentShaderSrc = R"(
+static const char* fragmentShaderSrc = R"(
 #include <metal_stdlib>
 using namespace metal;
 
@@ -32,14 +37,139 @@ fragment float4 fragment_main() {
     return float4(1.0, 0, 0.0, 1.0); // Red color
 }
 )";
+static const char* textureVertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+struct VertexData {
+    float4 position;
+    float2 textureCoordinate;
+};
+
+struct VertexOut {
+    float4 position [[position]];
+    float2 textureCoordinate;
+};
+
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                              constant VertexData* vertexData) {
+    VertexOut out;
+    out.position = vertexData[vertexID].position;
+    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
+    return out;
+}
+)";
+static const char* textureFragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+fragment float4 fragment_main(VertexOut in [[stage_in]],
+                               texture2d<float> colorTexture [[texture(0)]]) {
+    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
+    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    return colorSample;
+}
+)";
 //endregion
 
-//region: MetalViewController/UIAppDelegate declarations
+//region: Static helper functions
+void listFilesInDirectory(NSString *directoryPath, int indent) {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError *error = nil;
+
+    NSArray *contents = [fileManager contentsOfDirectoryAtPath:directoryPath error:&error];
+    if (error) {
+        NSLog(@"Error reading directory: %@", error);
+        return;
+    }
+
+    NSString *indentString = [@"" stringByPaddingToLength:indent withString:@" " startingAtIndex:0];
+
+    for (NSString *item in contents) {
+        NSString *fullPath = [directoryPath stringByAppendingPathComponent:item];
+        BOOL isDirectory = NO;
+
+        [fileManager fileExistsAtPath:fullPath isDirectory:&isDirectory];
+
+        NSLog(@"%@%@ %@", indentString, isDirectory ? @"📁" : @"📄", item);
+
+        if (isDirectory) {
+            listFilesInDirectory(fullPath, indent + 2);
+        }
+    }
+}
+
+static NSData *readPNGImageFromBundle(NSString *imageName) {
+    // Get the path to the image in the app bundle
+    NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:@"png"];
+
+    // Check if the image exists in the bundle
+    if (imagePath) {
+        // Read the image data from the file path
+        NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
+
+        if (imageData) {
+            return imageData;
+        } else {
+            NSLog(@"Failed to read data from image file: %@", imageName);
+        }
+    } else {
+        NSLog(@"Image not found in bundle: %@", imageName);
+    }
+
+    return nil;
+}
+
+// Static function to load any image as a Metal texture from app bundle
+static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDevice> device) {
+    // Get the path to the image in the app bundle (including extension)
+    NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
+
+    // Check if the image exists in the bundle
+    if (imagePath) {
+        // Read the image data from the file path
+        NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
+
+        if (imageData) {
+            // Create a MTKTextureLoader instance
+            MTKTextureLoader *textureLoader = [[MTKTextureLoader alloc] initWithDevice:device];
+
+            NSError *error = nil;
+
+            // Load the texture from the image data
+            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:nil error:&error];
+
+            if (texture) {
+                NSLog(@"Texture loaded successfully from %@", imageName);
+                return texture;
+            } else {
+                NSLog(@"Failed to load texture: %@", error.localizedDescription);
+            }
+        } else {
+            NSLog(@"Failed to read data from image file: %@", imageName);
+        }
+    } else {
+        NSLog(@"Image not found in bundle: %@", imageName);
+    }
+
+    return nil;
+}
+
+//endregion
+
+//region: Interface declarations
 @interface MetalViewController : UIViewController<MTKViewDelegate>
 @property (nonatomic, strong) MTKView *metalView;
 @property (nonatomic, strong) id<MTLDevice> device;
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
+@property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
@@ -91,11 +221,61 @@ private:
     id<MTLRenderPipelineState> metalRenderPSO;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
 };
+class SpriteMetal : public Sprite {
+public:
+    ~SpriteMetal() {
+        [vertexBuffer release];
+    }
+    SpriteMetal(
+            id <MTLDevice> metalDevice,
+            id <MTLRenderPipelineState> metalRenderPSO,
+            id <MTLTexture> texture
+    ){
+        this->metalDevice = metalDevice;
+        this->metalRenderPSO = metalRenderPSO;
+        this->texture = texture;
+    }
+
+    void Update() override {
+        Sprite::Update();
+        VertexData newVertices[]{
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
+        };
+
+        // TODO: Sprite atlas
+
+        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+                                                length:sizeof(newVertices)
+                                               options:MTLResourceStorageModeShared];
+
+        [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
+        [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
+        [renderCommandEncoder setFragmentTexture:texture atIndex:0];
+        [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
+    }
+
+    void SetRenderCommandEncoder(id<MTLRenderCommandEncoder> commandEncoder) {
+        this->renderCommandEncoder = commandEncoder;
+    }
+
+private:
+    id<MTLDevice> metalDevice;
+    id<MTLBuffer> vertexBuffer;
+    id<MTLRenderPipelineState> metalRenderPSO;
+    id<MTLRenderCommandEncoder> renderCommandEncoder;
+    id<MTLTexture> texture;
+};
 //endregion
 
 //region: PlatformIOS
 static bool Running = false;
 std::vector<TriangleMetal*> triangles = std::vector<TriangleMetal*>();
+std::vector<SpriteMetal*> sprites = std::vector<SpriteMetal*>();
 class PlatformIOS : public Platform {
 public:
     void Init() override {}
@@ -121,7 +301,20 @@ public:
         triangles.push_back(gameObject);
         return gameObject;
     }
-    Sprite* CreateSprite(const char* path) override { return nullptr; }
+    Sprite* CreateSprite(const char* path) override {
+        NSString *imageName = @"assets/sprites/background.png";
+        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
+        if (texture) {
+            NSLog(@"Texture loaded successfully!");
+        } else {
+            NSLog(@"Failed to load texture ☹\uFE0F");
+        }
+        auto gameObject = new SpriteMetal(
+                metalAppDelegate.viewController.device, metalAppDelegate.viewController.texturePSO, texture
+        );
+        sprites.push_back(gameObject);
+        return gameObject;
+    }
 
     bool IsKeyPressed(KeyCode key) override { return false; }
     bool IsMousePressed(MouseButton button) override { return false; }
@@ -167,37 +360,93 @@ static void RealMainMetal(MetalAppDelegate* app) {
     [self.view addSubview:self.metalView];
 
     // Create command queue
-    self.commandQueue = [self.device newCommandQueue];
+//    self.commandQueue = [self.device newCommandQueue];
 
     [self setupPipeline];
+
+    // Print all resources in the main bundle
+    NSBundle *mainBundle = [NSBundle mainBundle];
+    NSString *resourcePath = [mainBundle resourcePath];
+    NSLog(@"Resource path: %@", resourcePath);
+    listFilesInDirectory(resourcePath, 0);
+
+//    [self loadImage];
+//    [self loadTexture];
+}
+
+- (void)loadImage {
+    NSString *imageName = @"assets/sprites/background";  // The name of the PNG image (without extension)
+    NSData *imageData = readPNGImageFromBundle(imageName);
+
+    if (imageData) {
+        NSLog(@"Image data loaded successfully");
+        // You can now use the imageData to create a UIImage or for other purposes
+        UIImage *image = [UIImage imageWithData:imageData];
+    }
+}
+
+- (void)loadTexture {
+    // Get the device object (assuming it's set up somewhere)
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+
+    // The name of the image (without extension), can be any supported image format (e.g., .png, .jpg, .gif, .tiff)
+    NSString *imageName = @"assets/sprites/background.png";
+
+    // Load the texture using the static function
+    id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, device);
+
+    if (texture) {
+        NSLog(@"Texture loaded successfully!");
+        // Use the texture for rendering or other purposes
+    }
 }
 
 - (void)setupPipeline {
-    self.commandQueue = [self.metalView.device newCommandQueue];
+    self.commandQueue = [self.device newCommandQueue];
 
-    // Compile shaders
+    // Triangle shader
+    MTLRenderPipelineDescriptor* triangleDesc = [self loadShaderLibrary:vertexShaderSrc frag:fragmentShaderSrc];
     NSError *error = nil;
-    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
-    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexShaderSrc, fragmentShaderSrc];
-    id<MTLLibrary> library = [self.metalView.device newLibraryWithSource:shaderSource options:options error:&error];
-    if (!library) {
-        NSLog(@"Shader compilation error: %@", error.localizedDescription);
-        return;
+    self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:triangleDesc error:&error];
+    if (!self.trianglePSO || error != nil) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
     }
 
+    // Texture shader
+    MTLRenderPipelineDescriptor* textureDesc = [self loadShaderLibrary:textureVertexShaderSrc frag:textureFragmentShaderSrc];
+    error = nil;
+    self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
+    if (!self.texturePSO || error != nil) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
+    }
+
+    [triangleDesc release];
+    [textureDesc release];
+}
+- (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
+    // Compile shader
+    NSError *error = nil;
+    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
+    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
+    id<MTLLibrary> library = [self.device newLibraryWithSource:shaderSource options:options error:&error];
+    if (!library) {
+        NSLog(@"Shader compilation error: %@", error.localizedDescription);
+        return nil;
+    } else {
+        NSLog(@"Compiled library");
+        NSLog(@"%@", library.functionNames[0]);
+        NSLog(@"%@", library.functionNames[1]);
+    }
     id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
     id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
 
     // Create pipeline state
-    MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+    MTLRenderPipelineDescriptor* pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
     pipelineDesc.vertexFunction = vertexFunction;
     pipelineDesc.fragmentFunction = fragmentFunction;
     pipelineDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
 
-    self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:pipelineDesc error:&error];
-    if (!self.trianglePSO) {
-        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
-    }
+    return pipelineDesc;
 }
 
 - (void)drawInMTKView:(MTKView *)view {
@@ -206,33 +455,29 @@ static void RealMainMetal(MetalAppDelegate* app) {
     MTLRenderPassDescriptor *passDescriptor = view.currentRenderPassDescriptor;
     if (!passDescriptor) return;
 
+    [passDescriptor.colorAttachments[0] setTexture: view.currentDrawable.texture];
     passDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0);
     passDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-
-//    float vertices[] = {
-//            -0.5, -0.5, 0.0f, 1.0f,
-//            0.5f, -0.5f, 0.0f, 1.0f,
-//            0.0f,  0.5f, 0.0f, 1.0f
-//    };
-//    self.vertexBuffer = [self.metalView.device newBufferWithBytes:vertices length:sizeof(vertices) options:MTLResourceStorageModeShared];
-
-//    id<MTLRenderCommandEncoder> encoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
-//    [encoder setRenderPipelineState:self.trianglePSO];
-//    [encoder setVertexBuffer:self.vertexBuffer offset:0 atIndex:0];
-//    [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
-
+    passDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
 
     for (TriangleMetal* gameObject : triangles) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
     }
+    for (SpriteMetal* gameObject : sprites) {
+        gameObject->SetRenderCommandEncoder(renderCommandEncoder);
+    }
 
-    runFunc(runFuncContext);
+    if (runFunc != nil) {
+        runFunc(runFuncContext);
+    }
 
     [renderCommandEncoder endEncoding];
     [commandBuffer presentDrawable:view.currentDrawable];
     [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+    
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
