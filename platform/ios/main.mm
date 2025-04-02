@@ -79,7 +79,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 //endregion
 
 //region: Static helper functions
-void listFilesInDirectory(NSString *directoryPath, int indent) {
+static void listFilesInDirectory(NSString *directoryPath, int indent) {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSError *error = nil;
 
@@ -104,29 +104,6 @@ void listFilesInDirectory(NSString *directoryPath, int indent) {
         }
     }
 }
-
-static NSData *readPNGImageFromBundle(NSString *imageName) {
-    // Get the path to the image in the app bundle
-    NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:@"png"];
-
-    // Check if the image exists in the bundle
-    if (imagePath) {
-        // Read the image data from the file path
-        NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
-
-        if (imageData) {
-            return imageData;
-        } else {
-            NSLog(@"Failed to read data from image file: %@", imageName);
-        }
-    } else {
-        NSLog(@"Image not found in bundle: %@", imageName);
-    }
-
-    return nil;
-}
-
-// Static function to load any image as a Metal texture from app bundle
 static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDevice> device) {
     // Get the path to the image in the app bundle (including extension)
     NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
@@ -160,7 +137,29 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
 
     return nil;
 }
+static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, const char *vertexSrc, const char *fragmentSrc) {
+    // Compile shader
+    NSError *error = nil;
+    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
+    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
+    id <MTLLibrary> library = [device newLibraryWithSource:shaderSource options:options error:&error];
+    if (!library) {
+        NSLog(@"Shader compilation error: %@", error.localizedDescription);
+        return nil;
+    } else {
+        NSLog(@"Compiled library");
+        NSLog(@"%@", library.functionNames[0]);
+        NSLog(@"%@", library.functionNames[1]);
+    }
+    id <MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
+    id <MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
 
+    // Create pipeline state
+    MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineDesc.vertexFunction = vertexFunction;
+    pipelineDesc.fragmentFunction = fragmentFunction;
+    return pipelineDesc;
+}
 //endregion
 
 //region: Interface declarations
@@ -291,7 +290,7 @@ public:
         runFuncContext = context;
         Running = true;
         while (Running) {
-            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+            sleep(1);
         }
         printf("Run end");
     }
@@ -360,59 +359,18 @@ static void RealMainMetal(MetalAppDelegate* app) {
     self.metalView.enableSetNeedsDisplay = NO;
     self.metalView.preferredFramesPerSecond = 60;
     self.metalView.framebufferOnly = NO; // Allow read/write operations
-    self.metalView.clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0); // Set initial clear color
+    self.metalView.clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0);
     self.metalView.frame = self.view.bounds;
     self.metalView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:self.metalView];
     [self setupPipeline];
 }
-
-- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-    NSLog(@"resized: %f, %f", size.width, size.height);
-}
-- (void)viewWillLayoutSubviews {
-    [super viewWillLayoutSubviews];
-    self.view.frame = UIScreen.mainScreen.bounds;
-}
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-}
-#if 0
-//    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
-//    self.edgesForExtendedLayout = UIRectEdgeAll;
-//    self.modalPresentationStyle = UIModalPresentationFullScreen;
-//- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
-//    return UIRectEdgeAll;
-//}
-[[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(handleOrientationChange:)
-name:UIDeviceOrientationDidChangeNotification
-        object:nil];
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    [self updateMetalViewForCurrentOrientation];
-}
-- (void)handleOrientationChange:(NSNotification *)notification {
-    [self updateMetalViewForCurrentOrientation];
-}
-#endif
-
-- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-#ifdef FORCE_PORTRAIT
-    return UIInterfaceOrientationMaskPortrait;
-#elifdef FORCE_LANDSCAPE
-    return UIInterfaceOrientationMaskLandscape;
-#else
-    return UIInterfaceOrientationMaskAll;
-#endif
-
-}
-
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
 
     // Triangle shader
-    MTLRenderPipelineDescriptor* triangleDesc = [self loadShaderLibrary:vertexShaderSrc frag:fragmentShaderSrc];
+    MTLRenderPipelineDescriptor* triangleDesc = loadShaderLibrary(self.device, vertexShaderSrc, fragmentShaderSrc);
+    triangleDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
     NSError *error = nil;
     self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:triangleDesc error:&error];
     if (!self.trianglePSO || error != nil) {
@@ -420,7 +378,8 @@ name:UIDeviceOrientationDidChangeNotification
     }
 
     // Texture shader
-    MTLRenderPipelineDescriptor* textureDesc = [self loadShaderLibrary:textureVertexShaderSrc frag:textureFragmentShaderSrc];
+    MTLRenderPipelineDescriptor* textureDesc = loadShaderLibrary(self.device, textureVertexShaderSrc, textureFragmentShaderSrc);
+    textureDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
     error = nil;
     self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
     if (!self.texturePSO || error != nil) {
@@ -430,32 +389,6 @@ name:UIDeviceOrientationDidChangeNotification
     [triangleDesc release];
     [textureDesc release];
 }
-- (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
-    // Compile shader
-    NSError *error = nil;
-    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
-    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
-    id<MTLLibrary> library = [self.device newLibraryWithSource:shaderSource options:options error:&error];
-    if (!library) {
-        NSLog(@"Shader compilation error: %@", error.localizedDescription);
-        return nil;
-    } else {
-        NSLog(@"Compiled library");
-        NSLog(@"%@", library.functionNames[0]);
-        NSLog(@"%@", library.functionNames[1]);
-    }
-    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
-    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
-
-    // Create pipeline state
-    MTLRenderPipelineDescriptor* pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineDesc.vertexFunction = vertexFunction;
-    pipelineDesc.fragmentFunction = fragmentFunction;
-    pipelineDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
-
-    return pipelineDesc;
-}
-
 - (void)drawInMTKView:(MTKView *)view {
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
 
@@ -484,8 +417,47 @@ name:UIDeviceOrientationDidChangeNotification
     [commandBuffer presentDrawable:view.currentDrawable];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
-    
+
 }
+- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
+    NSLog(@"resized: %f, %f", size.width, size.height);
+}
+- (void)viewWillLayoutSubviews {
+    [super viewWillLayoutSubviews];
+    self.view.frame = UIScreen.mainScreen.bounds;
+}
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+}
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+#ifdef FORCE_PORTRAIT
+    return UIInterfaceOrientationMaskPortrait;
+#elifdef FORCE_LANDSCAPE
+    return UIInterfaceOrientationMaskLandscape;
+#else
+    return UIInterfaceOrientationMaskAll;
+#endif
+
+}
+#if 0
+//    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
+//    self.edgesForExtendedLayout = UIRectEdgeAll;
+//    self.modalPresentationStyle = UIModalPresentationFullScreen;
+//- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
+//    return UIRectEdgeAll;
+//}
+[[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(handleOrientationChange:)
+name:UIDeviceOrientationDidChangeNotification
+        object:nil];
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self updateMetalViewForCurrentOrientation];
+}
+- (void)handleOrientationChange:(NSNotification *)notification {
+    [self updateMetalViewForCurrentOrientation];
+}
+#endif
 @end
 //endregion
 
