@@ -362,19 +362,9 @@ static void RealMainMetal(MetalAppDelegate* app) {
     self.metalView.framebufferOnly = NO; // Allow read/write operations
     self.metalView.clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0); // Set initial clear color
     self.metalView.frame = self.view.bounds;
-    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
-    self.edgesForExtendedLayout = UIRectEdgeAll;
-    self.modalPresentationStyle = UIModalPresentationFullScreen;
     self.metalView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:self.metalView];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleOrientationChange:)
-                                                 name:UIDeviceOrientationDidChangeNotification
-                                               object:nil];
     [self setupPipeline];
-}
-- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
-    return UIRectEdgeAll;
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
@@ -386,16 +376,26 @@ static void RealMainMetal(MetalAppDelegate* app) {
 }
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+}
+#if 0
+//    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
+//    self.edgesForExtendedLayout = UIRectEdgeAll;
+//    self.modalPresentationStyle = UIModalPresentationFullScreen;
+//- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
+//    return UIRectEdgeAll;
+//}
+[[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(handleOrientationChange:)
+name:UIDeviceOrientationDidChangeNotification
+        object:nil];
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
     [self updateMetalViewForCurrentOrientation];
 }
 - (void)handleOrientationChange:(NSNotification *)notification {
     [self updateMetalViewForCurrentOrientation];
 }
-- (void)updateMetalViewForCurrentOrientation {
-    UIDeviceOrientation deviceOrientation = [[UIDevice currentDevice] orientation];
-    CGSize drawableSize = self.metalView.drawableSize;
-    NSLog(@"%f, %f, orientation: %d", drawableSize.width, drawableSize.height, deviceOrientation);
-}
+#endif
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
 #ifdef FORCE_PORTRAIT
