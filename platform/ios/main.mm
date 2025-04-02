@@ -234,6 +234,17 @@ public:
         this->metalDevice = metalDevice;
         this->metalRenderPSO = metalRenderPSO;
         this->texture = texture;
+        VertexData newVertices[]{
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
+        };
+        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+                                                length:sizeof(newVertices)
+                                               options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
@@ -246,13 +257,7 @@ public:
                 {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
                 {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
-
-        // TODO: Sprite atlas
-
-        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
-                                                length:sizeof(newVertices)
-                                               options:MTLResourceStorageModeShared];
-
+        memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
         [renderCommandEncoder setFragmentTexture:texture atIndex:0];
@@ -356,49 +361,51 @@ static void RealMainMetal(MetalAppDelegate* app) {
     self.metalView.preferredFramesPerSecond = 60;
     self.metalView.framebufferOnly = NO; // Allow read/write operations
     self.metalView.clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0); // Set initial clear color
-
+    self.metalView.frame = self.view.bounds;
+    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
+    self.edgesForExtendedLayout = UIRectEdgeAll;
+    self.modalPresentationStyle = UIModalPresentationFullScreen;
+    self.metalView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:self.metalView];
-
-    // Create command queue
-//    self.commandQueue = [self.device newCommandQueue];
-
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleOrientationChange:)
+                                                 name:UIDeviceOrientationDidChangeNotification
+                                               object:nil];
     [self setupPipeline];
-
-    // Print all resources in the main bundle
-    NSBundle *mainBundle = [NSBundle mainBundle];
-    NSString *resourcePath = [mainBundle resourcePath];
-    NSLog(@"Resource path: %@", resourcePath);
-    listFilesInDirectory(resourcePath, 0);
-
-//    [self loadImage];
-//    [self loadTexture];
+}
+- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
+    return UIRectEdgeAll;
 }
 
-- (void)loadImage {
-    NSString *imageName = @"assets/sprites/background";  // The name of the PNG image (without extension)
-    NSData *imageData = readPNGImageFromBundle(imageName);
-
-    if (imageData) {
-        NSLog(@"Image data loaded successfully");
-        // You can now use the imageData to create a UIImage or for other purposes
-        UIImage *image = [UIImage imageWithData:imageData];
-    }
+- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
+    NSLog(@"resized: %f, %f", size.width, size.height);
+}
+- (void)viewWillLayoutSubviews {
+    [super viewWillLayoutSubviews];
+    self.view.frame = UIScreen.mainScreen.bounds;
+}
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self updateMetalViewForCurrentOrientation];
+}
+- (void)handleOrientationChange:(NSNotification *)notification {
+    [self updateMetalViewForCurrentOrientation];
+}
+- (void)updateMetalViewForCurrentOrientation {
+    UIDeviceOrientation deviceOrientation = [[UIDevice currentDevice] orientation];
+    CGSize drawableSize = self.metalView.drawableSize;
+    NSLog(@"%f, %f, orientation: %d", drawableSize.width, drawableSize.height, deviceOrientation);
 }
 
-- (void)loadTexture {
-    // Get the device object (assuming it's set up somewhere)
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+#ifdef FORCE_PORTRAIT
+    return UIInterfaceOrientationMaskPortrait;
+#elifdef FORCE_LANDSCAPE
+    return UIInterfaceOrientationMaskLandscape;
+#else
+    return UIInterfaceOrientationMaskAll;
+#endif
 
-    // The name of the image (without extension), can be any supported image format (e.g., .png, .jpg, .gif, .tiff)
-    NSString *imageName = @"assets/sprites/background.png";
-
-    // Load the texture using the static function
-    id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, device);
-
-    if (texture) {
-        NSLog(@"Texture loaded successfully!");
-        // Use the texture for rendering or other purposes
-    }
 }
 
 - (void)setupPipeline {
@@ -478,10 +485,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
     
-}
-
-- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-    NSLog(@"resized");
 }
 @end
 //endregion
