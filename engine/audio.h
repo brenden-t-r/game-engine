@@ -1,4 +1,4 @@
-#if 0
+#ifndef PLATFORM_IOS
 #define MINIAUDIO_IMPLEMENTATION
 #include "../dependencies/miniaudio.h"
 

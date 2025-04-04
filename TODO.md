@@ -19,7 +19,9 @@
   - Shadow effect
   - SDF
 - MacOS support
+  - Input (Mouse, Keyboard, Gamepad)
 - iOS support
+  - Input (Gamepad, Touch), Sound
 - WebGL support
 - CICD
 

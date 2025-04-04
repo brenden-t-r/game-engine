@@ -104,6 +104,10 @@ elseif (APPLE)
                 "-framework QuartzCore"
                 "-framework IOKit"
                 "-framework CoreVideo"
+                "-framework CoreFoundation"
+                "-framework CoreAudio"
+                "-framework AudioToolbox"
+                "-framework AVFoundation"
         )
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")

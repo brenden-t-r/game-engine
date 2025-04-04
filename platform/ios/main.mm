@@ -432,7 +432,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
 #ifdef FORCE_PORTRAIT
     return UIInterfaceOrientationMaskPortrait;
-#elifdef FORCE_LANDSCAPE
+#elif defined(FORCE_LANDSCAPE)
     return UIInterfaceOrientationMaskLandscape;
 #else
     return UIInterfaceOrientationMaskAll;
