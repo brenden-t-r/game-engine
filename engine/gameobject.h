@@ -82,6 +82,7 @@ public:
 
 class Sound : public GameObject {
 public:
+    virtual ~Sound() = default;
     virtual void Play() = 0;
     virtual void Stop() = 0;
     virtual void Reset() = 0;

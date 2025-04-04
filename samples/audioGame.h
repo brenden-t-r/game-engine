@@ -190,6 +190,7 @@ public:
     int beats = 0;
     int count = 0;
     void Update() override {
+
         printf(".");
         triangle->Update();
 

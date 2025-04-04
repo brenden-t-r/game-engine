@@ -6,6 +6,7 @@
 #include "stb_image.h"
 
 #include "../platform.h"
+#include "../../engine/audio.h"
 
 #include <cstdio>
 
@@ -223,6 +224,34 @@ private:
     id<MTLRenderCommandEncoder> renderCommandEncoder;
     Texture* texture;
 };
+class SoundMA : public Sound {
+public:
+    ~SoundMA(){
+        ma_sound_uninit(&sound);
+    };
+
+    void Init(const char* filePath) {
+        ma_result result = ma_sound_init_from_file(&g_engine, filePath, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize audio sound.");
+        }
+        assert(result == MA_SUCCESS);
+    }
+
+    void Play() {
+        ma_sound_start(&sound);
+    }
+
+    void Stop() {
+        ma_sound_stop(&sound);
+    }
+
+    void Reset() {
+        ma_sound_seek_to_pcm_frame(&sound, 0);
+    }
+
+    ma_sound sound{};
+};
 //endregion
 
 //region: PlatformMetal
@@ -232,6 +261,8 @@ class PlatformMetal : public Platform {
 public:
     void Init() override {
         printf("Hi from Init\n");
+        audioWrapper = new AudioWrapper();
+        audioWrapper->Init();
     }
     void Run(void (*_func)(void*), void* context) override {
         runFunc = _func;
@@ -257,6 +288,11 @@ public:
         sprites.push_back(sprite);
         return sprite;
     }
+    Sound* CreateSound(const char* path) override {
+        auto sound = new SoundMA();
+        sound->Init(path);
+        return sound;
+    }
     bool IsKeyPressed(KeyCode key) override {
         return false;
     }
@@ -281,6 +317,7 @@ public:
     }
 
     MetalAppDelegate* metalAppDelegate;
+    AudioWrapper* audioWrapper;
 };
 
 int RealMain(Platform* platform);
