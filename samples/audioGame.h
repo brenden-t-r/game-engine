@@ -1,10 +1,5 @@
-#ifndef PLATFORM_IOS
 #ifndef GAMEENGINE_AUDIOGAME_H
 #define GAMEENGINE_AUDIOGAME_H
-
-#include "../engine/game.h"
-#include "../engine/audio.h"
-#include "cstdio"
 
 constexpr int BAR_COUNT = 16;
 
@@ -25,144 +20,144 @@ struct Song {
 };
 
 static Song MySong = {
-    {
-        // Section 1
         {
+                // Section 1
                 {
-                        { true, false, false, true, true },
-                        { false, false, true, false },
-                        { false, true, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true, true },
+                                { false, false, true, false },
+                                { false, true, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { false, false, true, false },
-                        { false, true, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { false, false, true, false },
+                                { false, true, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { false, false, true, false },
-                        { false, true, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { false, false, true, false },
+                                { false, true, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { false, false, true, false },
-                        { false, true, true, false },
-                        { false, false, true, false }
-                }
-        },
-        // Section 2
-        {
+                        {
+                                { true, false, false, true },
+                                { false, false, true, false },
+                                { false, true, true, false },
+                                { false, false, true, false }
+                        }
+                },
+                // Section 2
                 {
-                        { true, false, false, true },
-                        { true, false, false, true },
-                        { false, true, false, true },
-                        { false, true, false, true }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { true, false, false, true },
+                                { false, true, false, true },
+                                { false, true, false, true }
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { true, false, false, true },
-                        { false, true, false, true },
-                        { false, true, false, true }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { true, false, false, true },
+                                { false, true, false, true },
+                                { false, true, false, true }
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { true, false, false, true },
-                        { false, true, false, true },
-                        { false, true, false, true }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { true, false, false, true },
+                                { false, true, false, true },
+                                { false, true, false, true }
+                        }
+                },
                 {
-                        { true, true, false, false },
-                        { true, true, false, false },
-                        { true, true, false, false },
-                        { true, true, false, false }
-                }
-        },
-        // Section 3
-        {
+                        {
+                                { true, true, false, false },
+                                { true, true, false, false },
+                                { true, true, false, false },
+                                { true, true, false, false }
+                        }
+                },
+                // Section 3
                 {
-                        { true, false, false, true, true },
-                        { false, false, true, false },
-                        { false, false, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true, true },
+                                { false, false, true, false },
+                                { false, false, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, true, false, true },
-                        { false, false, false, false },
-                        { true, true, false, true },
-                        { false, false, false, false }
+                        {
+                                { true, true, false, true },
+                                { false, false, false, false },
+                                { true, true, false, true },
+                                { false, false, false, false }
 
-                }
-        },
-        {
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { false, false, true, false },
-                        { false, false, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { false, false, true, false },
+                                { false, false, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, false, false, false },
-                        { false, true, false, false },
-                        { false, false, true, false },
-                        { false, false, false, true }
+                        {
+                                { true, false, false, false },
+                                { false, true, false, false },
+                                { false, false, true, false },
+                                { false, false, false, true }
 
-                }
-        },
-        // Section 4
-        {
+                        }
+                },
+                // Section 4
                 {
-                        { true, false, false, true, true },
-                        { false, false, true, false },
-                        { false, false, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true, true },
+                                { false, false, true, false },
+                                { false, false, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, true, false, true },
-                        { false, false, false, false },
-                        { true, true, false, true },
-                        { false, false, false, false }
+                        {
+                                { true, true, false, true },
+                                { false, false, false, false },
+                                { true, true, false, true },
+                                { false, false, false, false }
 
-                }
-        },
-        {
+                        }
+                },
                 {
-                        { true, false, false, true },
-                        { false, false, true, false },
-                        { false, false, true, false },
-                        { false, false, true, false }
-                }
-        },
-        {
+                        {
+                                { true, false, false, true },
+                                { false, false, true, false },
+                                { false, false, true, false },
+                                { false, false, true, false }
+                        }
+                },
                 {
-                        { true, true, false, true, true },
-                        { false, false, false, true, true },
-                        { true, true, false, true, true },
-                        { false, false, false, true, true }
+                        {
+                                { true, true, false, true, true },
+                                { false, false, false, true, true },
+                                { true, true, false, true, true },
+                                { false, false, false, true, true }
 
-                }
-        },
-    }
+                        }
+                },
+        }
 };
 
 class AudioGame : public Game {
@@ -175,25 +170,16 @@ public:
         delete triangle;
         delete ride;
         delete crash;
-        delete audioWrapper;
     };
 
     void Start() override {
-        audioWrapper = new AudioWrapper();
-        AudioWrapper::Init();
-
-        kick = new AudioSoundWrapper();
-        kick->Init("assets/audio/Kick.mp3");
-        snare = new AudioSoundWrapper();
-        snare->Init("assets/audio/Snare.mp3");
-        hat = new AudioSoundWrapper();
-        hat->Init("assets/audio/Hat.mp3");
-        ride = new AudioSoundWrapper();
-        ride->Init("assets/audio/Ride.mp3");
-        crash = new AudioSoundWrapper();
-        crash->Init("assets/audio/Crash.mp3");
-        ma_sound_set_volume(&hat->sound, 0.5f);
-        ma_sound_set_volume(&crash->sound, 0.5f);
+        kick = platform->CreateSound("assets/audio/Kick.mp3");
+        snare = platform->CreateSound("assets/audio/Snare.mp3");
+        hat = platform->CreateSound("assets/audio/Hat.mp3");
+        ride = platform->CreateSound("assets/audio/Ride.mp3");
+        crash = platform->CreateSound("assets/audio/Crash.mp3");
+//        ma_sound_set_volume(&hat->sound, 0.5f);
+//        ma_sound_set_volume(&crash->sound, 0.5f);
 
         platform->LoadShaders();
         triangle = platform->CreateTriangle();
@@ -209,14 +195,14 @@ public:
 
         count++;
         if (count % speed == 0) {
-//            kick->Reset();
-//            kick->Play();
+            kick->Reset();
+            kick->Play();
 
             if (beats % 4 == 0 ) {
                 bars++;
                 beats = 0;
-//                ride->Reset();
-//                ride->Play();
+                ride->Reset();
+                ride->Play();
             }
 
             if (bars >= BAR_COUNT) {
@@ -251,13 +237,11 @@ public:
 
 private:
     GameObject* triangle = nullptr;
-    AudioWrapper* audioWrapper = nullptr;
-    AudioSoundWrapper* kick = nullptr;
-    AudioSoundWrapper* snare = nullptr;
-    AudioSoundWrapper* hat = nullptr;
-    AudioSoundWrapper* ride = nullptr;
-    AudioSoundWrapper* crash = nullptr;
+    Sound* kick = nullptr;
+    Sound* snare = nullptr;
+    Sound* hat = nullptr;
+    Sound* ride = nullptr;
+    Sound* crash = nullptr;
 };
 
-#endif //GAMEENGINE_AUDIOGAME_H
 #endif

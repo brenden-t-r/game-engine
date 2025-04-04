@@ -2,6 +2,7 @@
 #include <Metal/Metal.h>
 #include <UIKit/UIKit.h>
 #include <MetalKit/MetalKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 #include "../platform.h"
 
@@ -177,6 +178,8 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @end
 //endregion
 
+AVAudioEngine *engine = nullptr;
+
 //region: Game Objects
 class TriangleMetal : public Triangle {
 public:
@@ -274,6 +277,106 @@ private:
     id<MTLRenderCommandEncoder> renderCommandEncoder;
     id<MTLTexture> texture;
 };
+class SoundMetalAVAudioPlayer : public Sound {
+public:
+    ~SoundMetalAVAudioPlayer() {
+        [player release];
+    }
+    SoundMetalAVAudioPlayer(const char* filePath) {
+        NSString *file = [NSString stringWithUTF8String:filePath];
+        NSString *path = [[NSBundle mainBundle] pathForResource:file ofType:nil];
+        if (path) {
+            NSURL *fileURL = [NSURL fileURLWithPath:path];
+            NSError *error = nil;
+            player = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:&error];
+            if (error) {
+                NSLog(@"Error initializing player: %@", error.localizedDescription);
+            }
+        } else {
+            NSLog(@"File not found in bundle");
+        }
+        [player prepareToPlay];
+    }
+
+    void Play() override {
+        if (player) {
+            [player play];
+        }
+    }
+    void Stop() override {
+        if (player) {
+            [player stop];
+        }
+    }
+    void Reset() override {
+        if (player) {
+            player.currentTime = 0;
+        }
+    }
+    AVAudioPlayer* player = nullptr;
+};
+class SoundMetalAVAudioBuffered : public Sound {
+public:
+    ~SoundMetalAVAudioBuffered() {
+        [engine detachNode:player];
+        [player release];
+    }
+    SoundMetalAVAudioBuffered(const char* filePath) {
+        if (engine == nullptr) {
+            engine = [[AVAudioEngine alloc] init];
+        }
+
+        // Load audio file
+        NSError *error = nil;
+        NSString *file = [NSString stringWithUTF8String:filePath];
+        NSString *path = [[NSBundle mainBundle] pathForResource:file ofType:nil];
+        NSURL *fileURL = [NSURL fileURLWithPath:path];
+        NSLog(@"%s",filePath);
+        audioFile = [[AVAudioFile alloc] initForReading:fileURL error:&error];
+        if (error || !audioFile) {
+            NSLog(@"Failed to load audio file: %@", error.localizedDescription);
+        }
+
+        // Buffer
+        buffer = [[AVAudioPCMBuffer alloc]
+                  initWithPCMFormat:audioFile.processingFormat
+                  frameCapacity:(AVAudioFrameCount)audioFile.length];
+        [audioFile readIntoBuffer:buffer error:&error];
+        if (error) {
+            NSLog(@"Failed to read audio buffer: %@", error.localizedDescription);
+            return;
+        }
+
+        // Create player
+        player = [[AVAudioPlayerNode alloc] init];
+        [engine attachNode:player];
+
+        AVAudioFormat *format = [engine.mainMixerNode outputFormatForBus:0];
+        [engine connect:player to:engine.mainMixerNode format:format];
+
+        [engine prepare];
+        [engine startAndReturnError:&error];
+        if (error) {
+            NSLog(@"Failed to start audio engine: %@", error.localizedDescription);
+        }
+    }
+    void Play() {
+        if (!player.isPlaying) {
+            [player play];
+        }
+        [player scheduleBuffer:buffer atTime:nil options:AVAudioPlayerNodeBufferInterrupts completionHandler:nil];
+    }
+
+    void Stop() {
+        [player stop];
+    }
+
+    void Reset() {}
+
+    AVAudioPlayerNode *player;
+    AVAudioPCMBuffer *buffer;
+    AVAudioFile *audioFile;
+};
 //endregion
 
 //region: PlatformIOS
@@ -318,6 +421,9 @@ public:
         );
         sprites.push_back(gameObject);
         return gameObject;
+    }
+    Sound* CreateSound(const char* path) override {
+        return new SoundMetalAVAudioBuffered(path);
     }
 
     bool IsKeyPressed(KeyCode key) override { return false; }
@@ -364,6 +470,12 @@ static void RealMainMetal(MetalAppDelegate* app) {
     self.metalView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:self.metalView];
     [self setupPipeline];
+
+    // Print all resources in the main bundle
+    NSBundle *mainBundle = [NSBundle mainBundle];
+    NSString *resourcePath = [mainBundle resourcePath];
+    NSLog(@"Resource path: %@", resourcePath);
+    listFilesInDirectory(resourcePath, 0);
 }
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];

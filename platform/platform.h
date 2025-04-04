@@ -48,6 +48,7 @@ public:
     virtual GameObject* CreateGameObject(){ return new GameObject(); };
     virtual GameObject* CreateTriangle() = 0;
     virtual Sprite* CreateSprite(const char* path) = 0;
+    virtual Sound* CreateSound(const char* path) = 0;
 
     virtual bool IsKeyPressed(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
@@ -57,6 +58,7 @@ public:
     virtual void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) = 0;
     virtual void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) = 0;
     virtual vec3 GetMousePos() = 0;
+
 
     virtual void Shutdown() = 0;
 
