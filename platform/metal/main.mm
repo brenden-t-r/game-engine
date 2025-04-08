@@ -201,7 +201,22 @@ public:
                 {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
-        // TODO: Sprite atlas
+        int row = atlasNumRows - atlasRow - 1;
+        if (useAtlas) {
+            newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
+            newVertices[0].textureCoordinate.y = atlasCellSize * (float)row + atlasCellSize;
+            newVertices[1].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Bottom left
+            newVertices[1].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[2].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
+            newVertices[2].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[3].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
+            newVertices[3].textureCoordinate.y = atlasCellSize * (float)row + atlasCellSize;
+            newVertices[4].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
+            newVertices[4].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
+            newVertices[5].textureCoordinate.y = atlasCellSize * (float)row+ atlasCellSize;
+
+        }
 
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
                                                 length:sizeof(newVertices)
@@ -355,7 +370,15 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     // Texture shader
     MTLRenderPipelineDescriptor* textureDesc = [self loadShaderLibrary:textureVertexShaderSrc frag:textureFragmentShaderSrc];
-    textureDesc.colorAttachments[0].pixelFormat = self.colorPixelFormat;
+    MTLRenderPipelineColorAttachmentDescriptor *attachment = textureDesc.colorAttachments[0];
+    attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    attachment.blendingEnabled = YES;
+    attachment.rgbBlendOperation = MTLBlendOperationAdd;
+    attachment.alphaBlendOperation = MTLBlendOperationAdd;
+    attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+    attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
+    attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
     error = nil;
     self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
     if (!self.texturePSO) {
