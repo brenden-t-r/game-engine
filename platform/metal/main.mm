@@ -215,7 +215,6 @@ public:
             newVertices[4].textureCoordinate.y = atlasCellSize * (float)row;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
             newVertices[5].textureCoordinate.y = atlasCellSize * (float)row+ atlasCellSize;
-
         }
 
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices

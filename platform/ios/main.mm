@@ -259,7 +259,27 @@ public:
                 {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
                 {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
-        memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
+
+        if (useAtlas) {
+            newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
+            newVertices[0].textureCoordinate.y = atlasCellSize * (float)atlasRow;
+            newVertices[1].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Bottom left
+            newVertices[1].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+            newVertices[2].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
+            newVertices[2].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;;
+            newVertices[3].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
+            newVertices[3].textureCoordinate.y = atlasCellSize * (float)atlasRow;
+            newVertices[4].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
+            newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+            newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
+            newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
+        }
+
+//        memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
+        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+                                                length:sizeof(newVertices)
+                                               options:MTLResourceStorageModeShared];
+
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
         [renderCommandEncoder setFragmentTexture:texture atIndex:0];
@@ -409,7 +429,7 @@ public:
         return gameObject;
     }
     Sprite* CreateSprite(const char* path) override {
-        NSString *imageName = @"assets/sprites/background.png";
+        NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
         if (texture) {
             NSLog(@"Texture loaded successfully!");
@@ -491,7 +511,15 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     // Texture shader
     MTLRenderPipelineDescriptor* textureDesc = loadShaderLibrary(self.device, textureVertexShaderSrc, textureFragmentShaderSrc);
-    textureDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
+    MTLRenderPipelineColorAttachmentDescriptor *attachment = textureDesc.colorAttachments[0];
+    attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    attachment.blendingEnabled = YES;
+    attachment.rgbBlendOperation = MTLBlendOperationAdd;
+    attachment.alphaBlendOperation = MTLBlendOperationAdd;
+    attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+    attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
+    attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
     error = nil;
     self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
     if (!self.texturePSO || error != nil) {
