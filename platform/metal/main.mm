@@ -18,41 +18,90 @@ struct VertexData {
     simd::float4 position;
     simd::float2 textureCoordinate;
 };
-class Texture {
-public:
-    Texture(const char* filepath, id<MTLDevice> metalDevice) {
-        device = metalDevice;
 
-        stbi_set_flip_vertically_on_load(true);
-        unsigned char* image = stbi_load(filepath, &width, &height, &channels, STBI_rgb_alpha);
-        assert(image != NULL);
+//region: Static helper functions
+static void listFilesInDirectory(NSString *directoryPath, int indent) {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError *error = nil;
 
-        MTLTextureDescriptor* textureDescriptor = [[MTLTextureDescriptor alloc] init];
-        [textureDescriptor setPixelFormat: MTLPixelFormatRGBA8Unorm];
-        [textureDescriptor setWidth: width];
-        [textureDescriptor setHeight: height];
-
-        texture = [device newTextureWithDescriptor: textureDescriptor];
-
-        MTLRegion region = MTLRegionMake2D(0, 0, width, height);
-        NSUInteger bytesPerRow = 4 * width;
-
-        [texture replaceRegion:region mipmapLevel:0 withBytes:image bytesPerRow:bytesPerRow];
-
-        [textureDescriptor release];
-        stbi_image_free(image);
+    NSArray *contents = [fileManager contentsOfDirectoryAtPath:directoryPath error:&error];
+    if (error) {
+        NSLog(@"Error reading directory: %@", error);
+        return;
     }
 
-    ~Texture() {
-        [texture release];
+    NSString *indentString = [@"" stringByPaddingToLength:indent withString:@" " startingAtIndex:0];
+
+    for (NSString *item in contents) {
+        NSString *fullPath = [directoryPath stringByAppendingPathComponent:item];
+        BOOL isDirectory = NO;
+
+        [fileManager fileExistsAtPath:fullPath isDirectory:&isDirectory];
+
+        NSLog(@"%@%@ %@", indentString, isDirectory ? @"📁" : @"📄", item);
+
+        if (isDirectory) {
+            listFilesInDirectory(fullPath, indent + 2);
+        }
+    }
+}
+static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDevice> device) {
+    // Get the path to the image in the app bundle (including extension)
+    NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
+
+    // Check if the image exists in the bundle
+    if (imagePath) {
+        // Read the image data from the file path
+        NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
+
+        if (imageData) {
+            // Create a MTKTextureLoader instance
+            MTKTextureLoader *textureLoader = [[MTKTextureLoader alloc] initWithDevice:device];
+
+            NSError *error = nil;
+
+            // Load the texture from the image data
+            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:nil error:&error];
+
+            if (texture) {
+                NSLog(@"Texture loaded successfully from %@", imageName);
+                return texture;
+            } else {
+                NSLog(@"Failed to load texture: %@", error.localizedDescription);
+            }
+        } else {
+            NSLog(@"Failed to read data from image file: %@", imageName);
+        }
+    } else {
+        NSLog(@"Image not found in bundle: %@", imageName);
     }
 
-    id<MTLTexture> texture;
-    int width, height, channels;
+    return nil;
+}
+static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, const char *vertexSrc, const char *fragmentSrc) {
+    // Compile shader
+    NSError *error = nil;
+    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
+    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
+    id <MTLLibrary> library = [device newLibraryWithSource:shaderSource options:options error:&error];
+    if (!library) {
+        NSLog(@"Shader compilation error: %@", error.localizedDescription);
+        return nil;
+    } else {
+        NSLog(@"Compiled library");
+        NSLog(@"%@", library.functionNames[0]);
+        NSLog(@"%@", library.functionNames[1]);
+    }
+    id <MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
+    id <MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
 
-private:
-    id<MTLDevice> device;
-};
+    // Create pipeline state
+    MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineDesc.vertexFunction = vertexFunction;
+    pipelineDesc.fragmentFunction = fragmentFunction;
+    return pipelineDesc;
+}
+//endregion
 
 //region Shader Source
 static const char* vertexShaderSrc = R"(
@@ -124,6 +173,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
+@property (strong) NSTrackingArea *trackingArea;
 @end
 @interface MetalAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @property (strong, nonatomic) NSWindow *window;
@@ -183,7 +233,7 @@ public:
     SpriteMetal(
             id <MTLDevice> metalDevice,
             id <MTLRenderPipelineState> metalRenderPSO,
-            Texture* texture
+            id <MTLTexture> texture
     ){
         this->metalDevice = metalDevice;
         this->metalRenderPSO = metalRenderPSO;
@@ -223,7 +273,7 @@ public:
 
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
-        [renderCommandEncoder setFragmentTexture:texture->texture atIndex:0];
+        [renderCommandEncoder setFragmentTexture:texture atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
@@ -236,7 +286,7 @@ private:
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderPipelineState> metalRenderPSO;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
-    Texture* texture;
+    id<MTLTexture> texture;
 };
 class SoundMA : public Sound {
 public:
@@ -245,7 +295,10 @@ public:
     };
 
     void Init(const char* filePath) {
-        ma_result result = ma_sound_init_from_file(&g_engine, filePath, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
+        NSError *error = nil;
+        NSString *file = [NSString stringWithUTF8String:filePath];
+        NSString *path = [[NSBundle mainBundle] pathForResource:file ofType:nil];
+        ma_result result = ma_sound_init_from_file(&g_engine, [path UTF8String], MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
         if (result != MA_SUCCESS) {
             printf("Failed to initialize audio sound.");
         }
@@ -297,10 +350,18 @@ public:
         return gameObject;
     }
     Sprite* CreateSprite(const char* path) override {
-        auto texture = new Texture(path, metalAppDelegate.device);
-        auto sprite = new SpriteMetal(metalAppDelegate.device, metalAppDelegate.metalView.texturePSO, texture);
-        sprites.push_back(sprite);
-        return sprite;
+        NSString *imageName = [NSString stringWithUTF8String:path];
+        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device);
+        if (texture) {
+            NSLog(@"Texture loaded successfully!");
+        } else {
+            NSLog(@"Failed to load texture ☹\uFE0F");
+        }
+        auto gameObject = new SpriteMetal(
+                metalAppDelegate.metalView.device, metalAppDelegate.metalView.texturePSO, texture
+        );
+        sprites.push_back(gameObject);
+        return gameObject;
     }
     Sound* CreateSound(const char* path) override {
         auto sound = new SoundMA();
@@ -354,7 +415,6 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     }
     return self;
 }
-
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
 
@@ -386,6 +446,12 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     [triangleDesc release];
     [textureDesc release];
+
+    // Print all resources in the main bundle
+    NSBundle *mainBundle = [NSBundle mainBundle];
+    NSString *resourcePath = [mainBundle resourcePath];
+    NSLog(@"Resource path: %@", resourcePath);
+    listFilesInDirectory(resourcePath, 0);
 }
 - (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
     // Compile shader
@@ -437,6 +503,19 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     runFunc(runFuncContext);
 
+    NSUInteger pressed = [NSEvent pressedMouseButtons];
+
+    if (pressed & (1 << 0)) {
+        NSLog(@"Left button is down");
+    }
+    if (pressed & (1 << 1)) {
+        NSLog(@"Right button is down");
+    }
+    if (pressed & (1 << 2)) {
+        NSLog(@"Middle button is down");
+    }
+
+
     [renderCommandEncoder endEncoding];
     [commandBuffer presentDrawable:view.currentDrawable];
     [commandBuffer commit];
@@ -448,8 +527,65 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 }
 
 - (BOOL)acceptsFirstResponder {
-    return NO;
+    return YES;
 }
+
+- (void)keyDown:(NSEvent *)event {
+    NSLog(@"Key pressed: %@, keyCode: %hu", event.characters, event.keyCode);
+}
+
+- (void)mouseDown:(NSEvent *)event {
+    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
+    NSLog(@"Left click at: (%f, %f)", location.x, location.y);
+}
+
+- (void)mouseUp:(NSEvent *)event {
+    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
+    NSLog(@"Left released at: (%f, %f)", location.x, location.y);
+}
+
+- (void)rightMouseDown:(NSEvent *)event {
+    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
+    NSLog(@"Right click at: (%f, %f)", location.x, location.y);
+}
+
+- (void)rightMouseUp:(NSEvent *)event {
+    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
+    NSLog(@"Right released at: (%f, %f)", location.x, location.y);
+}
+
+- (void)otherMouseDown:(NSEvent *)event {
+    if (event.buttonNumber == 2) { // middle mouse button
+        NSLog(@"Middle click at: %@", NSStringFromPoint([self convertPoint:event.locationInWindow fromView:nil]));
+    }
+}
+
+- (void)otherMouseUp:(NSEvent *)event {
+    if (event.buttonNumber == 2) { // middle mouse button
+        NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
+        NSLog(@"Middle released at: (%f, %f)", location.x, location.y);
+    }
+}
+
+- (void)mouseMoved:(NSEvent *)event {
+    NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    NSLog(@"Mouse moved to: (%f, %f)", point.x, point.y);
+}
+
+- (void)updateTrackingAreas {
+    [super updateTrackingAreas];
+
+    if (self.trackingArea) {
+        [self removeTrackingArea:self.trackingArea];
+    }
+
+    self.trackingArea = [[NSTrackingArea alloc] initWithRect:self.bounds
+                                                     options:(NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
+                                                       owner:self
+                                                    userInfo:nil];
+    [self addTrackingArea:self.trackingArea];
+}
+
 @end
 //endregion
 

@@ -19,9 +19,9 @@
   - Shadow effect
   - SDF
 - MacOS support
-  - Input (Mouse, Keyboard, Gamepad), Sprite atlas
+  - Input (Gamepad)
 - iOS support
-  - Input (Gamepad, Touch), Sprite atlas
+  - Input (Gamepad, Touch)
 - WebGL support
 - CICD
 

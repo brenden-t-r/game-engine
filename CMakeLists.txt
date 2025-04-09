@@ -70,6 +70,8 @@ if (WIN32)
     else()
         message(FATAL_ERROR "No backend specified! Use -DBACKEND_DIRECTX or -DBACKEND_OPENGL.")
     endif()
+elseif (APPLE)
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${SOURCES})
 else()
     add_executable(${PROJECT_NAME} ${SOURCES})
 endif()
@@ -134,16 +136,36 @@ elseif (APPLE)
                 "-framework IOKit"
                 "-framework CoreVideo"
                 "-framework MetalKit"
+                "-framework AppKit"
         )
+        set(MACOSX_BUNDLE TRUE)
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/metal/Info.plist)
+
+        file(GLOB_RECURSE ASSET_FILES "${CMAKE_SOURCE_DIR}/assets/*")
+        foreach(ASSET ${ASSET_FILES})
+            file(RELATIVE_PATH ASSET_RELATIVE_PATH "${CMAKE_SOURCE_DIR}" ${ASSET})
+            get_filename_component(ASSET_DIR ${ASSET_RELATIVE_PATH} DIRECTORY)
+            message(STATUS "Asset: ${ASSET} will be placed at Resources/${ASSET_RELATIVE_PATH}")
+            set_source_files_properties(${ASSET} PROPERTIES
+                    MACOSX_PACKAGE_LOCATION "Resources/${ASSET_DIR}")
+        endforeach()
+        target_sources(${PROJECT_NAME} PRIVATE ${ASSET_FILES})
     endif()
 
     if(BACKEND_METAL)
         target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
+        if (NOT PLATFORM_IOS)
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:GameEngine>"
+            )
+        endif()
     else()
         target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
         target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
     endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
+
 endif()
 
 if (NOT PLATFORM_IOS)

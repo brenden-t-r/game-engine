@@ -3,7 +3,8 @@
  * Choose backend
  *  Windows => OpenGL, DirectX
  *  Linux   => OpenGL
- *  Apple   => OpenGL, Metal
+ *  macOS   => OpenGL, Metal
+ *  iOS     => Metal
  * */
 //#define BACKEND_DIRECTX
 //#define BACKEND_OPENGL
