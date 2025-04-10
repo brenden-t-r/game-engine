@@ -3,6 +3,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#import <Carbon/Carbon.h>
 #include "stb_image.h"
 
 #include "../platform.h"
@@ -13,6 +14,42 @@
 static void *runFuncContext;
 static void (*runFunc)(void *);
 static bool Running = false;
+
+//region Input Helpers / Callbacks
+static int GetAppleKey(KeyCode key) {
+    switch (key) {
+        case KeyCode::Up:       return kVK_UpArrow;
+        case KeyCode::Down:     return kVK_DownArrow;
+        case KeyCode::Left:     return kVK_LeftArrow;
+        case KeyCode::Right:    return kVK_RightArrow;
+        case KeyCode::W:        return kVK_ANSI_W;
+        case KeyCode::A:        return kVK_ANSI_A;
+        case KeyCode::S:        return kVK_ANSI_S;
+        case KeyCode::D:        return kVK_ANSI_D;
+        default:
+            return -1;
+    }
+}
+static KeyCode GetKeyCode(int appleKey) {
+    switch (appleKey) {
+        case kVK_UpArrow:       return KeyCode::Up;
+        case kVK_DownArrow:     return KeyCode::Down;
+        case kVK_LeftArrow:     return KeyCode::Left;
+        case kVK_RightArrow:    return KeyCode::Right;
+        case kVK_ANSI_W:        return KeyCode::W;
+        case kVK_ANSI_A:        return KeyCode::A;
+        case kVK_ANSI_S:        return KeyCode::S;
+        case kVK_ANSI_D:        return KeyCode::D;
+        default:                return KeyCode::Unknown;
+    }
+}
+void static(*keyUpCallback)(KeyCode, void*);
+static void* keyCallbackContext;
+void static(*mouseUpCallback)(MouseButton, void*);
+static void* mouseCallbackContext;
+void static(*gamepadUpCallback)(GamepadButton, void*);
+static void* gamepadCallbackContext;
+//endregion
 
 struct VertexData {
     simd::float4 position;
@@ -174,6 +211,8 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (strong) NSTrackingArea *trackingArea;
+- (BOOL) IsMousePressed:(MouseButton) button;
+- (BOOL) IsKeyPressed:(KeyCode) key;
 @end
 @interface MetalAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @property (strong, nonatomic) NSWindow *window;
@@ -369,22 +408,25 @@ public:
         return sound;
     }
     bool IsKeyPressed(KeyCode key) override {
-        return false;
+        return [metalAppDelegate.metalView IsKeyPressed: key];
     }
     bool IsMousePressed(MouseButton button) override {
-        return false;
+        return [metalAppDelegate.metalView IsMousePressed: button];
     }
     bool IsGamepadButtonPressed(GamepadButton button) override {
         return false;
     }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
-        return;
+        keyUpCallback = func;
+        keyCallbackContext = context;
     }
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
-        return;
+        mouseUpCallback = func;
+        mouseCallbackContext = context;
     }
     void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
-        return;
+        gamepadUpCallback = func;
+        gamepadCallbackContext = context;
     }
     virtual vec3 GetMousePos() override { return {}; }
     void Shutdown() override {
@@ -503,19 +545,6 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     runFunc(runFuncContext);
 
-    NSUInteger pressed = [NSEvent pressedMouseButtons];
-
-    if (pressed & (1 << 0)) {
-        NSLog(@"Left button is down");
-    }
-    if (pressed & (1 << 1)) {
-        NSLog(@"Right button is down");
-    }
-    if (pressed & (1 << 2)) {
-        NSLog(@"Middle button is down");
-    }
-
-
     [renderCommandEncoder endEncoding];
     [commandBuffer presentDrawable:view.currentDrawable];
     [commandBuffer commit];
@@ -525,53 +554,45 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size __attribute__((swift_attr("@UIActor"))) {
     NSLog(@"resized");
 }
-
 - (BOOL)acceptsFirstResponder {
     return YES;
 }
-
-- (void)keyDown:(NSEvent *)event {
-    NSLog(@"Key pressed: %@, keyCode: %hu", event.characters, event.keyCode);
+- (BOOL)IsMousePressed:(MouseButton)button {
+    NSUInteger pressed = [NSEvent pressedMouseButtons];
+    switch (button) {
+        case MouseButton::Unknown:
+            return false;
+        case MouseButton::Left:
+            return pressed & (1 << 0);
+        case MouseButton::Middle:
+            return pressed & (1 << 1);
+        case MouseButton::Right:
+            return pressed & (1 << 2);
+    }
 }
-
-- (void)mouseDown:(NSEvent *)event {
-    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
-    NSLog(@"Left click at: (%f, %f)", location.x, location.y);
+- (BOOL)IsKeyPressed:(KeyCode) key {
+    auto appleKey = GetAppleKey(key);
+    return CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, appleKey);
 }
-
+- (void)keyUp:(NSEvent *)event {
+    NSLog(@"Key released: %@, keyCode: %hu", event.characters, event.keyCode);
+    auto key = GetKeyCode(event.keyCode);
+    keyUpCallback(key, keyCallbackContext);
+}
 - (void)mouseUp:(NSEvent *)event {
-    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
-    NSLog(@"Left released at: (%f, %f)", location.x, location.y);
+    mouseUpCallback(MouseButton::Left, mouseCallbackContext);
 }
-
-- (void)rightMouseDown:(NSEvent *)event {
-    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
-    NSLog(@"Right click at: (%f, %f)", location.x, location.y);
-}
-
 - (void)rightMouseUp:(NSEvent *)event {
-    NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
-    NSLog(@"Right released at: (%f, %f)", location.x, location.y);
+    mouseUpCallback(MouseButton::Right, mouseCallbackContext);
 }
-
-- (void)otherMouseDown:(NSEvent *)event {
-    if (event.buttonNumber == 2) { // middle mouse button
-        NSLog(@"Middle click at: %@", NSStringFromPoint([self convertPoint:event.locationInWindow fromView:nil]));
-    }
-}
-
 - (void)otherMouseUp:(NSEvent *)event {
-    if (event.buttonNumber == 2) { // middle mouse button
-        NSPoint location = [self convertPoint:event.locationInWindow fromView:nil];
-        NSLog(@"Middle released at: (%f, %f)", location.x, location.y);
+    if (event.buttonNumber == 2) {
+        mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
     }
 }
-
 - (void)mouseMoved:(NSEvent *)event {
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-    NSLog(@"Mouse moved to: (%f, %f)", point.x, point.y);
 }
-
 - (void)updateTrackingAreas {
     [super updateTrackingAreas];
 
