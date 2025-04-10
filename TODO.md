@@ -21,7 +21,7 @@
 - MacOS support
   - Input (Gamepad)
 - iOS support
-  - Input (Gamepad, Touch)
+  - Input (Gamepad)
 - WebGL support
 - CICD
 

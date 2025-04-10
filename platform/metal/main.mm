@@ -580,14 +580,20 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     keyUpCallback(key, keyCallbackContext);
 }
 - (void)mouseUp:(NSEvent *)event {
-    mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+    if (mouseUpCallback != nil) {
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+    }
 }
 - (void)rightMouseUp:(NSEvent *)event {
-    mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+    if (mouseUpCallback != nil) {
+        mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+    }
 }
 - (void)otherMouseUp:(NSEvent *)event {
     if (event.buttonNumber == 2) {
-        mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+        if (mouseUpCallback != nil) {
+            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+        }
     }
 }
 - (void)mouseMoved:(NSEvent *)event {

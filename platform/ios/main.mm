@@ -8,6 +8,8 @@
 
 static void* runFuncContext;
 static void (*runFunc)(void *);
+void static(*mouseUpCallback)(MouseButton, void*);
+static void* mouseCallbackContext;
 
 struct VertexData {
     simd::float4 position;
@@ -171,6 +173,8 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
+@property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
+
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -447,11 +451,17 @@ public:
     }
 
     bool IsKeyPressed(KeyCode key) override { return false; }
-    bool IsMousePressed(MouseButton button) override { return false; }
+    bool IsMousePressed(MouseButton button) override {
+        if (button == MouseButton::Left) {
+            return metalAppDelegate.viewController.activeTouches.count > 0;
+        } else return false;
+    }
     bool IsGamepadButtonPressed(GamepadButton button) override { return false; }
-
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {}
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {}
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+        mouseUpCallback = func;
+        mouseCallbackContext = context;
+    }
     void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {}
 
     vec3 GetMousePos() override { return {}; }
@@ -496,6 +506,19 @@ static void RealMainMetal(MetalAppDelegate* app) {
     NSString *resourcePath = [mainBundle resourcePath];
     NSLog(@"Resource path: %@", resourcePath);
     listFilesInDirectory(resourcePath, 0);
+
+    // Input gesture setup
+    self.activeTouches = [NSMutableSet set];
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [tap setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:tap];
+    UITapGestureRecognizer *twoFingerTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTwoFingerTap:)];
+    twoFingerTap.numberOfTouchesRequired = 2;
+    [twoFingerTap setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:twoFingerTap];
+    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+    [longPress setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:longPress];
 }
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
@@ -578,6 +601,49 @@ static void RealMainMetal(MetalAppDelegate* app) {
     return UIInterfaceOrientationMaskAll;
 #endif
 
+}
+- (void)handleTap:(UITapGestureRecognizer *)gesture {
+//    CGPoint location = [gesture locationInView:self.view];
+//    NSLog(@"Tap at: (%f, %f)", location.x, location.y);
+    if (mouseUpCallback != nil) {
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+    }
+}
+- (void)handleTwoFingerTap:(UITapGestureRecognizer *)gesture {
+    if (gesture.numberOfTouches == 2) {
+//        CGPoint touch1 = [gesture locationOfTouch:0 inView:self.view];
+//        CGPoint touch2 = [gesture locationOfTouch:1 inView:self.view];
+//        CGPoint midpoint = CGPointMake((touch1.x + touch2.x) / 2, (touch1.y + touch2.y) / 2);
+//        NSLog(@"Two-finger tap midpoint: (%f, %f)", midpoint.x, midpoint.y);
+        if (mouseUpCallback != nil) {
+            mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+        }
+    }
+}
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+//        CGPoint point = [gesture locationInView:self.view];
+//        NSLog(@"Long press at: (%f, %f)", point.x, point.y);
+    }
+}
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        [self.activeTouches addObject:touch];
+//        NSLog(@"Touch began at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    }
+}
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        if ([self.activeTouches containsObject:touch]) {
+//            NSLog(@"Touch moved at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+        }
+    }
+}
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        [self.activeTouches removeObject:touch];
+//        NSLog(@"Touch ended at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    }
 }
 #if 0
 //    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
