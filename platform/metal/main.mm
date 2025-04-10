@@ -290,20 +290,20 @@ public:
                 {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
-        int row = atlasNumRows - atlasRow - 1;
+        int row = atlasRow;
         if (useAtlas) {
             newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
-            newVertices[0].textureCoordinate.y = atlasCellSize * (float)row + atlasCellSize;
+            newVertices[0].textureCoordinate.y = atlasCellSize * (float)atlasRow;
             newVertices[1].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Bottom left
-            newVertices[1].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[1].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[2].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
-            newVertices[2].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[2].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;;
             newVertices[3].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
-            newVertices[3].textureCoordinate.y = atlasCellSize * (float)row + atlasCellSize;
+            newVertices[3].textureCoordinate.y = atlasCellSize * (float)atlasRow;
             newVertices[4].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Bottom right
-            newVertices[4].textureCoordinate.y = atlasCellSize * (float)row;
+            newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
-            newVertices[5].textureCoordinate.y = atlasCellSize * (float)row+ atlasCellSize;
+            newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
         }
 
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
