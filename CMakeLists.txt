@@ -137,6 +137,7 @@ elseif (APPLE)
                 "-framework CoreVideo"
                 "-framework MetalKit"
                 "-framework AppKit"
+                "-framework GameController"
         )
         set(MACOSX_BUNDLE TRUE)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
