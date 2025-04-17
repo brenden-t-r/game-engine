@@ -18,15 +18,10 @@
   - Outline effect
   - Shadow effect
   - SDF
-- MacOS support
-  - Input (Gamepad)
-- iOS support
-  - Input (Gamepad)
+- Gamepad
+  - Triggers, axes
 - WebGL support
 - CICD
-
-- Bugs
-  - OpenGL, triangle primitive doesn't work when sprites are shown.
 
 ## Games
 
@@ -44,8 +39,6 @@
 
 ### Molt
 
-- Scenes
-- Basic game scene setup
 - Coroutines?
 - Events?
 
