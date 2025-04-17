@@ -53,7 +53,9 @@ elseif (APPLE AND NOT PLATFORM_IOS)
 elseif (PLATFORM_IOS)
     list(APPEND SOURCES platform/ios/main.mm)
     set(CMAKE_SYSTEM_NAME iOS)
-    set(CMAKE_OSX_SYSROOT iphonesimulator)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum OS X deployment version")
+#    set(CMAKE_OSX_SYSROOT iphonesimulator)
+    set(CMAKE_OSX_SYSROOT iphoneos)
     set(CMAKE_OSX_ARCHITECTURES arm64)
 endif()
 
@@ -110,6 +112,7 @@ elseif (APPLE)
                 "-framework CoreAudio"
                 "-framework AudioToolbox"
                 "-framework AVFoundation"
+                "-framework GameController"
         )
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
