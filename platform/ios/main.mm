@@ -2,21 +2,55 @@
 #include <Metal/Metal.h>
 #include <UIKit/UIKit.h>
 #include <MetalKit/MetalKit.h>
-#import <AVFoundation/AVFoundation.h>
+#include <AVFoundation/AVFoundation.h>
+#include <GameController/GameController.h>
 
 #include "../platform.h"
 
 static void* runFuncContext;
 static void (*runFunc)(void *);
+static GCControllerButtonInput* GetAppleGamepadButton(GCExtendedGamepad *pad, GamepadButton btn) {
+    switch (btn) {
+        case GamepadButton::North: return pad.buttonY;
+        case GamepadButton::South: return pad.buttonA;
+        case GamepadButton::East: return pad.buttonB;
+        case GamepadButton::West: return pad.buttonX;
+        case GamepadButton::RB: return pad.rightShoulder;
+        case GamepadButton::LB: return pad.leftShoulder;
+        case GamepadButton::R3: return pad.rightThumbstickButton;
+        case GamepadButton::L3: return pad.leftThumbstickButton;
+        case GamepadButton::Start: return pad.buttonHome;
+        case GamepadButton::Select: return pad.buttonMenu;
+        case GamepadButton::DLeft: return pad.dpad.left;
+        case GamepadButton::DRight: return pad.dpad.right;
+        case GamepadButton::DUp: return pad.dpad.up;
+        case GamepadButton::DDown: return pad.dpad.down;
+        default: return nullptr;
+    }
+}
+static GamepadButton GetGamepadButton(GCExtendedGamepad *pad, GCControllerElement* btn) {
+    if (btn == pad.buttonY) return GamepadButton::North;
+    if (btn == pad.buttonA) return GamepadButton::South;
+    if (btn == pad.buttonB) return GamepadButton::East;
+    if (btn == pad.buttonX) return GamepadButton::West;
+    if (btn == pad.rightShoulder) return GamepadButton::RB;
+    if (btn == pad.leftShoulder) return GamepadButton::LB;
+    if (btn == pad.rightThumbstickButton) return GamepadButton::R3;
+    if (btn == pad.leftThumbstickButton) return GamepadButton::L3;
+    if (btn == pad.buttonHome) return GamepadButton::Start;
+    if (btn == pad.buttonMenu) return GamepadButton::Select;
+    else return GamepadButton::Unknown;
+}
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
+void static(*gamepadUpCallback)(GamepadButton, void*);
+static void* gamepadCallbackContext;
 
+//region Shader Source
 struct VertexData {
     simd::float4 position;
     simd::float2 textureCoordinate;
 };
-
-//region Shader Source
 static const char* vertexShaderSrc = R"(
 #include <metal_stdlib>
 using namespace metal;
@@ -456,15 +490,18 @@ public:
             return metalAppDelegate.viewController.activeTouches.count > 0;
         } else return false;
     }
-    bool IsGamepadButtonPressed(GamepadButton button) override { return false; }
+    bool IsGamepadButtonPressed(GamepadButton button) override { return [metalAppDelegate.viewController IsGamePadPressed: button]; }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {}
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
-    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {}
-
+    void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
+        gamepadUpCallback = func;
+        gamepadCallbackContext = context;
+    }
     vec3 GetMousePos() override { return {}; }
+
     void Shutdown() override {}
 
     MetalAppDelegate* metalAppDelegate = nullptr;
@@ -551,6 +588,19 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     [triangleDesc release];
     [textureDesc release];
+
+    // Gamepad
+    [GCController startWirelessControllerDiscoveryWithCompletionHandler:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(controllerConnected:)
+                                                 name:GCControllerDidConnectNotification
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(controllerDisconnected:)
+                                                 name:GCControllerDidDisconnectNotification
+                                               object:nil];
 }
 - (void)drawInMTKView:(MTKView *)view {
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
@@ -644,6 +694,59 @@ static void RealMainMetal(MetalAppDelegate* app) {
         [self.activeTouches removeObject:touch];
 //        NSLog(@"Touch ended at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
     }
+}
+- (void)controllerConnected:(NSNotification *)notification {
+    GCController *controller = notification.object;
+    NSLog(@"Controller connected: %@", controller.vendorName);
+    if (controller.extendedGamepad) {
+        GCExtendedGamepad* gamepad = controller.extendedGamepad;
+        gamepad.valueChangedHandler = ^(GCExtendedGamepad* pad, GCControllerElement* element) {
+            for (int i = 0; i < pad.allButtons.count; i++) {
+                GCControllerButtonInput *button = pad.allButtons.allObjects[i];
+                if (element == button && !button.isPressed) {
+                    auto btn = GetGamepadButton(pad, element);
+                    if (btn != GamepadButton::Unknown && gamepadUpCallback != nullptr) {
+                        gamepadUpCallback(btn, gamepadCallbackContext);
+                    }
+                }
+            }
+        };
+        __block BOOL wasUpPressed = NO;
+        __block BOOL wasDownPressed = NO;
+        __block BOOL wasLeftPressed = NO;
+        __block BOOL wasRightPressed = NO;
+        gamepad.dpad.valueChangedHandler = ^(GCControllerDirectionPad *dpad, float xValue, float yValue) {
+            BOOL isUpPressed = dpad.up.isPressed;
+            BOOL isDownPressed = dpad.down.isPressed;
+            BOOL isLeftPressed = dpad.left.isPressed;
+            BOOL isRightPressed = dpad.right.isPressed;
+            if (gamepadUpCallback != nullptr) {
+                if (wasUpPressed && !isUpPressed) gamepadUpCallback(GamepadButton::DUp, gamepadCallbackContext);
+                if (wasDownPressed && !isDownPressed) gamepadUpCallback(GamepadButton::DDown, gamepadCallbackContext);
+                if (wasLeftPressed && !isLeftPressed) gamepadUpCallback(GamepadButton::DLeft, gamepadCallbackContext);
+                if (wasRightPressed && !isRightPressed) gamepadUpCallback(GamepadButton::DRight, gamepadCallbackContext);
+            }
+            wasUpPressed = isUpPressed;
+            wasDownPressed = isDownPressed;
+            wasLeftPressed = isLeftPressed;
+            wasRightPressed = isRightPressed;
+        };
+    }
+}
+- (void)controllerDisconnected:(NSNotification *)notification {
+    GCController *controller = notification.object;
+    NSLog(@"Controller disconnected: %@", controller.vendorName);
+}
+- (BOOL)IsGamePadPressed:(GamepadButton)button {
+    GCController *controller = [GCController controllers].firstObject;
+    if (controller.extendedGamepad) {
+        GCExtendedGamepad* gamepad = controller.extendedGamepad;
+        auto state = GetAppleGamepadButton(gamepad, button);
+        if (state != nullptr) {
+            return state.isPressed;
+        } else return false;
+    }
+    return false;
 }
 #if 0
 //    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
