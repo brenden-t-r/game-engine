@@ -69,11 +69,9 @@ public:
         }
 
         if (platform->IsMousePressed(MouseButton::Left)) {
-            printf("\nLeft Pressed!");
             triangleL->Update();
         }
         if (platform->IsMousePressed(MouseButton::Right)) {
-            printf("\nRight Pressed!");
             triangleR->Update();
         }
         if (platform->IsMousePressed(MouseButton::Middle)) {
@@ -117,10 +115,10 @@ public:
             platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
         }
 
-//        auto pos = platform->GetMousePos();
-//        triangleCursor->transform.pos.x = pos.x;
-//        triangleCursor->transform.pos.y = pos.y;
-//        triangleCursor->Update();
+        auto pos = platform->GetMousePos();
+        triangleCursor->transform.pos.x = pos.x;
+        triangleCursor->transform.pos.y = pos.y;
+        triangleCursor->Update();
     }
 
 private:
