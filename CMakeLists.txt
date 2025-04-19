@@ -33,14 +33,10 @@ elseif (UNIX AND NOT APPLE) # For Linux
     link_directories(/usr/lib/x86_64-linux-gnu)
     add_definitions(-DGLEW_STATIC)
 elseif (APPLE AND NOT PLATFORM_IOS)
-    # GLFW
-    set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
-    set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
-    include_directories(${GLFW_INCLUDE_DIR})
-
-    option(BACKEND_DIRECTX "Use DirectX backend" OFF)
-    option(BACKEND_OPENGL "Use OpenGL backend" OFF)
     if (BACKEND_OPENGL)
+        set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
+        set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
+        include_directories(${GLFW_INCLUDE_DIR})
         set(GLEW_INCLUDE_DIR /opt/homebrew/Cellar/glew/2.2.0_1/include)
         set(GLEW_LIBRARY /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib)
         include_directories(${GLEW_INCLUDE_DIR})
@@ -53,8 +49,8 @@ elseif (APPLE AND NOT PLATFORM_IOS)
 elseif (PLATFORM_IOS)
     list(APPEND SOURCES platform/ios/main.mm)
     set(CMAKE_SYSTEM_NAME iOS)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum OS X deployment version")
-#    set(CMAKE_OSX_SYSROOT iphonesimulator)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum iOS deployment version")
+    #    set(CMAKE_OSX_SYSROOT iphonesimulator)
     set(CMAKE_OSX_SYSROOT iphoneos)
     set(CMAKE_OSX_ARCHITECTURES arm64)
 endif()
@@ -142,7 +138,7 @@ elseif (APPLE)
                 "-framework AppKit"
                 "-framework GameController"
         )
-        set(MACOSX_BUNDLE TRUE)
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/metal/Info.plist)
 
@@ -172,7 +168,7 @@ elseif (APPLE)
 
 endif()
 
-if (NOT PLATFORM_IOS)
+if (NOT BACKEND_METAL)
 file(GLOB ASSETS_FOLDER
         "assets/*"
 )

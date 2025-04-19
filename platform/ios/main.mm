@@ -265,6 +265,7 @@ class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
         [vertexBuffer release];
+        [texture release];
     }
     SpriteMetal(
             id <MTLDevice> metalDevice,
@@ -311,12 +312,13 @@ public:
             newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
             newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
-        }
-
-//        memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
-        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+            [vertexBuffer release];
+            vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
                                                 length:sizeof(newVertices)
                                                options:MTLResourceStorageModeShared];
+        } else {
+            memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
+        }
 
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
