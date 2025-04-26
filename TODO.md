@@ -20,6 +20,10 @@
   - SDF
 - Gamepad
   - Triggers, axes
+- Metal
+  - Memory leak (delete gameobjects from internal list when deleted)
+  - iOS on screen controller
+  - iOS pong touch
 - WebGL support
 - CICD
 
