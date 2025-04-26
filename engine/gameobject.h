@@ -30,6 +30,8 @@ public:
     Transform transform{};
 //    std::vector<Component*> components{};
 
+    virtual ~GameObject(){}
+
     virtual void Update() {
 //        for (auto & component : components) {
 //            component->Update();

@@ -424,11 +424,7 @@ public:
     Sprite* CreateSprite(const char* path) override {
         NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device);
-        if (texture) {
-            NSLog(@"Texture loaded successfully!");
-        } else {
-            NSLog(@"Failed to load texture ☹\uFE0F");
-        }
+        assert(texture != nullptr);
         auto gameObject = new SpriteMetal(
                 metalAppDelegate.metalView.device, metalAppDelegate.metalView.texturePSO, texture
         );
@@ -439,6 +435,23 @@ public:
         auto sound = new SoundMA();
         sound->Init(path);
         return sound;
+    }
+    void Delete(GameObject* object) override {
+        for (auto it = triangles.begin(); it != triangles.end(); ++it) {
+            if (*it == object) {
+                triangles.erase(it);
+                delete object;
+                return;
+            }
+        }
+        for (auto it = sprites.begin(); it != sprites.end(); ++it) {
+            if (*it == object) {
+                sprites.erase(it);
+                delete object;
+                return;
+            }
+        }
+        delete object;
     }
     bool IsKeyPressed(KeyCode key) override {
         return [metalAppDelegate.metalView IsKeyPressed: key];

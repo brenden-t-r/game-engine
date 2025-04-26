@@ -49,6 +49,9 @@ public:
     virtual GameObject* CreateTriangle() = 0;
     virtual Sprite* CreateSprite(const char* path) = 0;
     virtual Sound* CreateSound(const char* path) = 0;
+    virtual void Delete(GameObject* object) {
+        delete object;
+    }
 
     virtual bool IsKeyPressed(KeyCode key) = 0;
     virtual bool IsMousePressed(MouseButton button) = 0;
