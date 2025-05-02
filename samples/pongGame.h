@@ -24,11 +24,11 @@ public:
     using Scene::Scene;
 
     ~PongScene() override {
-        delete player1Paddle;
-        delete player2Paddle;
-        delete ball;
-        delete dbg_triangle;
-        delete dbg_triangle2;
+        platform->Delete(player1Paddle);
+        platform->Delete(player2Paddle);
+        platform->Delete(ball);
+        platform->Delete(dbg_triangle);
+        platform->Delete(dbg_triangle2);
     };
 
     void Start() override {
@@ -243,8 +243,8 @@ private:
     Sprite* player2Paddle{};
     Sprite* ball{};
 
-    GameObject* dbg_triangle;
-    GameObject* dbg_triangle2;
+    GameObject* dbg_triangle{};
+    GameObject* dbg_triangle2{};
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;
@@ -266,22 +266,22 @@ class PongTitleScene : public Scene {
     using Scene::Scene;
 
     ~PongTitleScene() override {
-        delete gameObject;
-//        delete burbank;
+        platform->Delete(gameObject);
+        platform->Delete(burbank);
     }
 
     void Start() override {
         counter = 0;
         gameObject = platform->CreateTriangle();
 
-//        burbank = platform->CreateSprite("assets/sprites/burbank2048.png");
-//        burbank->transform.width = 0.5f;
-//        burbank->transform.height = 0.5f;
-//        burbank->useAtlas = true;
-//        burbank->atlasNumRows = 8;
-//        burbank->atlasCellSize = 0.125f;
-//        burbank->atlasRow = 0;
-//        burbank->atlasColumn = 0;
+        burbank = platform->CreateSprite("assets/sprites/burbank2048.png");
+        burbank->transform.width = 0.5f;
+        burbank->transform.height = 0.5f;
+        burbank->useAtlas = true;
+        burbank->atlasNumRows = 8;
+        burbank->atlasCellSize = 0.125f;
+        burbank->atlasRow = 0;
+        burbank->atlasColumn = 0;
     }
 
     void Update() override {
@@ -291,22 +291,22 @@ class PongTitleScene : public Scene {
 
         gameObject->Update();
 
-//        burbank->transform.width = 0.5f;
-//        burbank->transform.height = 0.5f;
-//        ShowText("PONG", burbank, ParagraphSettings{{}, MIDDLE, 0.5f, 0.5f});
-//        burbank->transform.width = 0.2f;
-//        burbank->transform.height = 0.2f;
-//        if (player_who_won == 1) {
-//            ShowText("Player 1 won!", burbank, ParagraphSettings{{0, 0.8f}, MIDDLE, 0.2f, 0.5f});
-//        } else if (player_who_won == 2) {
-//            ShowText("Player 2 won!", burbank, ParagraphSettings{{0, 0.8f}, MIDDLE, 0.2f, 0.5f});
-//        }
+        burbank->transform.width = 0.5f;
+        burbank->transform.height = 0.5f;
+        ShowText("PONG", burbank, ParagraphSettings{{}, MIDDLE, 0.5f, 0.5f});
+        burbank->transform.width = 0.2f;
+        burbank->transform.height = 0.2f;
+        if (player_who_won == 1) {
+            ShowText("Player 1 won!", burbank, ParagraphSettings{{0, 0.8f}, MIDDLE, 0.2f, 0.5f});
+        } else if (player_who_won == 2) {
+            ShowText("Player 2 won!", burbank, ParagraphSettings{{0, 0.8f}, MIDDLE, 0.2f, 0.5f});
+        }
     }
 
 private:
     //region Private Variables
     GameObject *gameObject = nullptr;
-    //Sprite *burbank = nullptr;
+    Sprite *burbank = nullptr;
     int counter = 0;
     //endregion
 };
