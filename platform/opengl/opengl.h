@@ -225,7 +225,7 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
-    vector3 GetMousePos() override {
+    vec3 GetMousePos() override {
         double cursorX, cursorY;
         int width, height;
         glfwGetCursorPos(window, &cursorX, &cursorY);

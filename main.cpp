@@ -3,7 +3,8 @@
  * Choose backend
  *  Windows => OpenGL, DirectX
  *  Linux   => OpenGL
- *  Apple   => Metal
+ *  macOS   => OpenGL, Metal
+ *  iOS     => Metal
  * */
 //#define BACKEND_DIRECTX
 //#define BACKEND_OPENGL
@@ -46,12 +47,12 @@ int RealMain(Platform* platform) {
 
     platform->Init();
 
-//    Game* game = new SampleGame(platform);
+    Game* game = new SampleGame(platform);
 //    Game* game = new TriangleGame(platform);
 //    Game* game = new SpriteGame(platform);
 //    Game* game = new PongGame(platform);
 //    Game* game = new AudioGame(platform);
-    Game* game = new InputGame(platform);
+//    Game* game = new InputGame(platform);
 //    Game* game = new BLANK_GAME::BlankSceneGame(platform);
 //    Game* game = new FontGame(platform);
 //    Game* game = new CollisionGame(platform);
@@ -79,7 +80,10 @@ int RealMain(Platform* platform) {
 #include "platform/directx/directx.h"
 #elif defined(PLATFORM_LINUX)
 #include "platform/opengl/opengl.h"
-#elif defined(PLATFORM_APPLE)
+#elif defined(PLATFORM_APPLE) && defined(BACKEND_OPENGL)
+#include "platform/opengl/opengl.h"
+#elif defined(PLATFORM_APPLE) && defined(BACKEND_METAL)
+#elif defined(PLATFORM_IOS)
 #else
 // No backend selected
 int main() {

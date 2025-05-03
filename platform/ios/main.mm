@@ -1,49 +1,14 @@
-#if defined(PLATFORM_APPLE) and defined(BACKEND_METAL) and not defined(PLATFORM_IOS)
-#import <Cocoa/Cocoa.h>
-#import <QuartzCore/CAMetalLayer.h>
-#import <Metal/Metal.h>
-#import <MetalKit/MetalKit.h>
-#import <Carbon/Carbon.h>
-#import <GameController/GameController.h>
-#include "stb_image.h"
+#if defined(PLATFORM_IOS)
+#include <Metal/Metal.h>
+#include <UIKit/UIKit.h>
+#include <MetalKit/MetalKit.h>
+#include <AVFoundation/AVFoundation.h>
+#include <GameController/GameController.h>
 
 #include "../platform.h"
-#include "../../engine/audio.h"
 
-#include <cstdio>
-
-static void *runFuncContext;
+static void* runFuncContext;
 static void (*runFunc)(void *);
-static bool Running = false;
-
-//region Input Helpers / Callbacks
-static int GetAppleKey(KeyCode key) {
-    switch (key) {
-        case KeyCode::Up:       return kVK_UpArrow;
-        case KeyCode::Down:     return kVK_DownArrow;
-        case KeyCode::Left:     return kVK_LeftArrow;
-        case KeyCode::Right:    return kVK_RightArrow;
-        case KeyCode::W:        return kVK_ANSI_W;
-        case KeyCode::A:        return kVK_ANSI_A;
-        case KeyCode::S:        return kVK_ANSI_S;
-        case KeyCode::D:        return kVK_ANSI_D;
-        default:
-            return -1;
-    }
-}
-static KeyCode GetKeyCode(int appleKey) {
-    switch (appleKey) {
-        case kVK_UpArrow:       return KeyCode::Up;
-        case kVK_DownArrow:     return KeyCode::Down;
-        case kVK_LeftArrow:     return KeyCode::Left;
-        case kVK_RightArrow:    return KeyCode::Right;
-        case kVK_ANSI_W:        return KeyCode::W;
-        case kVK_ANSI_A:        return KeyCode::A;
-        case kVK_ANSI_S:        return KeyCode::S;
-        case kVK_ANSI_D:        return KeyCode::D;
-        default:                return KeyCode::Unknown;
-    }
-}
 static GCControllerButtonInput* GetAppleGamepadButton(GCExtendedGamepad *pad, GamepadButton btn) {
     switch (btn) {
         case GamepadButton::North: return pad.buttonY;
@@ -76,12 +41,78 @@ static GamepadButton GetGamepadButton(GCExtendedGamepad *pad, GCControllerElemen
     if (btn == pad.buttonMenu) return GamepadButton::Select;
     else return GamepadButton::Unknown;
 }
-void static(*keyUpCallback)(KeyCode, void*);
-static void* keyCallbackContext;
 void static(*mouseUpCallback)(MouseButton, void*);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
+
+//region Shader Source
+struct VertexData {
+    simd::float4 position;
+    simd::float2 textureCoordinate;
+};
+static const char* vertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+struct VertexOut {
+    float4 position [[position]];
+};
+
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                             constant float4 *vertices [[buffer(0)]]) {
+    VertexOut out;
+    out.position = vertices[vertexID];
+    return out;
+}
+)";
+static const char* fragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+fragment float4 fragment_main() {
+    return float4(1.0, 0, 0.0, 1.0); // Red color
+}
+)";
+static const char* textureVertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+struct VertexData {
+    float4 position;
+    float2 textureCoordinate;
+};
+
+struct VertexOut {
+    float4 position [[position]];
+    float2 textureCoordinate;
+};
+
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                              constant VertexData* vertexData) {
+    VertexOut out;
+    out.position = vertexData[vertexID].position;
+    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
+    return out;
+}
+)";
+static const char* textureFragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+fragment float4 fragment_main(VertexOut in [[stage_in]],
+                               texture2d<float> colorTexture [[texture(0)]]) {
+    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
+    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    return colorSample;
+}
+)";
 //endregion
 
 //region: Static helper functions
@@ -168,91 +199,24 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 }
 //endregion
 
-//region Shader Source
-struct VertexData {
-    simd::float4 position;
-    simd::float2 textureCoordinate;
-};
-static const char* vertexShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-struct VertexOut {
-    float4 position [[position]];
-};
-
-vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
-                             constant float4 *vertices [[buffer(0)]]) {
-    VertexOut out;
-    out.position = vertices[vertexID];
-    return out;
-}
-)";
-static const char* fragmentShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-fragment float4 fragment_main() {
-    return float4(1.0, 0, 0.0, 1.0); // Red color
-}
-)";
-static const char* textureVertexShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-#include <simd/simd.h>
-using namespace simd;
-
-struct VertexData {
-    float4 position;
-    float2 textureCoordinate;
-};
-
-struct VertexOut {
-    float4 position [[position]];
-    float2 textureCoordinate;
-};
-
-vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
-                              constant VertexData* vertexData) {
-    VertexOut out;
-    out.position = vertexData[vertexID].position;
-    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
-    return out;
-}
-)";
-static const char* textureFragmentShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-#include <simd/simd.h>
-using namespace simd;
-
-fragment float4 fragment_main(VertexOut in [[stage_in]],
-                               texture2d<float> colorTexture [[texture(0)]]) {
-    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
-    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
-    return colorSample;
-}
-)";
-//endregion
-
-//region: MetalView/MetalAppDelegate declarations
-@interface MetalView : MTKView <MTKViewDelegate>
+//region: Interface declarations
+@interface MetalViewController : UIViewController<MTKViewDelegate>
+@property (nonatomic, strong) MTKView *metalView;
+@property (nonatomic, strong) id<MTLDevice> device;
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
-@property (strong) NSTrackingArea *trackingArea;
-- (BOOL) IsMousePressed:(MouseButton) button;
-- (BOOL) IsKeyPressed:(KeyCode) key;
-- (BOOL)IsGamePadPressed:(GamepadButton)button;
+@property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
+@property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
+@property (nonatomic, strong) GCVirtualController *virtualController;
 @end
-@interface MetalAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
-@property (strong, nonatomic) NSWindow *window;
-@property (strong, nonatomic) MetalView *metalView;
-@property (strong, nonatomic) id<MTLDevice> device;
+@interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
+@property (strong, nonatomic) UIWindow *window;
+@property (strong, nonatomic) MetalViewController *viewController;
 @end
 //endregion
+
+AVAudioEngine *engine = nullptr;
 
 //region: Game Objects
 class TriangleMetal : public Triangle {
@@ -301,6 +265,7 @@ class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
         [vertexBuffer release];
+        [texture release];
     }
     SpriteMetal(
             id <MTLDevice> metalDevice,
@@ -310,6 +275,17 @@ public:
         this->metalDevice = metalDevice;
         this->metalRenderPSO = metalRenderPSO;
         this->texture = texture;
+        VertexData newVertices[]{
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
+        };
+        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+                                                length:sizeof(newVertices)
+                                               options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
@@ -323,7 +299,6 @@ public:
                 {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
-        int row = atlasRow;
         if (useAtlas) {
             newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
             newVertices[0].textureCoordinate.y = atlasCellSize * (float)atlasRow;
@@ -337,11 +312,13 @@ public:
             newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
             newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
-        }
-
-        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+            [vertexBuffer release];
+            vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
                                                 length:sizeof(newVertices)
                                                options:MTLResourceStorageModeShared];
+        } else {
+            memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
+        }
 
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
@@ -360,81 +337,149 @@ private:
     id<MTLRenderCommandEncoder> renderCommandEncoder;
     id<MTLTexture> texture;
 };
-class SoundMA : public Sound {
+class SoundMetalAVAudioPlayer : public Sound {
 public:
-    ~SoundMA(){
-        ma_sound_uninit(&sound);
-    };
+    ~SoundMetalAVAudioPlayer() {
+        [player release];
+    }
+    SoundMetalAVAudioPlayer(const char* filePath) {
+        NSString *file = [NSString stringWithUTF8String:filePath];
+        NSString *path = [[NSBundle mainBundle] pathForResource:file ofType:nil];
+        if (path) {
+            NSURL *fileURL = [NSURL fileURLWithPath:path];
+            NSError *error = nil;
+            player = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:&error];
+            if (error) {
+                NSLog(@"Error initializing player: %@", error.localizedDescription);
+            }
+        } else {
+            NSLog(@"File not found in bundle");
+        }
+        [player prepareToPlay];
+    }
 
-    void Init(const char* filePath) {
+    void Play() override {
+        if (player) {
+            [player play];
+        }
+    }
+    void Stop() override {
+        if (player) {
+            [player stop];
+        }
+    }
+    void Reset() override {
+        if (player) {
+            player.currentTime = 0;
+        }
+    }
+    AVAudioPlayer* player = nullptr;
+};
+class SoundMetalAVAudioBuffered : public Sound {
+public:
+    ~SoundMetalAVAudioBuffered() {
+        [engine detachNode:player];
+        [player release];
+    }
+    SoundMetalAVAudioBuffered(const char* filePath) {
+        if (engine == nullptr) {
+            engine = [[AVAudioEngine alloc] init];
+        }
+
+        // Load audio file
         NSError *error = nil;
         NSString *file = [NSString stringWithUTF8String:filePath];
         NSString *path = [[NSBundle mainBundle] pathForResource:file ofType:nil];
-        ma_result result = ma_sound_init_from_file(&g_engine, [path UTF8String], MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
-        if (result != MA_SUCCESS) {
-            printf("Failed to initialize audio sound.");
+        NSURL *fileURL = [NSURL fileURLWithPath:path];
+        NSLog(@"%s",filePath);
+        audioFile = [[AVAudioFile alloc] initForReading:fileURL error:&error];
+        if (error || !audioFile) {
+            NSLog(@"Failed to load audio file: %@", error.localizedDescription);
         }
-        assert(result == MA_SUCCESS);
-    }
 
+        // Buffer
+        buffer = [[AVAudioPCMBuffer alloc]
+                  initWithPCMFormat:audioFile.processingFormat
+                  frameCapacity:(AVAudioFrameCount)audioFile.length];
+        [audioFile readIntoBuffer:buffer error:&error];
+        if (error) {
+            NSLog(@"Failed to read audio buffer: %@", error.localizedDescription);
+            return;
+        }
+
+        // Create player
+        player = [[AVAudioPlayerNode alloc] init];
+        [engine attachNode:player];
+
+        AVAudioFormat *format = [engine.mainMixerNode outputFormatForBus:0];
+        [engine connect:player to:engine.mainMixerNode format:format];
+
+        [engine prepare];
+        [engine startAndReturnError:&error];
+        if (error) {
+            NSLog(@"Failed to start audio engine: %@", error.localizedDescription);
+        }
+    }
     void Play() {
-        ma_sound_start(&sound);
+        if (!player.isPlaying) {
+            [player play];
+        }
+        [player scheduleBuffer:buffer atTime:nil options:AVAudioPlayerNodeBufferInterrupts completionHandler:nil];
     }
 
     void Stop() {
-        ma_sound_stop(&sound);
+        [player stop];
     }
 
-    void Reset() {
-        ma_sound_seek_to_pcm_frame(&sound, 0);
-    }
+    void Reset() {}
 
-    ma_sound sound{};
+    AVAudioPlayerNode *player;
+    AVAudioPCMBuffer *buffer;
+    AVAudioFile *audioFile;
 };
 //endregion
 
-//region: PlatformMetal
+//region: PlatformIOS
+static bool Running = false;
 std::vector<TriangleMetal*> triangles = std::vector<TriangleMetal*>();
 std::vector<SpriteMetal*> sprites = std::vector<SpriteMetal*>();
-class PlatformMetal : public Platform {
+class PlatformIOS : public Platform {
 public:
-    void Init() override {
-        printf("Hi from Init\n");
-        audioWrapper = new AudioWrapper();
-        audioWrapper->Init();
-    }
-    void Run(void (*_func)(void*), void* context) override {
-        runFunc = _func;
+    void Init() override {}
+
+    void Run(void (*func)(void*), void* context) override {
+        printf("Hi from Run\n");
+        runFunc = func;
         runFuncContext = context;
         Running = true;
         while (Running) {
-            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+            sleep(1);
         }
         printf("Run end");
     }
-    void LoadShaders() override {
 
-    }
-    GameObject* CreateGameObject() override { return new GameObject(); };
+    void LoadShaders() override {}
+
+    GameObject* CreateGameObject() override {
+        return new GameObject();
+    };
     GameObject* CreateTriangle() override {
-        auto gameObject = new TriangleMetal(metalAppDelegate.device, metalAppDelegate.metalView.trianglePSO);
+        auto gameObject = new TriangleMetal(metalAppDelegate.viewController.device, metalAppDelegate.viewController.trianglePSO);
         triangles.push_back(gameObject);
         return gameObject;
     }
     Sprite* CreateSprite(const char* path) override {
         NSString *imageName = [NSString stringWithUTF8String:path];
-        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device);
+        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
         assert(texture != nullptr);
         auto gameObject = new SpriteMetal(
-                metalAppDelegate.metalView.device, metalAppDelegate.metalView.texturePSO, texture
+                metalAppDelegate.viewController.device, metalAppDelegate.viewController.texturePSO, texture
         );
         sprites.push_back(gameObject);
         return gameObject;
     }
     Sound* CreateSound(const char* path) override {
-        auto sound = new SoundMA();
-        sound->Init(path);
-        return sound;
+        return new SoundMetalAVAudioBuffered(path);
     }
     void Delete(GameObject* object) override {
         for (auto it = triangles.begin(); it != triangles.end(); ++it) {
@@ -453,19 +498,15 @@ public:
         }
         delete object;
     }
-    bool IsKeyPressed(KeyCode key) override {
-        return [metalAppDelegate.metalView IsKeyPressed: key];
-    }
+
+    bool IsKeyPressed(KeyCode key) override { return false; }
     bool IsMousePressed(MouseButton button) override {
-        return [metalAppDelegate.metalView IsMousePressed: button];
+        if (button == MouseButton::Left) {
+            return metalAppDelegate.viewController.activeTouches.count > 0;
+        } else return false;
     }
-    bool IsGamepadButtonPressed(GamepadButton button) override {
-        return [metalAppDelegate.metalView IsGamePadPressed: button];
-    }
-    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {
-        keyUpCallback = func;
-        keyCallbackContext = context;
-    }
+    bool IsGamepadButtonPressed(GamepadButton button) override { return [metalAppDelegate.viewController IsGamePadPressed: button]; }
+    void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {}
     void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
@@ -474,72 +515,62 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
-    virtual vec3 GetMousePos() override { return {}; }
-    void Shutdown() override {
-        Running = false;
-    }
+    vec3 GetMousePos() override { return {}; }
 
-    MetalAppDelegate* metalAppDelegate;
-    AudioWrapper* audioWrapper;
+    void Shutdown() override {}
+
+    MetalAppDelegate* metalAppDelegate = nullptr;
 };
-
 int RealMain(Platform* platform);
-static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
-    auto platform = new PlatformMetal();
+static void RealMainMetal(MetalAppDelegate* app) {
+    auto platform = new PlatformIOS();
     platform->metalAppDelegate = app;
     RealMain(platform);
 }
 //endregion
 
-//region: MetalView
-@implementation MetalView
-- (instancetype)initWithFrame:(NSRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
-        self.device = MTLCreateSystemDefaultDevice();
-        self.delegate = self;
-        self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-        [self setupPipeline];
-    }
-    return self;
-}
-- (void)setupPipeline {
-    self.commandQueue = [self.device newCommandQueue];
+//region: MetalViewController
+@implementation MetalViewController
+- (void)viewDidLoad {
+    [super viewDidLoad];
 
-    // Triangle shader
-    MTLRenderPipelineDescriptor* triangleDesc = [self loadShaderLibrary:vertexShaderSrc frag:fragmentShaderSrc];
-    triangleDesc.colorAttachments[0].pixelFormat = self.colorPixelFormat;
-    NSError *error = nil;
-    self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:triangleDesc error:&error];
-    if (!self.trianglePSO) {
-        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
+    // Set up Metal device
+    self.device = MTLCreateSystemDefaultDevice();
+    if (!self.device) {
+        NSLog(@"Metal is not supported on this device.");
+        return;
     }
 
-    // Texture shader
-    MTLRenderPipelineDescriptor* textureDesc = [self loadShaderLibrary:textureVertexShaderSrc frag:textureFragmentShaderSrc];
-    MTLRenderPipelineColorAttachmentDescriptor *attachment = textureDesc.colorAttachments[0];
-    attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    attachment.blendingEnabled = YES;
-    attachment.rgbBlendOperation = MTLBlendOperationAdd;
-    attachment.alphaBlendOperation = MTLBlendOperationAdd;
-    attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-    attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
-    attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    error = nil;
-    self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
-    if (!self.texturePSO) {
-        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
-    }
-
-    [triangleDesc release];
-    [textureDesc release];
+    // Set up MTKView
+    self.metalView = [[MTKView alloc] initWithFrame:self.view.bounds device:self.device];
+    self.metalView.delegate = self;
+    self.metalView.enableSetNeedsDisplay = NO;
+    self.metalView.preferredFramesPerSecond = 60;
+    self.metalView.framebufferOnly = NO; // Allow read/write operations
+    self.metalView.clearColor = MTLClearColorMake(0.4, 0.4, 0.8, 1.0);
+    self.metalView.frame = self.view.bounds;
+    self.metalView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [self.view addSubview:self.metalView];
+    [self setupPipeline];
 
     // Print all resources in the main bundle
     NSBundle *mainBundle = [NSBundle mainBundle];
     NSString *resourcePath = [mainBundle resourcePath];
     NSLog(@"Resource path: %@", resourcePath);
     listFilesInDirectory(resourcePath, 0);
+
+    // Input gesture setup
+    self.activeTouches = [NSMutableSet set];
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [tap setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:tap];
+    UITapGestureRecognizer *twoFingerTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTwoFingerTap:)];
+    twoFingerTap.numberOfTouchesRequired = 2;
+    [twoFingerTap setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:twoFingerTap];
+    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+    [longPress setCancelsTouchesInView:false];
+    [self.view addGestureRecognizer:longPress];
 
     // Gamepad
     [GCController startWirelessControllerDiscoveryWithCompletionHandler:nil];
@@ -553,35 +584,56 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
                                              selector:@selector(controllerDisconnected:)
                                                  name:GCControllerDidDisconnectNotification
                                                object:nil];
-}
-- (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
-    // Compile shader
-    NSError *error = nil;
-    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
-    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
-    id<MTLLibrary> library = [self.device newLibraryWithSource:shaderSource options:options error:&error];
-    if (!library) {
-        NSLog(@"Shader compilation error: %@", error.localizedDescription);
-        return nil;
-    } else {
-        NSLog(@"Compiled library");
-        NSLog(@"%@", library.functionNames[0]);
-        NSLog(@"%@", library.functionNames[1]);
+    if (!_virtualController) {
+        GCVirtualControllerConfiguration *config = [[GCVirtualControllerConfiguration alloc] init];
+        config.elements = [NSSet setWithArray:@[
+                GCInputDirectionalDpad,
+                GCInputButtonA,
+                GCInputButtonY,
+//                GCInputButtonB,
+//                GCInputButtonX,
+//                GCInputLeftThumbstick,
+//                GCInputRightThumbstick
+        ]];
+        _virtualController = [[GCVirtualController alloc] initWithConfiguration:config];
     }
-    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
-    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
+    if (GCController.controllers.count == 0 && _virtualController != nil) {
+        [_virtualController connectWithReplyHandler:nil];
+    }
+}
+- (void)setupPipeline {
+    self.commandQueue = [self.device newCommandQueue];
 
-    // Create pipeline state
-    MTLRenderPipelineDescriptor* pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineDesc.vertexFunction = vertexFunction;
-    pipelineDesc.fragmentFunction = fragmentFunction;
-    pipelineDesc.colorAttachments[0].pixelFormat = self.colorPixelFormat;
+    // Triangle shader
+    MTLRenderPipelineDescriptor* triangleDesc = loadShaderLibrary(self.device, vertexShaderSrc, fragmentShaderSrc);
+    triangleDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
+    NSError *error = nil;
+    self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:triangleDesc error:&error];
+    if (!self.trianglePSO || error != nil) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
+    }
 
-    return pipelineDesc;
+    // Texture shader
+    MTLRenderPipelineDescriptor* textureDesc = loadShaderLibrary(self.device, textureVertexShaderSrc, textureFragmentShaderSrc);
+    MTLRenderPipelineColorAttachmentDescriptor *attachment = textureDesc.colorAttachments[0];
+    attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    attachment.blendingEnabled = YES;
+    attachment.rgbBlendOperation = MTLBlendOperationAdd;
+    attachment.alphaBlendOperation = MTLBlendOperationAdd;
+    attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+    attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
+    attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    error = nil;
+    self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
+    if (!self.texturePSO || error != nil) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
+    }
+
+    [triangleDesc release];
+    [textureDesc release];
 }
 - (void)drawInMTKView:(MTKView *)view {
-    if (!Running) return;
-
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
 
     MTLRenderPassDescriptor *passDescriptor = view.currentRenderPassDescriptor;
@@ -601,73 +653,78 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
     }
 
-    runFunc(runFuncContext);
+    if (runFunc != nil) {
+        runFunc(runFuncContext);
+    }
 
     [renderCommandEncoder endEncoding];
     [commandBuffer presentDrawable:view.currentDrawable];
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
+
 }
-- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size __attribute__((swift_attr("@UIActor"))) {
-    NSLog(@"resized");
+- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
+    NSLog(@"resized: %f, %f", size.width, size.height);
 }
-- (BOOL)acceptsFirstResponder {
-    return YES;
+- (void)viewWillLayoutSubviews {
+    [super viewWillLayoutSubviews];
+    self.view.frame = UIScreen.mainScreen.bounds;
 }
-- (BOOL)IsMousePressed:(MouseButton)button {
-    NSUInteger pressed = [NSEvent pressedMouseButtons];
-    switch (button) {
-        case MouseButton::Unknown:
-            return false;
-        case MouseButton::Left:
-            return pressed & (1 << 0);
-        case MouseButton::Middle:
-            return pressed & (1 << 1);
-        case MouseButton::Right:
-            return pressed & (1 << 2);
-    }
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
 }
-- (BOOL)IsKeyPressed:(KeyCode) key {
-    auto appleKey = GetAppleKey(key);
-    return CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, appleKey);
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+#ifdef FORCE_PORTRAIT
+    return UIInterfaceOrientationMaskPortrait;
+#elif defined(FORCE_LANDSCAPE)
+    return UIInterfaceOrientationMaskLandscape;
+#else
+    return UIInterfaceOrientationMaskAll;
+#endif
+
 }
-- (void)keyUp:(NSEvent *)event {
-    NSLog(@"Key released: %@, keyCode: %hu", event.characters, event.keyCode);
-    auto key = GetKeyCode(event.keyCode);
-    keyUpCallback(key, keyCallbackContext);
-}
-- (void)mouseUp:(NSEvent *)event {
+- (void)handleTap:(UITapGestureRecognizer *)gesture {
+//    CGPoint location = [gesture locationInView:self.view];
+//    NSLog(@"Tap at: (%f, %f)", location.x, location.y);
     if (mouseUpCallback != nil) {
         mouseUpCallback(MouseButton::Left, mouseCallbackContext);
     }
 }
-- (void)rightMouseUp:(NSEvent *)event {
-    if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Right, mouseCallbackContext);
-    }
-}
-- (void)otherMouseUp:(NSEvent *)event {
-    if (event.buttonNumber == 2) {
+- (void)handleTwoFingerTap:(UITapGestureRecognizer *)gesture {
+    if (gesture.numberOfTouches == 2) {
+//        CGPoint touch1 = [gesture locationOfTouch:0 inView:self.view];
+//        CGPoint touch2 = [gesture locationOfTouch:1 inView:self.view];
+//        CGPoint midpoint = CGPointMake((touch1.x + touch2.x) / 2, (touch1.y + touch2.y) / 2);
+//        NSLog(@"Two-finger tap midpoint: (%f, %f)", midpoint.x, midpoint.y);
         if (mouseUpCallback != nil) {
-            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+            mouseUpCallback(MouseButton::Right, mouseCallbackContext);
         }
     }
 }
-- (void)mouseMoved:(NSEvent *)event {
-    NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-}
-- (void)updateTrackingAreas {
-    [super updateTrackingAreas];
-
-    if (self.trackingArea) {
-        [self removeTrackingArea:self.trackingArea];
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+//        CGPoint point = [gesture locationInView:self.view];
+//        NSLog(@"Long press at: (%f, %f)", point.x, point.y);
     }
-
-    self.trackingArea = [[NSTrackingArea alloc] initWithRect:self.bounds
-                                                     options:(NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
-                                                       owner:self
-                                                    userInfo:nil];
-    [self addTrackingArea:self.trackingArea];
+}
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        [self.activeTouches addObject:touch];
+//        NSLog(@"Touch began at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    }
+}
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        if ([self.activeTouches containsObject:touch]) {
+//            NSLog(@"Touch moved at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+        }
+    }
+}
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        [self.activeTouches removeObject:touch];
+//        NSLog(@"Touch ended at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    }
 }
 - (void)controllerConnected:(NSNotification *)notification {
     GCController *controller = notification.object;
@@ -706,10 +763,34 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
             wasRightPressed = isRightPressed;
         };
     }
+
+    if (_virtualController != nil) {
+        BOOL hasPhysicalController = NO;
+        for (GCController *ctrl in GCController.controllers) {
+            if (ctrl != _virtualController.controller) {
+                hasPhysicalController = YES;
+                break;
+            }
+        }
+        if (hasPhysicalController) {
+            [_virtualController disconnect];
+        }
+    }
 }
+
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);
+    [self showVirtualController];
+}
+- (void)showVirtualController {
+    if (!self.virtualController.controller.isAttachedToDevice) {
+        [self.virtualController connectWithReplyHandler:^(NSError * _Nullable error) {
+            if (error) {
+                NSLog(@"Error showing virtual controller: %@", error);
+            }
+        }];
+    }
 }
 - (BOOL)IsGamePadPressed:(GamepadButton)button {
     GCController *controller = [GCController controllers].firstObject;
@@ -722,55 +803,53 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     }
     return false;
 }
+#if 0
+//    self.metalView.insetsLayoutMarginsFromSafeArea = NO;
+//    self.edgesForExtendedLayout = UIRectEdgeAll;
+//    self.modalPresentationStyle = UIModalPresentationFullScreen;
+//- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
+//    return UIRectEdgeAll;
+//}
+[[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(handleOrientationChange:)
+name:UIDeviceOrientationDidChangeNotification
+        object:nil];
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    [self updateMetalViewForCurrentOrientation];
+}
+- (void)handleOrientationChange:(NSNotification *)notification {
+    [self updateMetalViewForCurrentOrientation];
+}
+#endif
 @end
 //endregion
 
 //region: AppDelegate
 @implementation MetalAppDelegate
-- (void)applicationDidFinishLaunching:(NSNotification *)notification {
-    NSLog(@"applicationDidFinishLaunching");
-    NSRect frame = NSMakeRect(100, 100, 1280, 720);
-    self.window = [[NSWindow alloc] initWithContentRect:frame
-                                              styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                                                         NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)
-                                                backing:NSBackingStoreBuffered
-                                                  defer:NO
-    ];
-    [self.window setTitle:@"Metal Triangle"];
-    self.window.delegate = self;
-    [self.window setLevel:NSNormalWindowLevel];
-    [self.window makeKeyAndOrderFront:nil];
-    [self.window orderFrontRegardless];
-    [NSApp activateIgnoringOtherApps:YES];
-
-    MetalView *metalView = [[MetalView alloc] initWithFrame:frame];
-    self.window.contentView = metalView;
-    self.metalView = metalView;
-    self.device = metalView.device;
-
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    NSLog(@"didFinishLaunchingWithOptions");
+    self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    self.viewController = [[MetalViewController alloc] init];
+    self.window.rootViewController = self.viewController;
+    [self.window makeKeyAndVisible];
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-        RealMainMetal(self, self.metalView);
+        RealMainMetal(self);
     });
-}
-- (void)windowWillClose:(NSNotification *)notification {
-    NSLog(@"Window is closing");
-    [NSApp terminate:self]; // Optional: Quit the app when the window closes
-    Running = false;
+    return YES;
 }
 @end
 //endregion
 
 //region: Main
-int main(int argc, const char * argv[]) {
-    printf("Hello world\n");
+int RealMain(Platform* platform);
+int main(int argc, char * argv[]) {
+    NSLog(@"Hello world");
     @autoreleasepool {
-        NSApplication *app = [NSApplication sharedApplication];
-        MetalAppDelegate *delegate = [[MetalAppDelegate alloc] init];
-        [app setDelegate:delegate];
-        [app finishLaunching];
-        [app run];
+        UIApplicationMain(argc, argv, nil, NSStringFromClass([MetalAppDelegate class]));
     }
     return 0;
 }
-//endregions
+//endregion
+
 #endif

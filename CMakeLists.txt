@@ -3,7 +3,7 @@ project(GameEngine)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set sources
 set(SOURCES main.cpp)
@@ -32,13 +32,27 @@ elseif (UNIX AND NOT APPLE) # For Linux
     link_directories(${GLFW3_LIBRARY_DIRS})
     link_directories(/usr/lib/x86_64-linux-gnu)
     add_definitions(-DGLEW_STATIC)
-elseif (APPLE)
-    # GLFW
-    set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
-    set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
-    include_directories(${GLFW_INCLUDE_DIR})
-    list(APPEND SOURCES platform/metal/mtl_implementation.cpp platform/metal/main.mm platform/metal/stbi_image.cpp)
-
+elseif (APPLE AND NOT PLATFORM_IOS)
+    if (BACKEND_OPENGL)
+        set(GLFW_INCLUDE_DIR /opt/homebrew/Cellar/glfw/3.4/include)
+        set(GLFW_LIBRARY /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.dylib)
+        include_directories(${GLFW_INCLUDE_DIR})
+        set(GLEW_INCLUDE_DIR /opt/homebrew/Cellar/glew/2.2.0_1/include)
+        set(GLEW_LIBRARY /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib)
+        include_directories(${GLEW_INCLUDE_DIR})
+        list(APPEND SOURCES platform/opengl/opengl.h)
+    elseif (BACKEND_METAL)
+        list(APPEND SOURCES platform/metal/main.mm platform/metal/stb_image.cpp)
+    else()
+        message(FATAL_ERROR "No backend specified! Use -DBACKEND_METAL or -DBACKEND_OPENGL.")
+    endif()
+elseif (PLATFORM_IOS)
+    list(APPEND SOURCES platform/ios/main.mm)
+    set(CMAKE_SYSTEM_NAME iOS)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum iOS deployment version")
+    #    set(CMAKE_OSX_SYSROOT iphonesimulator)
+    set(CMAKE_OSX_SYSROOT iphoneos)
+    set(CMAKE_OSX_ARCHITECTURES arm64)
 endif()
 
 # Add executable
@@ -54,6 +68,8 @@ if (WIN32)
     else()
         message(FATAL_ERROR "No backend specified! Use -DBACKEND_DIRECTX or -DBACKEND_OPENGL.")
     endif()
+elseif (APPLE)
+    add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${SOURCES})
 else()
     add_executable(${PROJECT_NAME} ${SOURCES})
 endif()
@@ -78,21 +94,83 @@ elseif (UNIX AND NOT APPLE) # For Linux
     # Set platform pre-processor macro
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_LINUX)
 elseif (APPLE)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/dependencies/metal-cpp)
-    target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY}
-            "-framework Metal"
-            "-framework Foundation"
-            "-framework QuartzCore"
-            "-framework OpenGL"
-            "-framework Cocoa"
-            "-framework IOKit"
-            "-framework CoreVideo"
-    )
+    if (PLATFORM_IOS)
+        target_link_libraries(${PROJECT_NAME}
+                "-framework Metal"
+                "-framework Foundation"
+                "-framework MetalKit"
+                "-framework UIKit"
+                "-framework CoreGraphics"
+                "-framework QuartzCore"
+                "-framework IOKit"
+                "-framework CoreVideo"
+                "-framework CoreFoundation"
+                "-framework CoreAudio"
+                "-framework AudioToolbox"
+                "-framework AVFoundation"
+                "-framework GameController"
+        )
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/ios/Info.plist)
+
+        file(GLOB_RECURSE ASSET_FILES "${CMAKE_SOURCE_DIR}/assets/*")
+        foreach(ASSET ${ASSET_FILES})
+            file(RELATIVE_PATH ASSET_RELATIVE_PATH "${CMAKE_SOURCE_DIR}" ${ASSET})
+            get_filename_component(ASSET_DIR ${ASSET_RELATIVE_PATH} DIRECTORY)
+            message(STATUS "Asset: ${ASSET} will be placed at Resources/${ASSET_RELATIVE_PATH}")
+            set_source_files_properties(${ASSET} PROPERTIES
+                    MACOSX_PACKAGE_LOCATION "Resources/${ASSET_DIR}")
+        endforeach()
+        target_sources(${PROJECT_NAME} PRIVATE ${ASSET_FILES})
+
+        target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_IOS)
+    else()
+        target_link_libraries(${PROJECT_NAME}
+                "-framework Metal"
+                "-framework Foundation"
+                "-framework QuartzCore"
+                "-framework OpenGL"
+                "-framework Cocoa"
+                "-framework IOKit"
+                "-framework CoreVideo"
+                "-framework MetalKit"
+                "-framework AppKit"
+                "-framework GameController"
+        )
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platform/metal/Info.plist)
+
+        file(GLOB_RECURSE ASSET_FILES "${CMAKE_SOURCE_DIR}/assets/*")
+        foreach(ASSET ${ASSET_FILES})
+            file(RELATIVE_PATH ASSET_RELATIVE_PATH "${CMAKE_SOURCE_DIR}" ${ASSET})
+            get_filename_component(ASSET_DIR ${ASSET_RELATIVE_PATH} DIRECTORY)
+            message(STATUS "Asset: ${ASSET} will be placed at Resources/${ASSET_RELATIVE_PATH}")
+            set_source_files_properties(${ASSET} PROPERTIES
+                    MACOSX_PACKAGE_LOCATION "Resources/${ASSET_DIR}")
+        endforeach()
+        target_sources(${PROJECT_NAME} PRIVATE ${ASSET_FILES})
+    endif()
+
+    if(BACKEND_METAL)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
+        if (NOT PLATFORM_IOS)
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:GameEngine>"
+            )
+        endif()
+    else()
+        target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_OPENGL)
+    endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE PLATFORM_APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE BACKEND_METAL)
+
 endif()
 
+if (NOT BACKEND_METAL)
 file(GLOB ASSETS_FOLDER
         "assets/*"
 )
 file(COPY ${ASSETS_FOLDER} DESTINATION assets)
+endif()

@@ -24,9 +24,11 @@ public:
     using Scene::Scene;
 
     ~PongScene() override {
-        delete player1Paddle;
-        delete player2Paddle;
-        delete ball;
+        platform->Delete(player1Paddle);
+        platform->Delete(player2Paddle);
+        platform->Delete(ball);
+        platform->Delete(dbg_triangle);
+        platform->Delete(dbg_triangle2);
     };
 
     void Start() override {
@@ -43,7 +45,7 @@ public:
         player2Paddle->transform.pos.x = 1 - (PaddleWidth/2);
         player2Paddle->transform.pos.y = 1 - (PaddleHeight/2);
 
-        ballPos = vector3{0, -0.5, 0};
+        ballPos = vec3{0, -0.5, 0};
         ballDirVec = get_unit_vector_from_angle_degrees(45);
         ball = platform->CreateSprite("assets/sprites/ball.png");
         ball->transform.width = BallWidth;
@@ -96,24 +98,24 @@ public:
             ball->transform.pos = ballPos;
         }
 
-        // Paddle left keyboard movement
+        // Paddle keyboard movement
         {
-            if (platform->IsKeyPressed(KeyCode::S)) {
+            if (platform->IsKeyPressed(KeyCode::S) || platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
                 if (player1Paddle->transform.pos.y >= (-1.0f + PaddleHeight / 2)) {
                     player1Paddle->transform.pos.y -= 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::W)) {
+            if (platform->IsKeyPressed(KeyCode::W) || platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
                 if (player1Paddle->transform.pos.y <= (1.0f - PaddleHeight / 2)) {
                     player1Paddle->transform.pos.y += 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::Down)) {
+            if (platform->IsKeyPressed(KeyCode::Down) || platform->IsGamepadButtonPressed(GamepadButton::South)) {
                 if (player2Paddle->transform.pos.y >= (-1.0f + PaddleHeight / 2)) {
                     player2Paddle->transform.pos.y -= 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::Up)) {
+            if (platform->IsKeyPressed(KeyCode::Up) || platform->IsGamepadButtonPressed(GamepadButton::North)) {
                 if (player2Paddle->transform.pos.y <= (1.0f - PaddleHeight / 2)) {
                     player2Paddle->transform.pos.y += 0.01f;
                 }
@@ -141,7 +143,7 @@ public:
                     reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
-                    vector3 paddlePos = player1Paddle->transform.pos;
+                    vec3 paddlePos = player1Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
@@ -178,7 +180,7 @@ public:
                     reflectX();
                 }
                 else if(hitEdge.bottom || hitEdge.top) {
-                    vector3 paddlePos = player2Paddle->transform.pos;
+                    vec3 paddlePos = player2Paddle->transform.pos;
                     if (hitEdge.top) {
                         dbg_triangle->transform.pos = {paddlePos.x, ballPos.y - BallHeight/2, 0};
                         ballPos.y = paddlePos.y + PaddleHeight/2 + BallHeight/2;
@@ -211,13 +213,17 @@ public:
                 printf("Player 1 wins");
                 player_who_won = 1;
                 freeze = true;
-//                nextScene = PONG_TITLE;
+#ifndef debugging
+                nextScene = PONG_TITLE;
+#endif
             }
             if (ballPos.x < -1.0) {
                 printf("Player 2 wins");
                 player_who_won = 2;
                 freeze = true;
-//                nextScene = PONG_TITLE;
+#ifndef debugging
+                nextScene = PONG_TITLE;
+#endif
             }
         }
 
@@ -225,9 +231,9 @@ public:
         if (platform->IsMouseReleased(MouseButton::Right)) {
             stutterAmt += 0.05;
         }
-        if (ballPos.x > (1 - PaddleWidth - BallWidth) || ballPos.x < (-1 + PaddleWidth)) {
-            ballDirVec.x *= -1;
-        }
+//        if (ballPos.x > (1 - PaddleWidth - BallWidth) || ballPos.x < (-1 + PaddleWidth)) {
+//            ballDirVec.x *= -1;
+//        }
 #endif
     }
 
@@ -237,13 +243,13 @@ private:
     Sprite* player2Paddle{};
     Sprite* ball{};
 
-    GameObject* dbg_triangle;
-    GameObject* dbg_triangle2;
+    GameObject* dbg_triangle{};
+    GameObject* dbg_triangle2{};
 
     float ballSpeed = 0.01;
     float stutterAmt = 0.2;
-    vector2 ballDirVec = vector2{};
-    vector3 ballPos{};
+    vec2 ballDirVec = vec2{};
+    vec3 ballPos{};
     bool isQuick;
 
     static constexpr float PaddlePixelWidth = 32.0 * 2;
@@ -260,7 +266,8 @@ class PongTitleScene : public Scene {
     using Scene::Scene;
 
     ~PongTitleScene() override {
-        delete gameObject;
+        platform->Delete(gameObject);
+        platform->Delete(burbank);
     }
 
     void Start() override {
@@ -278,7 +285,10 @@ class PongTitleScene : public Scene {
     }
 
     void Update() override {
-        if (platform->IsKeyPressed(KeyCode::W)) {
+        if (platform->IsKeyPressed(KeyCode::W) || platform->IsMousePressed(MouseButton::Left)) {
+            nextScene = PONG_MAIN;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::South)) {
             nextScene = PONG_MAIN;
         }
 

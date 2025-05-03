@@ -9,39 +9,41 @@
 
 class Transform {
 public:
-    vector3 pos = {0, 0, 0};
-    vector3 rot = {0, 0, 0};
-    vector3 scale = {1, 1, 1};
+    vec3 pos = {0, 0, 0};
+    vec3 rot = {0, 0, 0};
+    vec3 scale = {1, 1, 1};
     float width = 1;
     float height = 1;
 
-    void Translate(vector3 vector){}
+    void Translate(vec3 vector){}
     void Rotate(float degrees){}
 };
 
-class Component {
-public:
-    virtual void Init() = 0;
-    virtual void Update() = 0;
-};
+//class Component {
+//public:
+//    virtual void Init() = 0;
+//    virtual void Update() = 0;
+//};
 
 class GameObject {
 public:
     Transform transform{};
-    std::vector<Component*> components{};
+//    std::vector<Component*> components{};
+
+    virtual ~GameObject(){}
 
     virtual void Update() {
-        for (auto & component : components) {
-            component->Update();
-        }
+//        for (auto & component : components) {
+//            component->Update();
+//        }
     }
 };
 
 class Triangle : public GameObject {
 public:
-    vector3 vertex1 = {1.0f, -1.0f, 0.0f};
-    vector3 vertex2 = {-1.0f, -1.0f, 0.0f};
-    vector3 vertex3 = {0, 1.0f, 0.0f};
+    vec3 vertex1 = {1.0f, -1.0f, 0.0f};
+    vec3 vertex2 = {-1.0f, -1.0f, 0.0f};
+    vec3 vertex3 = {0, 1.0f, 0.0f};
 
     void Update() override {
         GameObject::Update();
@@ -56,10 +58,10 @@ public:
 
 class Sprite : public GameObject {
 public:
-    vector3 vertex1 = {-0.5f, 0.5f, 0.0f};  // top left
-    vector3 vertex2 = {0.5f, 0.5f, 0.0f};  // top right
-    vector3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
-    vector3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
+    vec3 vertex1 = {-0.5f, 0.5f, 0.0f};  // top left
+    vec3 vertex2 = {0.5f, 0.5f, 0.0f};  // top right
+    vec3 vertex3 = {0.5f, -0.5f, 0.0f};  // bottom right
+    vec3 vertex4 = {-0.5f, -0.5f, 0.0f};  // bottom left
 
     bool useAtlas = false;
     int atlasNumRows = 0;
@@ -78,6 +80,14 @@ public:
         vertex4.x = transform.pos.x - transform.width/2;
         vertex4.y = transform.pos.y - transform.height/2;
     }
+};
+
+class Sound : public GameObject {
+public:
+    virtual ~Sound() = default;
+    virtual void Play() = 0;
+    virtual void Stop() = 0;
+    virtual void Reset() = 0;
 };
 
 #endif //GAMEENGINE_GAMEOBJECT_H

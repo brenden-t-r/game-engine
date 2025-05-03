@@ -220,7 +220,7 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
-    vector3 GetMousePos() override {
+    vec3 GetMousePos() override {
         RECT rect;
         GetClientRect(hwnd, &rect);  // Get window size
         int width = rect.right - rect.left;

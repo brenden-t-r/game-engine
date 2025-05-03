@@ -69,11 +69,9 @@ public:
         }
 
         if (platform->IsMousePressed(MouseButton::Left)) {
-            printf("\nLeft Pressed!");
             triangleL->Update();
         }
         if (platform->IsMousePressed(MouseButton::Right)) {
-            printf("\nRight Pressed!");
             triangleR->Update();
         }
         if (platform->IsMousePressed(MouseButton::Middle)) {
