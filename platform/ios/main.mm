@@ -764,13 +764,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
         };
     }
 
-    controller.extendedGamepad.buttonA.valueChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed) {
-        if (pressed) {
-            NSLog(@"Button A pressed");
-            // Handle button press
-        }
-    };
-
     if (_virtualController != nil) {
         BOOL hasPhysicalController = NO;
         for (GCController *ctrl in GCController.controllers) {
@@ -784,6 +777,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
         }
     }
 }
+
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);
