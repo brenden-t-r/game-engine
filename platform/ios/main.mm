@@ -208,7 +208,7 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
 @property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
-
+@property (nonatomic, strong) GCVirtualController *virtualController;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -571,6 +571,35 @@ static void RealMainMetal(MetalAppDelegate* app) {
     UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
     [longPress setCancelsTouchesInView:false];
     [self.view addGestureRecognizer:longPress];
+
+    // Gamepad
+    [GCController startWirelessControllerDiscoveryWithCompletionHandler:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(controllerConnected:)
+                                                 name:GCControllerDidConnectNotification
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(controllerDisconnected:)
+                                                 name:GCControllerDidDisconnectNotification
+                                               object:nil];
+    if (!_virtualController) {
+        GCVirtualControllerConfiguration *config = [[GCVirtualControllerConfiguration alloc] init];
+        config.elements = [NSSet setWithArray:@[
+                GCInputDirectionalDpad,
+                GCInputButtonA,
+                GCInputButtonY,
+//                GCInputButtonB,
+//                GCInputButtonX,
+//                GCInputLeftThumbstick,
+//                GCInputRightThumbstick
+        ]];
+        _virtualController = [[GCVirtualController alloc] initWithConfiguration:config];
+    }
+    if (GCController.controllers.count == 0 && _virtualController != nil) {
+        [_virtualController connectWithReplyHandler:nil];
+    }
 }
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
@@ -603,19 +632,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     [triangleDesc release];
     [textureDesc release];
-
-    // Gamepad
-    [GCController startWirelessControllerDiscoveryWithCompletionHandler:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(controllerConnected:)
-                                                 name:GCControllerDidConnectNotification
-                                               object:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(controllerDisconnected:)
-                                                 name:GCControllerDidDisconnectNotification
-                                               object:nil];
 }
 - (void)drawInMTKView:(MTKView *)view {
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
@@ -747,10 +763,40 @@ static void RealMainMetal(MetalAppDelegate* app) {
             wasRightPressed = isRightPressed;
         };
     }
+
+    controller.extendedGamepad.buttonA.valueChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed) {
+        if (pressed) {
+            NSLog(@"Button A pressed");
+            // Handle button press
+        }
+    };
+
+    if (_virtualController != nil) {
+        BOOL hasPhysicalController = NO;
+        for (GCController *ctrl in GCController.controllers) {
+            if (ctrl != _virtualController.controller) {
+                hasPhysicalController = YES;
+                break;
+            }
+        }
+        if (hasPhysicalController) {
+            [_virtualController disconnect];
+        }
+    }
 }
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);
+    [self showVirtualController];
+}
+- (void)showVirtualController {
+    if (!self.virtualController.controller.isAttachedToDevice) {
+        [self.virtualController connectWithReplyHandler:^(NSError * _Nullable error) {
+            if (error) {
+                NSLog(@"Error showing virtual controller: %@", error);
+            }
+        }];
+    }
 }
 - (BOOL)IsGamePadPressed:(GamepadButton)button {
     GCController *controller = [GCController controllers].firstObject;

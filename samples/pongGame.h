@@ -98,24 +98,24 @@ public:
             ball->transform.pos = ballPos;
         }
 
-        // Paddle left keyboard movement
+        // Paddle keyboard movement
         {
-            if (platform->IsKeyPressed(KeyCode::S)) {
+            if (platform->IsKeyPressed(KeyCode::S) || platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
                 if (player1Paddle->transform.pos.y >= (-1.0f + PaddleHeight / 2)) {
                     player1Paddle->transform.pos.y -= 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::W)) {
+            if (platform->IsKeyPressed(KeyCode::W) || platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
                 if (player1Paddle->transform.pos.y <= (1.0f - PaddleHeight / 2)) {
                     player1Paddle->transform.pos.y += 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::Down)) {
+            if (platform->IsKeyPressed(KeyCode::Down) || platform->IsGamepadButtonPressed(GamepadButton::South)) {
                 if (player2Paddle->transform.pos.y >= (-1.0f + PaddleHeight / 2)) {
                     player2Paddle->transform.pos.y -= 0.01f;
                 }
             }
-            if (platform->IsKeyPressed(KeyCode::Up)) {
+            if (platform->IsKeyPressed(KeyCode::Up) || platform->IsGamepadButtonPressed(GamepadButton::North)) {
                 if (player2Paddle->transform.pos.y <= (1.0f - PaddleHeight / 2)) {
                     player2Paddle->transform.pos.y += 0.01f;
                 }
@@ -286,6 +286,9 @@ class PongTitleScene : public Scene {
 
     void Update() override {
         if (platform->IsKeyPressed(KeyCode::W) || platform->IsMousePressed(MouseButton::Left)) {
+            nextScene = PONG_MAIN;
+        }
+        if (platform->IsGamepadButtonPressed(GamepadButton::South)) {
             nextScene = PONG_MAIN;
         }
 

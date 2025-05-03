@@ -20,9 +20,6 @@
   - SDF
 - Gamepad
   - Triggers, axes
-- Metal
-  - iOS on screen controller
-  - iOS pong touch
 - WebGL support
 - CICD
 
