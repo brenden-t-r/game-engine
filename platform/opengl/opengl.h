@@ -14,6 +14,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "../../dependencies/miniaudio.h"
+static ma_engine g_engine;
+
 //region Input Helpers / Callbacks
 static int GetGLFWKey(KeyCode keyCode) {
     switch (keyCode) {
@@ -148,6 +152,14 @@ public:
 
         // Setup VAOs
         setupVAOs();
+
+        // Init miniaudio
+        ma_result result;
+        result = ma_engine_init(nullptr, &g_engine);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize audio engine.");
+        }
+        assert(result == MA_SUCCESS);
     }
 
     void LoadShaders() override {
@@ -207,6 +219,7 @@ public:
         return state == GLFW_PRESS;
     }
     bool IsGamepadButtonPressed(GamepadButton button) override {
+        return false;
         if (!glfwJoystickPresent(0)) return false;
         GLFWgamepadstate state;
         if (!glfwGetGamepadState(0, &state)) return false;
@@ -240,10 +253,6 @@ public:
     class TriangleGL : public Triangle{
 
     public:
-        ~TriangleGL(){
-            glDeleteBuffers(1, &vertexBufferObject);
-        }
-
         void Update() override {
             Triangle::Update();
             GLfloat newVertices[] = {
@@ -252,9 +261,9 @@ public:
                     vertex3.x, vertex3.y, 0.0f,
             };
             glDisable(GL_BLEND);
-            glUseProgram(shaderProgram); // Use appropriate shader
+            glUseProgram(shaderProgram);
             glBindVertexArray(vertexArrayObject);
-            glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject); // Bind the triangle's VBO
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
@@ -274,10 +283,6 @@ public:
 
     class SpriteGL : public Sprite {
     public:
-        ~SpriteGL() {
-            glDeleteBuffers(1, &vertexBufferObject);
-        }
-
         void SetTexture(const char* path) {
             texture = loadTexture(path);
 
@@ -311,9 +316,9 @@ public:
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glUseProgram(shaderProgram); // Use appropriate shader
+            glUseProgram(shaderProgram);
             glBindVertexArray(vertexArrayObject);
-            glBindBuffer(GL_ARRAY_BUFFER, vertexArrayObject);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBindTexture(GL_TEXTURE_2D, texture);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -332,6 +337,40 @@ public:
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
         return gameObject;
+    }
+
+    class MiniAudioSound : public Sound {
+    public:
+        ~MiniAudioSound() override{
+            ma_sound_uninit(&sound);
+        };
+
+        void Init(const char* filePath) {
+            ma_result result = ma_sound_init_from_file(&g_engine, filePath, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
+            if (result != MA_SUCCESS) {
+                printf("Failed to initialize audio sound.");
+            }
+            assert(result == MA_SUCCESS);
+        }
+
+        void Play() override {
+            ma_sound_start(&sound);
+        }
+
+        void Stop() override {
+            ma_sound_stop(&sound);
+        }
+
+        void Reset() override {
+            ma_sound_seek_to_pcm_frame(&sound, 0);
+        }
+
+        ma_sound sound{};
+    };
+    Sound* CreateSound(const char* path) override {
+        auto sound = new MiniAudioSound();
+        sound->Init(path);
+        return sound;
     }
     //endregion
 

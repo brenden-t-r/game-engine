@@ -13,6 +13,10 @@
 #include <iostream>
 #include <Xinput.h>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "../../dependencies/miniaudio.h"
+static ma_engine g_engine;
+
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
@@ -137,6 +141,14 @@ public:
 
         // Input init
         RegisterRawInput(hwnd);
+
+        // Init miniaudio
+        ma_result result;
+        result = ma_engine_init(nullptr, &g_engine);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize audio engine.");
+        }
+        assert(result == MA_SUCCESS);
     }
 
     void SetGamepadVibration(int amountLeft, int amountRight) override {
@@ -434,6 +446,40 @@ public:
         gameObject->SetTexture(wchar);
         delete[] wchar;
         return gameObject;
+    }
+
+    class MiniAudioSound : public Sound {
+    public:
+        ~MiniAudioSound() override{
+            ma_sound_uninit(&sound);
+        };
+
+        void Init(const char* filePath) {
+            ma_result result = ma_sound_init_from_file(&g_engine, filePath, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound);
+            if (result != MA_SUCCESS) {
+                printf("Failed to initialize audio sound.");
+            }
+            assert(result == MA_SUCCESS);
+        }
+
+        void Play() override {
+            ma_sound_start(&sound);
+        }
+
+        void Stop() override {
+            ma_sound_stop(&sound);
+        }
+
+        void Reset() override {
+            ma_sound_seek_to_pcm_frame(&sound, 0);
+        }
+
+        ma_sound sound{};
+    };
+    Sound* CreateSound(const char* path) override {
+        auto sound = new MiniAudioSound();
+        sound->Init(path);
+        return sound;
     }
     //endregion
 

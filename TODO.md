@@ -22,6 +22,7 @@
   - Triggers, axes
 - WebGL support
 - CICD
+- Library / Game separation
 
 ## Games
 
