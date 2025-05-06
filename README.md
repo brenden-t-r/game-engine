@@ -2,8 +2,6 @@
 
 ## Windows
 
-Must be run with Visual Studio toolchain.
-
 Run with one of the following CMake options to choose a backend
 ```bash
 -DBACKEND_OPENGL=ON
@@ -12,11 +10,8 @@ Run with one of the following CMake options to choose a backend
 
 Build and run
 ```bash
-mkdir build
-cd build
-cmake .. -G "Visual Studio 17 2022" -DBACKEND_DIRECTX=ON
-cmake --build .
-"Debug/GameEngine.exe"
+win-build-directx.bat
+win-build-opengl.bat
 ```
 
 ## MacOS
@@ -24,6 +19,7 @@ cmake --build .
 Prerequisites
 ```bash
 brew install cmake
+# If using OpenGL backend
 brew install glfw
 brew install glew
 ```

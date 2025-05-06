@@ -3,10 +3,10 @@ setlocal enabledelayedexpansion
 
 :: Set default paths (override with environment variables if already set)
 if "%VS_PATH%"=="" set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community"
-if "%CMAKE_PATH%"=="" set "CMAKE_PATH=C:\Program Files\JetBrains\CLion 2023.2.1\bin\cmake\win\x64\bin\cmake.exe"
-if "%NINJA_PATH%"=="" set "NINJA_PATH=C:\Program Files\JetBrains\CLion 2023.2.1\bin\ninja\win\x64\ninja.exe"
+if "%CMAKE_PATH%"=="" set "CMAKE_PATH=cmake"
+if "%NINJA_PATH%"=="" set "NINJA_PATH=ninja"
 if "%BUILD_TYPE%"=="" set "BUILD_TYPE=Debug"
-if "%BUILD_DIR%"=="" set "BUILD_DIR=%CD%\cmake-build-debug-opengl"
+if "%BUILD_DIR%"=="" set "BUILD_DIR=%CD%\build-ninja"
 if "%SOURCE_DIR%"=="" set "SOURCE_DIR=%CD%"
 if "%BACKEND%"=="" set "BACKEND=DIRECTX"
 
