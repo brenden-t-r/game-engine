@@ -57,11 +57,11 @@ public:
         EnableCallback(KEY_RELEASED);
     }
 
-    vector3 startPos = {960, 500, 0};
+    vec3 startPos = {960, 500, 0};
 
     static void Rotate(Sprite* obj, float degrees) {
         // "Undo" current position transform back to screen space origin (top left 0,0)
-        vector3 posScreenSpace = coords_device_to_screen(obj->transform.pos);
+        vec3 posScreenSpace = coords_device_to_screen(obj->transform.pos);
 
         obj->vertex1.x = coords_screen_to_device({coords_device_to_screen(obj->vertex1).x - posScreenSpace.x, coords_device_to_screen(obj->vertex1).y - posScreenSpace.y, 0}).x;
         obj->vertex2.x = coords_screen_to_device({coords_device_to_screen(obj->vertex2).x - posScreenSpace.x, coords_device_to_screen(obj->vertex2).y - posScreenSpace.y, 0}).x;
@@ -89,7 +89,7 @@ public:
 
     static void Rotate(Triangle* obj, float degrees) {
         // "Undo" current position transform back to screen space origin (top left 0,0)
-        vector3 posScreenSpace = coords_device_to_screen(obj->transform.pos);
+        vec3 posScreenSpace = coords_device_to_screen(obj->transform.pos);
 
         obj->vertex1.x = coords_screen_to_device({coords_device_to_screen(obj->vertex1).x - posScreenSpace.x, coords_device_to_screen(obj->vertex1).y - posScreenSpace.y, 0}).x;
         obj->vertex2.x = coords_screen_to_device({coords_device_to_screen(obj->vertex2).x - posScreenSpace.x, coords_device_to_screen(obj->vertex2).y - posScreenSpace.y, 0}).x;
@@ -115,7 +115,26 @@ public:
 
         if (platform->IsKeyPressed(KeyCode::Up)) {
             Rotate(sprite, 1);
-            Rotate(triangle, 2);
+            Rotate(triangle, 1);
+        }
+        if (platform->IsKeyPressed(KeyCode::Down)) {
+            Rotate(sprite, -1);
+            Rotate(triangle, -1);
+        }
+
+        if (platform->IsKeyPressed(KeyCode::Right)) {
+            sprite->vertex1.x += 0.01;
+            sprite->vertex2.x += 0.01;
+            sprite->vertex3.x += 0.01;
+            sprite->vertex4.x += 0.01;
+            sprite->transform.pos.x += 0.01;
+        }
+        if (platform->IsKeyPressed(KeyCode::Left)) {
+            sprite->vertex1.x -= 0.01;
+            sprite->vertex2.x -= 0.01;
+            sprite->vertex3.x -= 0.01;
+            sprite->vertex4.x -= 0.01;
+            sprite->transform.pos.x -= 0.01;
         }
 
         triangle->Update();
