@@ -6,9 +6,9 @@
   <key>CFBundleIdentifier</key>
   <string>com.mycompany.mygame</string>
   <key>CFBundleName</key>
-  <string>MyApp</string>
+  <string>Game</string>
   <key>CFBundleExecutable</key>
-  <string>MyApp</string>
+  <string>Game</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSBackgroundOnly</key>

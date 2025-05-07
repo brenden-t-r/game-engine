@@ -5,9 +5,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.mycompany.mygame</string>
     <key>CFBundleName</key>
-    <string>GameEngine</string>
+    <string>Game</string>
     <key>CFBundleExecutable</key>
-    <string>GameEngine</string>
+    <string>Game</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>

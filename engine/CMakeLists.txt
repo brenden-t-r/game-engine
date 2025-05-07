@@ -88,7 +88,7 @@ elseif (APPLE)
         )
         if (PLATFORM_IOS)
             target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_IOS)
-            target_link_libraries(${PROJECT_NAME}
+            target_link_libraries(${PROJECT_NAME} PUBLIC
                 "-framework UIKit"
                 "-framework CoreGraphics"
                 "-framework CoreFoundation"
@@ -98,18 +98,12 @@ elseif (APPLE)
             )
         else()
             target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_MACOS)
-            target_link_libraries(${PROJECT_NAME}
+            target_link_libraries(${PROJECT_NAME} PUBLIC
                 "-framework OpenGL"
                 "-framework Cocoa"
                 "-framework AppKit"
             )
         endif ()
-        # TODO?
-        if (NOT PLATFORM_IOS)
-            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                    COMMAND codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:GameEngine>"
-            )
-        endif()
     elseif (BACKEND_OPENGL)
         target_compile_definitions(${PROJECT_NAME} PUBLIC BACKEND_OPENGL)
         target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
