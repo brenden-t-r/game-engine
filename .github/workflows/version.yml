@@ -1,0 +1,57 @@
+name: Version
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to get all tags
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Parse and bump version
+        id: bump
+        run: |
+          VERSION="${{ steps.get_tag.outputs.tag }}"
+          VERSION="${VERSION#v}"  # strip leading 'v'
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          PREFIX=$(echo "$COMMIT_MSG" | awk '{print tolower($1)}')
+
+          case "$PREFIX" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch|*)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "new_tag=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create and push new tag
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.bump.outputs.new_tag }}
+          git push origin ${{ steps.bump.outputs.new_tag }}
