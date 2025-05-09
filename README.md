@@ -52,6 +52,12 @@ Build
 
 ## Linux
 
+Prerequisites
+```bash
+sudo apt-get update
+sudo apt-get install -y cmake libglfw3-dev libglew-dev
+```
+
 Build and run
 ```bash
 mkdir build
