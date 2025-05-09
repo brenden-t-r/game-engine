@@ -1,14 +1,24 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - linux
+          - macos
+          - ios
 jobs:
   build-windows:
     runs-on: windows-latest
+    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
     steps:
       - uses: actions/checkout@v4
       - uses: lukka/get-cmake@latest
@@ -17,6 +27,7 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
       - name: Upload artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
@@ -24,6 +35,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux'
     steps:
       - uses: actions/checkout@v4
       - name: Install deps
@@ -33,6 +45,7 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
       - name: Upload artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
@@ -40,6 +53,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos'
     steps:
       - uses: actions/checkout@v4
       - name: Install Ninja
@@ -49,6 +63,7 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
       - name: Upload artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
@@ -56,11 +71,13 @@ jobs:
 
   generate-ios-xcodeproj:
     runs-on: macos-latest
+    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios'
     steps:
       - uses: actions/checkout@v4
       - name: Configure for iOS
         run: cmake -S . -B ios_build -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DBACKEND_METAL=ON
-      - name: Upload Xcode project
+      - name: Upload artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: ios-xcodeproj
