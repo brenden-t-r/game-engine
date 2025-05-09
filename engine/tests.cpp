@@ -1,6 +1,7 @@
 #include "engine/vector.h"
 
 #include <cassert>
+#include <cstdio>
 
 static void tests_getUnitVectorFromAngleDegrees() {
     vec2 vec = get_unit_vector_from_angle_degrees(45);
@@ -12,6 +13,7 @@ static void tests_getUnitVectorFromAngleDegrees() {
 }
 
 int main() {
+    printf("Running Tests");
     tests_getUnitVectorFromAngleDegrees();
     return 0;
 }

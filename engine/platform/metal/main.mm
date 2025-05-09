@@ -11,6 +11,10 @@
 
 #include <cstdio>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "../../dependencies/miniaudio.h"
+static ma_engine g_engine;
+
 static void *runFuncContext;
 static void (*runFunc)(void *);
 static bool Running = false;
@@ -399,8 +403,14 @@ class PlatformMetal : public Platform {
 public:
     void Init() override {
         printf("Hi from Init\n");
-        audioWrapper = new AudioWrapper();
-        audioWrapper->Init();
+
+        // Init miniaudio
+        ma_result result;
+        result = ma_engine_init(nullptr, &g_engine);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize audio engine.");
+        }
+        assert(result == MA_SUCCESS);
     }
     void Run(void (*_func)(void*), void* context) override {
         runFunc = _func;
@@ -479,7 +489,6 @@ public:
     }
 
     MetalAppDelegate* metalAppDelegate;
-    AudioWrapper* audioWrapper;
 };
 
 int RealMain(Platform* platform);

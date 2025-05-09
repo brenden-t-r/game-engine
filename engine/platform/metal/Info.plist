@@ -4,11 +4,11 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.mycompany.mygame</string>
+  <string>@BUNDLE_ID_PREFIX@.@PROJECT_NAME@</string>
   <key>CFBundleName</key>
-  <string>MyApp</string>
+  <string>@PROJECT_NAME@</string>
   <key>CFBundleExecutable</key>
-  <string>MyApp</string>
+  <string>@PROJECT_NAME@</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSBackgroundOnly</key>
