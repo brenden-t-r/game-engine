@@ -1,4 +1,4 @@
-name: CI
+name: Build
 
 on:
   pull_request:
@@ -16,58 +16,58 @@ on:
           - macos
           - ios
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: lukka/get-cmake@latest
-      - name: Configure
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -DBACKEND_DIRECTX=ON
-      - name: Build
-        run: cmake --build build --config Release
-      - name: Upload artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: build/
-
-  build-linux:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install deps
-        run: sudo apt-get update && sudo apt-get install -y cmake libglfw3-dev libglew-dev libxi-dev
-      - name: Configure
-        run: cmake -S . -B build
-      - name: Build
-        run: cmake --build build --config Release
-      - name: Upload artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: build/
-
-  build-macos:
-    runs-on: macos-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Ninja
-        run: brew install ninja
-      - name: Configure
-        run: cmake -S . -B build -G "Ninja" -DBACKEND_METAL=ON
-      - name: Build
-        run: cmake --build build --config Release
-      - name: Upload artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-build
-          path: build/
+#  build-windows:
+#    runs-on: windows-latest
+#    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: lukka/get-cmake@latest
+#      - name: Configure
+#        run: cmake -S . -B build -G "Visual Studio 17 2022" -DBACKEND_DIRECTX=ON
+#      - name: Build
+#        run: cmake --build build --config Release
+#      - name: Upload artifact
+#        if: github.event_name == 'workflow_dispatch'
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: windows-build
+#          path: build/
+#
+#  build-linux:
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux'
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Install deps
+#        run: sudo apt-get update && sudo apt-get install -y cmake libglfw3-dev libglew-dev libxi-dev
+#      - name: Configure
+#        run: cmake -S . -B build
+#      - name: Build
+#        run: cmake --build build --config Release
+#      - name: Upload artifact
+#        if: github.event_name == 'workflow_dispatch'
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: linux-build
+#          path: build/
+#
+#  build-macos:
+#    runs-on: macos-latest
+#    if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos'
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Install Ninja
+#        run: brew install ninja
+#      - name: Configure
+#        run: cmake -S . -B build -G "Ninja" -DBACKEND_METAL=ON
+#      - name: Build
+#        run: cmake --build build --config Release
+#      - name: Upload artifact
+#        if: github.event_name == 'workflow_dispatch'
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: macos-build
+#          path: build/
 
   generate-ios-xcodeproj:
     runs-on: macos-latest
@@ -75,9 +75,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure for iOS
-        run: cmake -S . -B ios_build -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DBACKEND_METAL=ON
+        run: cmake -S . -B ios_build -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DBACKEND_METAL=ON -DPLATFORM_IOS=ON
       - name: Upload artifact
-        if: github.event_name == 'workflow_dispatch'
+        #if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: ios-xcodeproj
