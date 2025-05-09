@@ -33,17 +33,11 @@ elseif (APPLE AND NOT PLATFORM_IOS)
 elseif (PLATFORM_IOS)
     list(APPEND ENGINE_SOURCES platform/ios/main.mm)
     set(CMAKE_SYSTEM_NAME iOS)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum iOS deployment version")
-    # set(CMAKE_OSX_SYSROOT iphonesimulator)
     set(CMAKE_OSX_SYSROOT iphoneos)
     set(CMAKE_OSX_ARCHITECTURES arm64)
 endif()
 
-message(STATUS "Engine sources:")
-foreach(source_file ${ENGINE_SOURCES})
-    message(STATUS "  ${source_file}")
-endforeach()
-
+# Static library setup
 add_library(${PROJECT_NAME} STATIC ${ENGINE_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)

@@ -12,15 +12,17 @@ if (WIN32)
     endif()
 elseif (APPLE)
     if (BACKEND_METAL)
+        set(BUNDLE_ID_PREFIX "games.gluttonous")
+        string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
         add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${GAME_SOURCES})
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
-        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_BUNDLE_IDENTIFIER "com.mycompany.mygame")
         if (PLATFORM_IOS)
-            message(STATUS ${CMAKE_SOURCE_DIR}/engine/platform/ios/Info.plist)
-            set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/engine/platform/ios/Info.plist)
+            set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0")
+            configure_file("${CMAKE_SOURCE_DIR}/engine/platform/ios/Info.plist" "${CMAKE_BINARY_DIR}/Info.plist" @ONLY)
         else()
-            set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/engine/platform/metal/Info.plist)
+            configure_file("${CMAKE_SOURCE_DIR}/engine/platform/metal/Info.plist" "${CMAKE_BINARY_DIR}/Info.plist" @ONLY)
         endif()
+        set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_BINARY_DIR}/Info.plist)
     elseif (BACKEND_OPENGL)
         add_executable(${PROJECT_NAME} ${GAME_SOURCES})
     else()
@@ -30,9 +32,10 @@ else()
     add_executable(${PROJECT_NAME} ${GAME_SOURCES})
 endif()
 
+# Static link engine library
 target_link_libraries(${PROJECT_NAME} PRIVATE GameEngine)
 
-# Game assets
+# Copy game assets
 if (NOT BACKEND_METAL)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory

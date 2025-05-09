@@ -3,15 +3,7 @@
 rm -r build
 mkdir build
 pushd build
-cmake -G Xcode -DBACKEND_METAL=ON -DPLATFORM_IOS=ON ..
-cmake --build . --config Debug
+cmake -G Xcode -DBACKEND_METAL=ON -DPLATFORM_IOS=ON -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk ..
+echo "Opening in Xcode.."
+open GameProject.xcodeproj
 popd build
-
-if [ "$1" == "-run" ]; then
-  echo "Running.."
-  xcrun simctl install booted build/Debug-iphonesimulator/GameEngine.app
-  xcrun simctl launch booted com.mycompany.mygame
-else
-  echo "Opening in Xcode.."
-  open GameEngine.xcodeproj
-fi
