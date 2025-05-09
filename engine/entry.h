@@ -11,7 +11,6 @@
  *     \::/  /       \:\__\        \::/  /        /:/  /     \:\__\        \::/  /
  *      \/__/         \/__/         \/__/         \/__/       \/__/         \/__/
  *
- * v0.1.0
  *
  *  Platform/Backend Support
  *  ------------------------
@@ -41,7 +40,7 @@ void RunLoop(Platform* platform, Game* game) {
 #elif defined(PLATFORM_WINDOWS) && defined(BACKEND_DIRECTX)
 #include "platform/directx/directx.cpp"
 #elif defined(PLATFORM_LINUX)
-#include "platform/opengl/opengl.h"
+#include "platform/opengl/opengl.cpp"
 #elif defined(PLATFORM_APPLE) && defined(BACKEND_OPENGL)
 #include "platform/opengl/opengl.cpp"
 #elif defined(PLATFORM_APPLE) && defined(BACKEND_METAL)
