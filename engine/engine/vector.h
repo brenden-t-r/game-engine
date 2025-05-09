@@ -57,25 +57,25 @@ static float getRandomFloat(float start, float end) {
     return start + static_cast<float>(rand()) / RAND_MAX * (end - start);
 }
 
-static vec2 coords_device_to_screen(vec2 vec) {
+static vec2 normalized_to_screen(vec2 vec) {
     // Convert normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
     float screenX = (vec.x + 1) * 0.5f * WINDOW_WIDTH;
     float screenY = (1 - vec.y) * 0.5f * WINDOW_HEIGHT;
     return {screenX, screenY};
 }
-static vec2 coords_screen_to_device(vec2 vec) {
+static vec2 screen_to_normalized(vec2 vec) {
     // Convert screen coordinates (0 to screenWidth/Height) to normalized coordinates (-1 to 1)
     float deviceX = (2 * vec.x) / WINDOW_WIDTH - 1;
     float deviceY = 1 - (2 * vec.y) / WINDOW_HEIGHT;
     return {deviceX, deviceY};
 }
-static vec3 coords_device_to_screen(vec3 vec) {
+static vec3 normalized_to_screen(vec3 vec) {
     // Convert normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
     float screenX = (vec.x + 1) * 0.5f * WINDOW_WIDTH;
     float screenY = (1 - vec.y) * 0.5f * WINDOW_HEIGHT;
     return {screenX, screenY,0};
 }
-static vec3 coords_screen_to_device(vec3 vec) {
+static vec3 screen_to_normalized(vec3 vec) {
     // Convert screen coordinates (0 to screenWidth/Height) to normalized coordinates (-1 to 1)
     float deviceX = (2 * vec.x) / WINDOW_WIDTH - 1;
     float deviceY = 1 - (2 * vec.y) / WINDOW_HEIGHT;

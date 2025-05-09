@@ -15,20 +15,17 @@ public:
         sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 0.5f;
         sprite->transform.height = 0.5f;
-        sprite->transform.rot = {0,0,45};
-        sprite->SetPosition(coords_screen_to_device(startPos));
+//        sprite->transform.rot = {0,0,45};
+        sprite->SetPosition(screen_to_normalized({960, 500, 0}));
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
         triangle->transform.height = 0.2f;
         triangle->transform.rot = {0,0,45};
-        triangle->SetPosition(coords_screen_to_device({300, 500, 0}));
+        triangle->SetPosition(screen_to_normalized({300, 500, 0}));
 
         EnableCallback(KEY_RELEASED);
     }
-
-    vec3 startPos = {960, 500, 0};
-
 
     void Update() override {
         printf(".");

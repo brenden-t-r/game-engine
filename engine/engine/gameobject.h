@@ -70,26 +70,25 @@ public:
     
     void Rotate(float degrees) {
         // "Undo" current position transform back to screen space origin (top left 0,0)
-        vec3 posScreenSpace = coords_device_to_screen(transform.pos);
+        vec3 posPixels = normalized_to_screen(transform.pos);
+        vec3 vertex1_pixels = normalized_to_screen(vertex1);
+        vec3 vertex2_pixels = normalized_to_screen(vertex2);
+        vec3 vertex3_pixels = normalized_to_screen(vertex3);
+        vec3 newVertex1 = {vertex1_pixels.x - posPixels.x, vertex1_pixels.y - posPixels.y, 0};
+        vec3 newVertex2 = {vertex2_pixels.x - posPixels.x, vertex2_pixels.y - posPixels.y, 0};
+        vec3 newVertex3 = {vertex3_pixels.x - posPixels.x, vertex3_pixels.y - posPixels.y, 0};
 
-        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).x;
-        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).x;
-        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).x;
-        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).y;
-        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).y;
-        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).y;
+        // Rotate
+        newVertex1 = rotate_euler(newVertex1, degrees);
+        newVertex2 = rotate_euler(newVertex2, degrees);
+        newVertex3 = rotate_euler(newVertex3, degrees);
 
-        vertex1 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex1), degrees));
-        vertex2 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex2), degrees));
-        vertex3 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex3), degrees));
+        // Reset transform position back
+        vertex1 = screen_to_normalized({newVertex1.x + posPixels.x, newVertex1.y + posPixels.y, 0});
+        vertex2 = screen_to_normalized({newVertex2.x + posPixels.x, newVertex2.y + posPixels.y, 0});
+        vertex3 = screen_to_normalized({newVertex3.x + posPixels.x, newVertex3.y + posPixels.y, 0});
 
-        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).x;
-        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).x;
-        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).x;
-        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).y;
-        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).y;
-        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).y;
-
+        // Record current rotation
         transform.rot.z += degrees;
     }
 };
@@ -147,34 +146,32 @@ public:
         transform.pos.y += translate.y;
         transform.pos.z += translate.z;
     }
-    
+
     void Rotate(float degrees) {
         // "Undo" current position transform back to screen space origin (top left 0,0)
-        vec3 posScreenSpace = coords_device_to_screen(transform.pos);
+        vec3 posPixels = normalized_to_screen(transform.pos);
+        vec3 vertex1_pixels = normalized_to_screen(vertex1);
+        vec3 vertex2_pixels = normalized_to_screen(vertex2);
+        vec3 vertex3_pixels = normalized_to_screen(vertex3);
+        vec3 vertex4_pixels = normalized_to_screen(vertex4);
+        vec3 newVertex1 = {vertex1_pixels.x - posPixels.x, vertex1_pixels.y - posPixels.y, 0};
+        vec3 newVertex2 = {vertex2_pixels.x - posPixels.x, vertex2_pixels.y - posPixels.y, 0};
+        vec3 newVertex3 = {vertex3_pixels.x - posPixels.x, vertex3_pixels.y - posPixels.y, 0};
+        vec3 newVertex4 = {vertex4_pixels.x - posPixels.x, vertex4_pixels.y - posPixels.y, 0};
 
-        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).x;
-        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).x;
-        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).x;
-        vertex4.x = coords_screen_to_device({coords_device_to_screen(vertex4).x - posScreenSpace.x, coords_device_to_screen(vertex4).y - posScreenSpace.y, 0}).x;
-        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).y;
-        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).y;
-        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).y;
-        vertex4.y = coords_screen_to_device({coords_device_to_screen(vertex4).x - posScreenSpace.x, coords_device_to_screen(vertex4).y - posScreenSpace.y, 0}).y;
+        // Rotate
+        newVertex1 = rotate_euler(newVertex1, degrees);
+        newVertex2 = rotate_euler(newVertex2, degrees);
+        newVertex3 = rotate_euler(newVertex3, degrees);
+        newVertex4 = rotate_euler(newVertex4, degrees);
 
-        vertex1 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex1), degrees));
-        vertex2 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex2), degrees));
-        vertex3 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex3), degrees));
-        vertex4 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex4), degrees));
+        // Reset transform position back
+        vertex1 = screen_to_normalized({newVertex1.x + posPixels.x, newVertex1.y + posPixels.y, 0});
+        vertex2 = screen_to_normalized({newVertex2.x + posPixels.x, newVertex2.y + posPixels.y, 0});
+        vertex3 = screen_to_normalized({newVertex3.x + posPixels.x, newVertex3.y + posPixels.y, 0});
+        vertex4 = screen_to_normalized({newVertex4.x + posPixels.x, newVertex4.y + posPixels.y, 0});
 
-        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).x;
-        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).x;
-        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).x;
-        vertex4.x = coords_screen_to_device({coords_device_to_screen(vertex4).x + posScreenSpace.x, coords_device_to_screen(vertex4).y + posScreenSpace.y, 0}).x;
-        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).y;
-        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).y;
-        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).y;
-        vertex4.y = coords_screen_to_device({coords_device_to_screen(vertex4).x + posScreenSpace.x, coords_device_to_screen(vertex4).y + posScreenSpace.y, 0}).y;
-
+        // Record current rotation
         transform.rot.z += degrees;
     }
 };
