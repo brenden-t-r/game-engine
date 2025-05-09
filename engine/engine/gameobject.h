@@ -22,8 +22,7 @@ public:
 class GameObject {
 public:
     Transform transform{};
-    virtual ~GameObject(){}
-    virtual void Start(){}
+    virtual ~GameObject()= default;
     virtual void Update(){}
 };
 
@@ -33,17 +32,65 @@ public:
     vec3 vertex2 = {-1.0f, -1.0f, 0.0f};
     vec3 vertex3 = {0, 1.0f, 0.0f};
 
-    void Start() override {
+    Triangle() {
+        SetPosition({0,0,0});
+    }
+
+    void Update() override {
+        GameObject::Update();
+    }
+
+    void SetPosition(vec3 position) {
+        transform.pos = position;
         vertex1.x = transform.pos.x + transform.width/2;
         vertex1.y = transform.pos.y - transform.height/2;
         vertex2.x = transform.pos.x - transform.width/2;
         vertex2.y = transform.pos.y - transform.height/2;
         vertex3.x = transform.pos.x;
         vertex3.y = transform.pos.y + transform.height/2;
+        if (transform.rot.z > 0) {
+            Rotate(transform.rot.z);
+        }
     }
 
-    void Update() override {
-        GameObject::Update();
+    void Translate(vec3 translate) {
+        vertex1.x += translate.x;
+        vertex2.x += translate.x;
+        vertex3.x += translate.x;
+        vertex1.y += translate.y;
+        vertex2.y += translate.y;
+        vertex3.y += translate.y;
+        vertex1.z += translate.z;
+        vertex2.z += translate.z;
+        vertex3.z += translate.z;
+        transform.pos.x += translate.x;
+        transform.pos.y += translate.y;
+        transform.pos.z += translate.z;
+    }
+    
+    void Rotate(float degrees) {
+        // "Undo" current position transform back to screen space origin (top left 0,0)
+        vec3 posScreenSpace = coords_device_to_screen(transform.pos);
+
+        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).x;
+        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).x;
+        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).x;
+        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).y;
+        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).y;
+        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).y;
+
+        vertex1 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex1), degrees));
+        vertex2 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex2), degrees));
+        vertex3 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex3), degrees));
+
+        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).x;
+        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).x;
+        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).x;
+        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).y;
+        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).y;
+        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).y;
+
+        transform.rot.z += degrees;
     }
 };
 
@@ -60,7 +107,16 @@ public:
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
 
-    void Start() override {
+    Sprite() {
+        SetPosition({0,0,0});
+    }
+
+    void Update() override {
+        GameObject::Update();
+    }
+
+    void SetPosition(vec3 position) {
+        transform.pos = position;
         vertex1.x = transform.pos.x - transform.width/2;
         vertex1.y = transform.pos.y + transform.height/2;
         vertex2.x = transform.pos.x + transform.width/2;
@@ -69,10 +125,57 @@ public:
         vertex3.y = transform.pos.y - transform.height/2;
         vertex4.x = transform.pos.x - transform.width/2;
         vertex4.y = transform.pos.y - transform.height/2;
+        if (transform.rot.z > 0) {
+            Rotate(transform.rot.z);
+        }
     }
 
-    void Update() override {
-        GameObject::Update();
+    void Translate(vec3 translate) {
+        vertex1.x += translate.x;
+        vertex2.x += translate.x;
+        vertex3.x += translate.x;
+        vertex4.x += translate.x;
+        vertex1.y += translate.y;
+        vertex2.y += translate.y;
+        vertex3.y += translate.y;
+        vertex4.y += translate.y;
+        vertex1.z += translate.z;
+        vertex2.z += translate.z;
+        vertex3.z += translate.z;
+        vertex4.z += translate.z;
+        transform.pos.x += translate.x;
+        transform.pos.y += translate.y;
+        transform.pos.z += translate.z;
+    }
+    
+    void Rotate(float degrees) {
+        // "Undo" current position transform back to screen space origin (top left 0,0)
+        vec3 posScreenSpace = coords_device_to_screen(transform.pos);
+
+        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).x;
+        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).x;
+        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).x;
+        vertex4.x = coords_screen_to_device({coords_device_to_screen(vertex4).x - posScreenSpace.x, coords_device_to_screen(vertex4).y - posScreenSpace.y, 0}).x;
+        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x - posScreenSpace.x, coords_device_to_screen(vertex1).y - posScreenSpace.y, 0}).y;
+        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x - posScreenSpace.x, coords_device_to_screen(vertex2).y - posScreenSpace.y, 0}).y;
+        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x - posScreenSpace.x, coords_device_to_screen(vertex3).y - posScreenSpace.y, 0}).y;
+        vertex4.y = coords_screen_to_device({coords_device_to_screen(vertex4).x - posScreenSpace.x, coords_device_to_screen(vertex4).y - posScreenSpace.y, 0}).y;
+
+        vertex1 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex1), degrees));
+        vertex2 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex2), degrees));
+        vertex3 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex3), degrees));
+        vertex4 = coords_screen_to_device(rotate_euler(coords_device_to_screen(vertex4), degrees));
+
+        vertex1.x = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).x;
+        vertex2.x = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).x;
+        vertex3.x = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).x;
+        vertex4.x = coords_screen_to_device({coords_device_to_screen(vertex4).x + posScreenSpace.x, coords_device_to_screen(vertex4).y + posScreenSpace.y, 0}).x;
+        vertex1.y = coords_screen_to_device({coords_device_to_screen(vertex1).x + posScreenSpace.x, coords_device_to_screen(vertex1).y + posScreenSpace.y, 0}).y;
+        vertex2.y = coords_screen_to_device({coords_device_to_screen(vertex2).x + posScreenSpace.x, coords_device_to_screen(vertex2).y + posScreenSpace.y, 0}).y;
+        vertex3.y = coords_screen_to_device({coords_device_to_screen(vertex3).x + posScreenSpace.x, coords_device_to_screen(vertex3).y + posScreenSpace.y, 0}).y;
+        vertex4.y = coords_screen_to_device({coords_device_to_screen(vertex4).x + posScreenSpace.x, coords_device_to_screen(vertex4).y + posScreenSpace.y, 0}).y;
+
+        transform.rot.z += degrees;
     }
 };
 
