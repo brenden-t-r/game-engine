@@ -107,8 +107,8 @@ static void rotate_vertices(vec3 pos, vec3* vertices, int vertexCount, float deg
     vec3 posPixels = normalized_to_screen(pos);
     for (int i = 0; i < vertexCount; i ++) {
         // "Undo" current position transform back to screen space origin (top left 0,0)
-        vec3 vertex1_pixels = normalized_to_screen(vertices[i]);
-        vec3 newVertex = {vertex1_pixels.x - posPixels.x, vertex1_pixels.y - posPixels.y, 0};
+        vec3 vertex_pixels = normalized_to_screen(vertices[i]);
+        vec3 newVertex = {vertex_pixels.x - posPixels.x, vertex_pixels.y - posPixels.y, 0};
 
         // Rotate
         newVertex = rotate_euler(newVertex, degrees);
