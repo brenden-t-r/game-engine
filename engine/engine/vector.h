@@ -103,4 +103,27 @@ static vec3 rotate_euler(vec3 transform, float angle) {
     };
 }
 
+static void rotate_vertices(vec3 pos, vec3* vertices, int vertexCount, float degrees) {
+    vec3 posPixels = normalized_to_screen(pos);
+    for (int i = 0; i < vertexCount; i ++) {
+        // "Undo" current position transform back to screen space origin (top left 0,0)
+        vec3 vertex1_pixels = normalized_to_screen(vertices[i]);
+        vec3 newVertex = {vertex1_pixels.x - posPixels.x, vertex1_pixels.y - posPixels.y, 0};
+
+        // Rotate
+        newVertex = rotate_euler(newVertex, degrees);
+
+        // "Redo" position back
+        vertices[i] = screen_to_normalized({newVertex.x + posPixels.x, newVertex.y + posPixels.y, 0});
+    }
+}
+
+static void translate_vertices(vec3 pos, vec3* vertices, int vertexCount, vec3 translate) {
+    for (int i = 0; i < vertexCount; i ++) {
+        vertices[i].x += translate.x;
+        vertices[i].y += translate.y;
+        vertices[i].z += translate.z;
+    }
+}
+
 #endif //GAMEENGINE_VECTOR_H
