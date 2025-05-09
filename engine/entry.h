@@ -20,6 +20,8 @@
  *  iOS     => Metal
  *
  */
+#include "platform/platform.h"
+#include "engine/game.h"
 
 // Just the declaration; defined within the game code
 int RealMain(Platform* platform);
