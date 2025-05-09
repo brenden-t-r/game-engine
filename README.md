@@ -36,14 +36,18 @@ mkdir build
 cd build
 cmake .. -DBACKEND_METAL=ON
 make
-./GameEngine
 ```
 
-Compile shaders:
+## iOS
 
+Prerequisites
 ```bash
-xcrun -sdk macosc metal -o shader.air -c shader.metal
-xcrun -sdk macosc metallib -o shader.metallib shader.air
+brew install cmake
+```
+
+Build
+```bash
+./ios-build.sh
 ```
 
 ## Linux
