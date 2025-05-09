@@ -19,24 +19,12 @@ public:
     void Rotate(float degrees){}
 };
 
-//class Component {
-//public:
-//    virtual void Init() = 0;
-//    virtual void Update() = 0;
-//};
-
 class GameObject {
 public:
     Transform transform{};
-//    std::vector<Component*> components{};
-
     virtual ~GameObject(){}
-
-    virtual void Update() {
-//        for (auto & component : components) {
-//            component->Update();
-//        }
-    }
+    virtual void Start(){}
+    virtual void Update(){}
 };
 
 class Triangle : public GameObject {
@@ -45,14 +33,17 @@ public:
     vec3 vertex2 = {-1.0f, -1.0f, 0.0f};
     vec3 vertex3 = {0, 1.0f, 0.0f};
 
-    void Update() override {
-        GameObject::Update();
+    void Start() override {
         vertex1.x = transform.pos.x + transform.width/2;
         vertex1.y = transform.pos.y - transform.height/2;
         vertex2.x = transform.pos.x - transform.width/2;
         vertex2.y = transform.pos.y - transform.height/2;
         vertex3.x = transform.pos.x;
         vertex3.y = transform.pos.y + transform.height/2;
+    }
+
+    void Update() override {
+        GameObject::Update();
     }
 };
 
@@ -69,8 +60,7 @@ public:
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
 
-    void Update() override {
-        GameObject::Update();
+    void Start() override {
         vertex1.x = transform.pos.x - transform.width/2;
         vertex1.y = transform.pos.y + transform.height/2;
         vertex2.x = transform.pos.x + transform.width/2;
@@ -79,6 +69,10 @@ public:
         vertex3.y = transform.pos.y - transform.height/2;
         vertex4.x = transform.pos.x - transform.width/2;
         vertex4.y = transform.pos.y - transform.height/2;
+    }
+
+    void Update() override {
+        GameObject::Update();
     }
 };
 
