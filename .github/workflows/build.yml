@@ -75,7 +75,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure for iOS
-        run: cmake -S . -B ios_build -G Xcode -DCMAKE_OSX_SYSROOT=iphoneos -DBACKEND_METAL=ON -DPLATFORM_IOS=ON -DCMAKE_GENERATOR_TOOLSET=""
+        run: cmake -S . -B ios_build -G Xcode -DCMAKE_OSX_SYSROOT=iphoneos -DBACKEND_METAL=ON -DPLATFORM_IOS=ON \
+          -DCMAKE_GENERATOR_TOOLSET="" \
+          -DCMAKE_OSX_ARCHITECTURES=arm64 \
+          -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+          -DCMAKE_INSTALL_RPATH="@executable_path/Frameworks"
       - name: Upload artifact
         #if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
