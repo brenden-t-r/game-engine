@@ -80,6 +80,10 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES=arm64 \
           -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
           -DCMAKE_INSTALL_RPATH="@executable_path/Frameworks"
+          -DCMAKE_XCODE_ATTRIBUTE_DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer" \
+          -DCMAKE_XCODE_ATTRIBUTE_SKIP_INSTALL=YES \
+          -DCMAKE_XCODE_ATTRIBUTE_INSTALL_PATH="@executable_path/Frameworks" \
+          -DCMAKE_XCODE_ATTRIBUTE_BUILD_DIR="build"
       - name: Upload artifact
         #if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
