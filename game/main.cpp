@@ -37,5 +37,3 @@ int RealMain(Platform* platform) {
     delete platform;
     return 0;
 }
-
-
