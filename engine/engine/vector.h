@@ -103,7 +103,13 @@ static vec3 rotate_euler(vec3 transform, float angle) {
     };
 }
 
-static void rotate_vertices(vec3 pos, vec3* vertices, int vertexCount, float degrees) {
+static vec3 scale_vector(vec3 transform, vec3 scale) {
+    return {
+        transform.x*scale.x, transform.y*scale.y, transform.z*scale.z
+    };
+}
+
+static void rotate_vertices(vec3* vertices, int vertexCount, vec3 pos, float degrees) {
     vec3 posPixels = normalized_to_screen(pos);
     for (int i = 0; i < vertexCount; i ++) {
         // "Undo" current position transform back to screen space origin (top left 0,0)

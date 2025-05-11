@@ -15,14 +15,16 @@ public:
         sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 0.5f;
         sprite->transform.height = 0.5f;
-//        sprite->transform.rot = {0,0,45};
+        sprite->transform.rot = {0,0,45};
         sprite->SetPosition(screen_to_normalized({960, 500, 0}));
+        sprite->SetScale({2.0, 2.0, 0});
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
         triangle->transform.height = 0.2f;
         triangle->transform.rot = {0,0,45};
         triangle->SetPosition(screen_to_normalized({300, 500, 0}));
+        triangle->SetScale({2.0, 2.0, 0});
 
         EnableCallback(KEY_RELEASED);
     }
@@ -66,12 +68,12 @@ private:
 
     void KeyReleasedCallback(KeyCode key) override {
         if (key == KeyCode::D) {
-            triangle->Rotate(45);
-            sprite->Rotate(45);
+            sprite->SetScale({sprite->transform.scale.x*2, sprite->transform.scale.y*2, 0});
+            triangle->SetScale({triangle->transform.scale.x*2, triangle->transform.scale.y*2, 0});
         }
         if (key == KeyCode::A) {
-            triangle->Rotate(-45);
-            sprite->Rotate(-45);
+            sprite->SetScale({sprite->transform.scale.x/2, sprite->transform.scale.y/2, 0});
+            triangle->SetScale({triangle->transform.scale.x/2, triangle->transform.scale.y/2, 0});
         }
     }
 };
