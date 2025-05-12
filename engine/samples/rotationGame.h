@@ -32,28 +32,28 @@ public:
     void Update() override {
         printf(".");
 
-        if (platform->IsKeyPressed(KeyCode::W)) {
+        if (platform->IsKeyPressed(KeyCode::W) || platform->IsGamepadButtonPressed(GamepadButton::North)) {
             sprite->Rotate(1);
             triangle->Rotate(1);
         }
-        if (platform->IsKeyPressed(KeyCode::S)) {
+        if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
             sprite->Rotate(-1);
             triangle->Rotate(-1);
         }
 
-        if (platform->IsKeyPressed(KeyCode::Up)) {
+        if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
             sprite->Translate({0,0.01,0});
             triangle->Translate({0,0.01,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Down)) {
+        if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
             sprite->Translate({0,-0.01,0});
             triangle->Translate({0,-0.01,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Right)) {
+        if (platform->IsKeyPressed(KeyCode::Right)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
             sprite->Translate({0.01,0,0});
             triangle->Translate({0.01,0,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Left)) {
+        if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
             sprite->Translate({-0.01,0,0});
             triangle->Translate({-0.01,0,0});
         }

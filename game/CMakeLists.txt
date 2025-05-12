@@ -16,11 +16,9 @@ elseif (APPLE)
         string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
         add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${GAME_SOURCES})
         set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE YES)
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${BUNDLE_ID_PREFIX}.${PROJECT_NAME_LOWER}"
-        )
+        set_target_properties(${PROJECT_NAME} PROPERTIES PRODUCT_BUNDLE_IDENTIFIER "${BUNDLE_ID_PREFIX}.${PROJECT_NAME_LOWER}")
+        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${BUNDLE_ID_PREFIX}.${PROJECT_NAME_LOWER}")
         if (PLATFORM_IOS)
-            set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0")
             configure_file("${CMAKE_SOURCE_DIR}/engine/platform/ios/Info.plist" "${CMAKE_BINARY_DIR}/Info.plist" @ONLY)
         else()
             configure_file("${CMAKE_SOURCE_DIR}/engine/platform/metal/Info.plist" "${CMAKE_BINARY_DIR}/Info.plist" @ONLY)

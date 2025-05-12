@@ -209,6 +209,7 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
 @property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
 @property (nonatomic, strong) GCVirtualController *virtualController;
+- (BOOL)IsGamePadPressed:(GamepadButton)button;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -291,12 +292,12 @@ public:
     void Update() override {
         Sprite::Update();
         VertexData newVertices[]{
-                {{vertices[0].x, vertices[0], 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertices[3].x, vertices[3], 0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{vertices[2].x, vertices[2], 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertices[0].x, vertices[0], 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertices[2].x, vertices[2], 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertices[1].x, vertices[1], 0, 1}, {1.0f, 0.0f}}  // Top right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[3].x, vertices[3].y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[1].x, vertices[1].y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
         if (useAtlas) {
