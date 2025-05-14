@@ -37,6 +37,7 @@ public:
 
     void Update() override {
         GameObject::Update();
+        SetPosition(transform.pos);
     }
 
     void SetPosition(vec3 position) {
@@ -51,25 +52,22 @@ public:
         vertices[1] = scale_vector(vertices[1], transform.scale);
         vertices[2] = scale_vector(vertices[2], transform.scale);
         translate_vertices({0,0,0}, vertices, 3, transform.pos);
-        if (transform.rot.z > 0) {
+        if (transform.rot.z != 0) {
             rotate_vertices(vertices, 3, transform.pos, transform.rot.z);
         }
     }
 
     void SetScale(vec3 newScale) {
         transform.scale = newScale;
-        SetPosition(transform.pos);
     }
 
     void Translate(vec3 translate) {
-        translate_vertices(transform.pos, vertices, 3, translate);
         transform.pos.x += translate.x;
         transform.pos.y += translate.y;
         transform.pos.z += translate.z;
     }
 
     void Rotate(float degrees) {
-        rotate_vertices(vertices, 3, transform.pos, degrees);
         transform.rot.z += degrees;
     }
 };
@@ -95,6 +93,7 @@ public:
 
     void Update() override {
         GameObject::Update();
+        SetPosition(transform.pos);
     }
 
     void SetPosition(vec3 position) {
@@ -112,25 +111,22 @@ public:
         vertices[2] = scale_vector(vertices[2], transform.scale);
         vertices[3] = scale_vector(vertices[3], transform.scale);
         translate_vertices({0,0,0}, vertices, 4, transform.pos);
-        if (transform.rot.z > 0) {
+        if (transform.rot.z != 0) {
             rotate_vertices(vertices, 4, transform.pos, transform.rot.z);
         }
     }
 
     void SetScale(vec3 newScale) {
         transform.scale = newScale;
-        SetPosition(transform.pos);
     }
 
     void Translate(vec3 translate) {
-        translate_vertices(transform.pos, vertices, 4, translate);
         transform.pos.x += translate.x;
         transform.pos.y += translate.y;
         transform.pos.z += translate.z;
     }
 
     void Rotate(float degrees) {
-        rotate_vertices(vertices, 4, transform.pos, degrees);
         transform.rot.z += degrees;
     }
 };
