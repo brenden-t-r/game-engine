@@ -639,10 +639,14 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     auto appleKey = GetAppleKey(key);
     return CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, appleKey);
 }
+- (void)keyDown:(NSEvent *)event {
+    // Just implement to avoid "beep" sound
+}
 - (void)keyUp:(NSEvent *)event {
-    NSLog(@"Key released: %@, keyCode: %hu", event.characters, event.keyCode);
     auto key = GetKeyCode(event.keyCode);
-    keyUpCallback(key, keyCallbackContext);
+    if (keyUpCallback != nullptr) {
+        keyUpCallback(key, keyCallbackContext);
+    }
 }
 - (void)mouseUp:(NSEvent *)event {
     if (mouseUpCallback != nil) {
