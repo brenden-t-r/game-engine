@@ -15,7 +15,7 @@
 
 #include "../engine/platform/platform.h"
 #include "../engine/engine/game.h"
-#include "../engine/samples/pongGame.h"
+#include "../engine/samples/eventGame.h"
 #include "../engine/entry.h"
 
 class SampleGame : public Game {
@@ -29,7 +29,7 @@ public:
 
 int RealMain(Platform* platform) {
     platform->Init();
-    Game* game = new PongGame(platform);
+    Game* game = new EventGame(platform);
     game->Start();
     RunLoop(platform, game);
     platform->Shutdown();
