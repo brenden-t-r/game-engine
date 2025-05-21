@@ -209,6 +209,7 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
 @property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
 @property (nonatomic, strong) GCVirtualController *virtualController;
+- (BOOL)IsGamePadPressed:(GamepadButton)button;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -230,22 +231,22 @@ public:
     ){
         this->metalDevice = metalDevice;
         this->metalRenderPSO = metalRenderPSO;
-        static const float vertices[] = {
-                vertex1.x, vertex1.y, 0.0f, 1.0f,  // Top vertex
-                vertex2.x, vertex2.y, 0.0f, 1.0f,  // Bottom left vertex
-                vertex3.x, vertex3.y, 0.0f, 1.0f   // Bottom right vertex
+        static const float metal_vertices[] = {
+                vertices[0].x, vertices[0].y, 0.0f, 1.0f,  // Top vertex
+                vertices[1].x, vertices[1].y, 0.0f, 1.0f,  // Bottom left vertex
+                vertices[2].x, vertices[2].y, 0.0f, 1.0f   // Bottom right vertex
         };
-        vertexBuffer = [metalDevice newBufferWithBytes:&vertices length:sizeof(vertices) options:MTLResourceStorageModeShared];
+        vertexBuffer = [metalDevice newBufferWithBytes:&metal_vertices length:sizeof(metal_vertices) options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
         Triangle::Update();
-        float vertices[] = {
-                vertex1.x, vertex1.y, 0.0f, 1.0f,  // Top vertex
-                vertex2.x, vertex2.y, 0.0f, 1.0f,  // Bottom left vertex
-                vertex3.x, vertex3.y, 0.0f, 1.0f   // Bottom right vertex
+        float metal_vertices[] = {
+                vertices[0].x, vertices[0].y, 0.0f, 1.0f,  // Top vertex
+                vertices[1].x, vertices[1].y, 0.0f, 1.0f,  // Bottom left vertex
+                vertices[2].x, vertices[2].y, 0.0f, 1.0f   // Bottom right vertex
         };
-        memcpy([vertexBuffer contents], vertices, sizeof(vertices));
+        memcpy([vertexBuffer contents], metal_vertices, sizeof(metal_vertices));
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
@@ -276,12 +277,12 @@ public:
         this->metalRenderPSO = metalRenderPSO;
         this->texture = texture;
         VertexData newVertices[]{
-                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[3].x, vertices[3].y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[1].x, vertices[1].y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
                                                 length:sizeof(newVertices)
@@ -291,12 +292,12 @@ public:
     void Update() override {
         Sprite::Update();
         VertexData newVertices[]{
-                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertex4.x, vertex4.y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex1.x, vertex1.y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertex3.x, vertex3.y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertex2.x, vertex2.y, 0, 1}, {1.0f, 0.0f}}  // Top right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[3].x, vertices[3].y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
+                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
+                {{vertices[1].x, vertices[1].y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
         if (useAtlas) {

@@ -256,9 +256,9 @@ public:
         void Update() override {
             Triangle::Update();
             GLfloat newVertices[] = {
-                    vertex1.x, vertex1.y, 0.0f,
-                    vertex2.x, vertex2.y, 0.0f,
-                    vertex3.x, vertex3.y, 0.0f,
+                    vertices[0].x, vertices[0].y, 0.0f,
+                    vertices[1].x, vertices[1].y, 0.0f,
+                    vertices[2].x, vertices[2].y, 0.0f,
             };
             glDisable(GL_BLEND);
             glUseProgram(shaderProgram);
@@ -296,10 +296,10 @@ public:
             Sprite::Update();
             float newVertices[] = {
                     // Positions                 // Texture Coords
-                    vertex1.x, vertex1.y, 0.0f,  0.0f, 1.0f, // Top-left
-                    vertex2.x, vertex2.y, 0.0f,  1.0f, 1.0f, // Top-right
-                    vertex3.x, vertex3.y, 0.0f,  1.0f, 0.0f, // Bottom-right
-                    vertex4.x, vertex4.y, 0.0f,  0.0f, 0.0f  // Bottom-left
+                    vertices[0].x, vertices[0].y, 0.0f,  0.0f, 1.0f, // Top-left
+                    vertices[1].x, vertices[1].y, 0.0f,  1.0f, 1.0f, // Top-right
+                    vertices[2].x, vertices[2].y, 0.0f,  1.0f, 0.0f, // Bottom-right
+                    vertices[3].x, vertices[3].y, 0.0f,  0.0f, 0.0f  // Bottom-left
             };
 
             int row = atlasNumRows - atlasRow - 1;

@@ -10,6 +10,10 @@ option(BACKEND_OPENGL "Use OpenGL backend" OFF)
 option(BACKEND_METAL "Use Metal backend" OFF)
 option(PLATFORM_IOS "Build for iOS" OFF)
 
+if (PLATFORM_IOS)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0")
+endif()
+
 # Add subdirectories
 add_subdirectory(engine)
 add_subdirectory(game)

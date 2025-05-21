@@ -267,12 +267,12 @@ public:
 
         void Update() override {
             Triangle::Update();
-            vertices[0].position.x = vertex1.x;
-            vertices[0].position.y = vertex1.y;
-            vertices[1].position.x = vertex2.x;
-            vertices[1].position.y = vertex2.y;
-            vertices[2].position.x = vertex3.x;
-            vertices[2].position.y = vertex3.y;
+            d3d_vertices[0].position.x = vertices[0].x;
+            d3d_vertices[0].position.y = vertices[0].y;
+            d3d_vertices[1].position.x = vertices[1].x;
+            d3d_vertices[1].position.y = vertices[1].y;
+            d3d_vertices[2].position.x = vertices[2].x;
+            d3d_vertices[2].position.y = vertices[2].y;
 
             // "Unset" the blend state
             float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -282,7 +282,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mappedResource;
             HRESULT hr = d3dContext->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
             if (SUCCEEDED(hr)) {
-                memcpy(mappedResource.pData, vertices, sizeof(vertices));
+                memcpy(mappedResource.pData, d3d_vertices, sizeof(d3d_vertices));
                 d3dContext->Unmap(vertexBuffer, 0);
             }
 
@@ -308,7 +308,7 @@ public:
         ID3D11InputLayout* inputLayout = nullptr;
         ID3D11VertexShader* vertexShader = nullptr;
         ID3D11PixelShader* pixelShader = nullptr;
-        Vertex vertices[3] {
+        Vertex d3d_vertices[3] {
                 { DirectX::XMFLOAT3(0.5f,  -0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
                 { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.0f), DirectX::XMFLOAT2(0.5f, 0.0f) },
                 { DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.25f, 0.5f) }
@@ -320,10 +320,10 @@ public:
             bufferDesc.Usage = D3D11_USAGE_DYNAMIC; // Required for MAP_WRITE_DISCARD
             bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // Enables writing
             bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            bufferDesc.ByteWidth = sizeof(vertices); // Size of your vertex data
+            bufferDesc.ByteWidth = sizeof(d3d_vertices); // Size of your vertex data
 
             D3D11_SUBRESOURCE_DATA initData = {};
-            initData.pSysMem = vertices;
+            initData.pSysMem = d3d_vertices;
 
             HRESULT hr = d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
             if (FAILED(hr)) {
@@ -360,37 +360,37 @@ public:
             // Create the vertex buffer (same as before)
             D3D11_BUFFER_DESC bufferDesc = {};
             bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-            bufferDesc.ByteWidth = sizeof(vertices);
+            bufferDesc.ByteWidth = sizeof(d3d_vertices);
             bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
             bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
             D3D11_SUBRESOURCE_DATA initData = {};
-            initData.pSysMem = vertices;
+            initData.pSysMem = d3d_vertices;
 
             d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
         }
 
         void Update() override {
             Sprite::Update();
-            vertices[0].position.x = vertex1.x;
-            vertices[0].position.y = vertex1.y;
-            vertices[1].position.x = vertex2.x;
-            vertices[1].position.y = vertex2.y;
+            d3d_vertices[0].position.x = vertices[0].x;
+            d3d_vertices[0].position.y = vertices[0].y;
+            d3d_vertices[1].position.x = vertices[1].x;
+            d3d_vertices[1].position.y = vertices[1].y;
             // Bottom left and bottom right are flipped in DirectX; order matters
-            vertices[3].position.x = vertex3.x;
-            vertices[3].position.y = vertex3.y;
-            vertices[2].position.x = vertex4.x;
-            vertices[2].position.y = vertex4.y;
+            d3d_vertices[3].position.x = vertices[2].x;
+            d3d_vertices[3].position.y = vertices[2].y;
+            d3d_vertices[2].position.x = vertices[3].x;
+            d3d_vertices[2].position.y = vertices[3].y;
 
             if (useAtlas) {
-                vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
-                vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
-                vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
-                vertices[3].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
-                vertices[0].texCoord.y = atlasCellSize * (float)atlasRow;
-                vertices[1].texCoord.y = atlasCellSize * (float)atlasRow;
-                vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
-                vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+                d3d_vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
+                d3d_vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                d3d_vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
+                d3d_vertices[3].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
+                d3d_vertices[0].texCoord.y = atlasCellSize * (float)atlasRow;
+                d3d_vertices[1].texCoord.y = atlasCellSize * (float)atlasRow;
+                d3d_vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+                d3d_vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             }
 
             // Set the blend state
@@ -401,7 +401,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mappedResource;
             HRESULT hr = d3dContext->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
             if (SUCCEEDED(hr)) {
-                memcpy(mappedResource.pData, vertices, sizeof(vertices));
+                memcpy(mappedResource.pData, d3d_vertices, sizeof(d3d_vertices));
                 d3dContext->Unmap(vertexBuffer, 0);
             }
 
@@ -430,7 +430,7 @@ public:
         ID3D11ShaderResourceView* textureView = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
 
-        Vertex vertices[4] {
+        Vertex d3d_vertices[4] {
                 // Order matters
                 { DirectX::XMFLOAT3(-1.0f,  1.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) }, // Top left
                 { DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 0.0f) }, // Top Right
