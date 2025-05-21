@@ -70,6 +70,7 @@ struct aabb_hit_edge {
     bool bottom;
 };
 
+// Mosty works, but doesn't take into account velocity, so has some edge cases
 static aabb_hit_edge aabb_get_hit_edge(GameObject* a, GameObject* b) {
     vec3 aPos = a->transform.pos;
     vec3 bPos = b->transform.pos;
