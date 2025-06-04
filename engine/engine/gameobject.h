@@ -41,20 +41,20 @@ public:
     }
 
     void SetPosition(vec3 position) {
-        transform.pos = position;
-        vertices[0].x = transform.width/2;
-        vertices[0].y = -transform.height/2;
-        vertices[1].x = -transform.width/2;
-        vertices[1].y = -transform.height/2;
-        vertices[2].x = 0;
-        vertices[2].y = transform.height/2;
-        vertices[0] = scale_vector(vertices[0], transform.scale);
-        vertices[1] = scale_vector(vertices[1], transform.scale);
-        vertices[2] = scale_vector(vertices[2], transform.scale);
-        translate_vertices({0,0,0}, vertices, 3, transform.pos);
-        if (transform.rot.z != 0) {
-            rotate_vertices(vertices, 3, transform.pos, transform.rot.z);
-        }
+//        transform.pos = position;
+//        vertices[0].x = transform.width/2;
+//        vertices[0].y = -transform.height/2;
+//        vertices[1].x = -transform.width/2;
+//        vertices[1].y = -transform.height/2;
+//        vertices[2].x = 0;
+//        vertices[2].y = transform.height/2;
+//        vertices[0] = scale_vector(vertices[0], transform.scale);
+//        vertices[1] = scale_vector(vertices[1], transform.scale);
+//        vertices[2] = scale_vector(vertices[2], transform.scale);
+//        translate_vertices({0,0,0}, vertices, 3, transform.pos);
+//        if (transform.rot.z != 0) {
+//            rotate_vertices(vertices, 3, transform.pos, transform.rot.z);
+//        }
     }
 
     void SetScale(vec3 newScale) {
@@ -110,7 +110,7 @@ public:
         vertices[1] = scale_vector(vertices[1], transform.scale);
         vertices[2] = scale_vector(vertices[2], transform.scale);
         vertices[3] = scale_vector(vertices[3], transform.scale);
-        translate_vertices({0,0,0}, vertices, 4, transform.pos);
+        translate_vertices(vertices, 4, transform.pos);
         if (transform.rot.z != 0) {
             rotate_vertices(vertices, 4, transform.pos, transform.rot.z);
         }

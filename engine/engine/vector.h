@@ -124,7 +124,7 @@ static void rotate_vertices(vec3* vertices, int vertexCount, vec3 pos, float deg
     }
 }
 
-static void translate_vertices(vec3 pos, vec3* vertices, int vertexCount, vec3 translate) {
+static void translate_vertices(vec3* vertices, int vertexCount, vec3 translate) {
     for (int i = 0; i < vertexCount; i ++) {
         vertices[i].x += translate.x;
         vertices[i].y += translate.y;

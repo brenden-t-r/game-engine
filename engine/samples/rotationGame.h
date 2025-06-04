@@ -25,57 +25,52 @@ public:
         triangle->transform.rot = {0,0,45};
         triangle->SetPosition(screen_to_normalized({300, 500, 0}));
         triangle->SetScale({2.0, 2.0, 0});
-
-        EnableCallback(KEY_RELEASED);
     }
 
     void Update() override {
         printf(".");
 
-        if (platform->IsKeyPressed(KeyCode::W) || platform->IsGamepadButtonPressed(GamepadButton::North)) {
+        if (platform->IsKeyPressed(KeyCode::Right) || platform->IsGamepadButtonPressed(GamepadButton::East)) {
             sprite->Rotate(1);
             triangle->Rotate(1);
         }
-        if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
+        if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::West)) {
             sprite->Rotate(-1);
             triangle->Rotate(-1);
         }
+        if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::North)) {
+            sprite->transform.scale.x += -0.1;
+            sprite->transform.scale.y += -0.1;
+        }
+        if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
+            sprite->transform.scale.x -= -0.1;
+            sprite->transform.scale.y -= -0.1;
+        }
 
-        if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
+        if (platform->IsKeyPressed(KeyCode::W)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
             sprite->Translate({0,0.01,0});
             triangle->Translate({0,0.01,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
+        if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
             sprite->Translate({0,-0.01,0});
             triangle->Translate({0,-0.01,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Right)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
+        if (platform->IsKeyPressed(KeyCode::D)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
             sprite->Translate({0.01,0,0});
             triangle->Translate({0.01,0,0});
         }
-        if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
+        if (platform->IsKeyPressed(KeyCode::A)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
             sprite->Translate({-0.01,0,0});
             triangle->Translate({-0.01,0,0});
         }
 
-        triangle->Update();
+//        triangle->Update();
         sprite->Update();
     }
 
 private:
     Triangle* triangle;
     Sprite* sprite;
-
-    void KeyReleasedCallback(KeyCode key) override {
-        if (key == KeyCode::D) {
-            sprite->SetScale({sprite->transform.scale.x*2, sprite->transform.scale.y*2, 0});
-            triangle->SetScale({triangle->transform.scale.x*2, triangle->transform.scale.y*2, 0});
-        }
-        if (key == KeyCode::A) {
-            sprite->SetScale({sprite->transform.scale.x/2, sprite->transform.scale.y/2, 0});
-            triangle->SetScale({triangle->transform.scale.x/2, triangle->transform.scale.y/2, 0});
-        }
-    }
 };
 
 #endif //GAMEENGINE_ROTATIONGAME_H
