@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <vector>
+#include <cassert>
 
 class Transform {
 public:
@@ -72,6 +73,72 @@ public:
     }
 };
 
+struct Matrix3 {
+    float _11, _12, _13 = 0;
+    float _21, _22, _23 = 0;
+    float _31, _32, _33 = 0;
+
+    vec3 Row(int i) {
+        switch (i) {
+            case 0:
+                return vec3{_11, _12, _13};
+            case 1:
+                return vec3{_21, _22, _23};
+            case 2:
+                return vec3{_31, _32, _33};
+            default:
+                assert(false);
+        }
+    }
+    vec3 Col(int i) {
+        switch (i) {
+            case 0:
+                return vec3{_11, _21, _31};
+            case 1:
+                return vec3{_12, _22, _32};
+            case 2:
+                return vec3{_13, _23, _33};
+            default:
+                assert(false);
+        }
+    }
+};
+
+Matrix3 matrix_multiply(Matrix3 a, Matrix3 b) {
+    return {
+            dot_product(a.Row(0), b.Col(0)), dot_product(a.Row(0), b.Col(1)), dot_product(a.Row(0), b.Col(2)),
+            dot_product(a.Row(1), b.Col(0)), dot_product(a.Row(1), b.Col(1)), dot_product(a.Row(1), b.Col(2)),
+            dot_product(a.Row(2), b.Col(0)), dot_product(a.Row(2), b.Col(1)), dot_product(a.Row(2), b.Col(2))
+    };
+}
+
+//void MatrixTransformation(Transform t) {
+//    Matrix3 matrix = {
+//            0, 0, 0,
+//            0, 0, 0,
+//            0, 0, 0,
+//    };
+//    matrix = {
+//            t.scale.x
+//    };
+//
+//    float angle = t.rot.z;
+//    float cos = cosf(angle);
+//    float sin = sinf(angle);
+//    Matrix3 rotationMatrix = {
+//            cos, -sin, 0,
+//            sin, cos,  0,
+//            0,   0,    0,
+//    };
+//
+//    //?
+//    Matrix3 scaleMatrix = {
+//            t.scale.x, 0, 0,
+//            0, t.scale.y, 0,
+//            0, 0, 0
+//    };
+//}
+
 class Sprite : public GameObject {
 public:
     vec3 vertices[4] {
@@ -95,6 +162,8 @@ public:
         GameObject::Update();
         SetPosition(transform.pos);
     }
+
+
 
     void SetPosition(vec3 position) {
         transform.pos = position;

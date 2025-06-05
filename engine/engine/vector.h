@@ -132,4 +132,10 @@ static void translate_vertices(vec3* vertices, int vertexCount, vec3 translate) 
     }
 }
 
+static float dot_product(vec3 a, vec3 b) {
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+}
+
+
+
 #endif //GAMEENGINE_VECTOR_H
