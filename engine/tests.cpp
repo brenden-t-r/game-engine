@@ -16,10 +16,10 @@ static void tests_getUnitVectorFromAngleDegrees() {
 static void tests_dotProduct() {
     vec3 a = {-6, 8, 0};
     vec3 b = {5, 12, 0};
-    assert(66 == dot_product(a, b));
+    assert(66 == dot(a, b));
     a = {-12, 16, 0};
     b = {12, 9, 0};
-    assert(0 == dot_product(a, b));
+    assert(0 == dot(a, b));
 }
 
 static void tests_matrixMultiply() {
@@ -45,10 +45,38 @@ static void tests_matrixMultiply() {
     assert(quotient.Row(2).z == -3);
 }
 
+static void tests_matrixMultiplyVec() {
+    Matrix3 mat = {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9
+    };
+    vec3 vec = {
+            2, 1, 3
+    };
+    vec3 quotient = matrix_multiply_vec(mat, vec);
+    assert(quotient.x == 13);
+    assert(quotient.y == 31);
+    assert(quotient.z == 49);
+}
+
+static void tests_matrixTransformation() {
+    vec3 point  {1, 1, 0};
+    vec3 pos = {2, 3, 0};
+    vec3 scale = {2, 1, 1};
+    vec3 rot = {0, 0, 0.5235988};
+    Matrix3 result = matrix_transformation(pos, scale, rot);
+    vec3 transformed = matrix_multiply_vec(result, point);
+    assert(transformed.x == 3.732);
+    assert(transformed.y == 4.5);
+}
+
 int main() {
     printf("Running Tests\n");
     tests_getUnitVectorFromAngleDegrees();
     tests_dotProduct();
     tests_matrixMultiply();
+    tests_matrixMultiplyVec();
+    tests_matrixTransformation();
     return 0;
 }

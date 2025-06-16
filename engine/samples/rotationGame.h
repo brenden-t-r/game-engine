@@ -15,9 +15,10 @@ public:
         sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 0.5f;
         sprite->transform.height = 0.5f;
-        sprite->transform.rot = {0,0,45};
-        sprite->SetPosition(screen_to_normalized({960, 500, 0}));
+//        sprite->transform.rot = {0,0,45};
+//        sprite->SetPosition(screen_to_normalized({960, 500, 0}));
         sprite->SetScale({2.0, 2.0, 0});
+        sprite->SetPosition({-1, 0, 1});
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
@@ -39,12 +40,12 @@ public:
             triangle->Rotate(-1);
         }
         if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::North)) {
-            sprite->transform.scale.x += -0.1;
-            sprite->transform.scale.y += -0.1;
+            sprite->transform.scale.x += 0.1;
+            sprite->transform.scale.y += 0.1;
         }
         if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
-            sprite->transform.scale.x -= -0.1;
-            sprite->transform.scale.y -= -0.1;
+            sprite->transform.scale.x -= 0.1;
+            sprite->transform.scale.y -= 0.1;
         }
 
         if (platform->IsKeyPressed(KeyCode::W)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
