@@ -17,6 +17,13 @@ struct vec2 {
     float y;
 };
 
+static float dot(vec3 a, vec3 b) {
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+}
+static float dot(vec2 a, vec2 b) {
+    return (a.x * b.x) + (a.y * b.y);
+}
+
 /*
  * Take an angle in degrees (counter-clockwise from origin),
  * convert it to a unit vector direction.
@@ -52,7 +59,6 @@ static vec2 get_unit_vector_from_angle_degrees(float angle) {
 static int getRandomInt(int start, int end) {
     return start + (rand() % (end - start + 1));
 }
-
 static float getRandomFloat(float start, float end) {
     return start + static_cast<float>(rand()) / RAND_MAX * (end - start);
 }
@@ -81,63 +87,7 @@ static vec3 screen_to_normalized(vec3 vec) {
     float deviceY = 1 - (2 * vec.y) / WINDOW_HEIGHT;
     return {deviceX, deviceY,0};
 }
-
-static vec2 rotate_euler(vec2 transform, float angle) {
-    float cos = cosf(angle);
-    float sin = sinf(angle);
-    float rotation_matrix[4] = { cos, -sin, sin, cos };
-    return {
-            (transform.x*rotation_matrix[0] + transform.y*rotation_matrix[1]),
-            (transform.x*rotation_matrix[2] + transform.y*rotation_matrix[3]),
-    };
-}
-static vec3 rotate_euler(vec3 transform, float angle) {
-    float radians = angle * PI/180.0f;
-    float cos = cosf(radians);
-    float sin = sinf(radians);
-    float rotation_matrix[4] = { cos, -sin, sin, cos };
-    return {
-            (transform.x*rotation_matrix[0] + transform.y*rotation_matrix[1]),
-            (transform.x*rotation_matrix[2] + transform.y*rotation_matrix[3]),
-            0,
-    };
-}
-
-static vec3 scale_vector(vec3 transform, vec3 scale) {
-    return {
-        transform.x*scale.x, transform.y*scale.y, transform.z*scale.z
-    };
-}
-
-static void rotate_vertices(vec3* vertices, int vertexCount, vec3 pos, float degrees) {
-    vec3 posPixels = normalized_to_screen(pos);
-    for (int i = 0; i < vertexCount; i ++) {
-        // "Undo" current position transform back to screen space origin (top left 0,0)
-        vec3 vertex_pixels = normalized_to_screen(vertices[i]);
-        vec3 newVertex = {vertex_pixels.x - posPixels.x, vertex_pixels.y - posPixels.y, 0};
-
-        // Rotate
-        newVertex = rotate_euler(newVertex, degrees);
-
-        // "Redo" position back
-        vertices[i] = screen_to_normalized({newVertex.x + posPixels.x, newVertex.y + posPixels.y, 0});
-    }
-}
-
-static void translate_vertices(vec3* vertices, int vertexCount, vec3 translate) {
-    for (int i = 0; i < vertexCount; i ++) {
-        vertices[i].x += translate.x;
-        vertices[i].y += translate.y;
-        vertices[i].z += translate.z;
-    }
-}
-
-static float dot(vec3 a, vec3 b) {
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
-}
-
-// Transform a point from world space to local space (inverse of local_to_world)
-vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
+static vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
     // Step 1: Translate to origin (inverse of translation)
     vec3 translatedPoint = {
             worldPoint.x - worldPos.x,
@@ -165,9 +115,7 @@ vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float world
 
     return localPoint;
 }
-
-// Transform a point from local space to world space
-vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
+static vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
     // Step 1: Scale the local point
     vec3 scaledPoint = {
             localPoint.x * worldScale.x,
@@ -195,5 +143,53 @@ vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, float world
 
     return worldPoint;
 }
+
+static vec2 rotate_euler(vec2 transform, float angle) {
+    float cos = cosf(angle);
+    float sin = sinf(angle);
+    float rotation_matrix[4] = { cos, -sin, sin, cos };
+    return {
+            (transform.x*rotation_matrix[0] + transform.y*rotation_matrix[1]),
+            (transform.x*rotation_matrix[2] + transform.y*rotation_matrix[3]),
+    };
+}
+static vec3 rotate_euler(vec3 transform, float angle) {
+    float radians = angle * PI/180.0f;
+    float cos = cosf(radians);
+    float sin = sinf(radians);
+    float rotation_matrix[4] = { cos, -sin, sin, cos };
+    return {
+            (transform.x*rotation_matrix[0] + transform.y*rotation_matrix[1]),
+            (transform.x*rotation_matrix[2] + transform.y*rotation_matrix[3]),
+            0,
+    };
+}
+static vec3 scale_vector(vec3 transform, vec3 scale) {
+    return {
+        transform.x*scale.x, transform.y*scale.y, transform.z*scale.z
+    };
+}
+static void rotate_vertices(vec3* vertices, int vertexCount, vec3 pos, float degrees) {
+    vec3 posPixels = normalized_to_screen(pos);
+    for (int i = 0; i < vertexCount; i ++) {
+        // "Undo" current position transform back to screen space origin (top left 0,0)
+        vec3 vertex_pixels = normalized_to_screen(vertices[i]);
+        vec3 newVertex = {vertex_pixels.x - posPixels.x, vertex_pixels.y - posPixels.y, 0};
+
+        // Rotate
+        newVertex = rotate_euler(newVertex, degrees);
+
+        // "Redo" position back
+        vertices[i] = screen_to_normalized({newVertex.x + posPixels.x, newVertex.y + posPixels.y, 0});
+    }
+}
+static void translate_vertices(vec3* vertices, int vertexCount, vec3 translate) {
+    for (int i = 0; i < vertexCount; i ++) {
+        vertices[i].x += translate.x;
+        vertices[i].y += translate.y;
+        vertices[i].z += translate.z;
+    }
+}
+
 
 #endif //GAMEENGINE_VECTOR_H
