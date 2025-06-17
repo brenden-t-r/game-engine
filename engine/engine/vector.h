@@ -136,6 +136,64 @@ static float dot(vec3 a, vec3 b) {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
+// Transform a point from world space to local space (inverse of local_to_world)
+vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
+    // Step 1: Translate to origin (inverse of translation)
+    vec3 translatedPoint = {
+            worldPoint.x - worldPos.x,
+            worldPoint.y - worldPos.y,
+            worldPoint.z - worldPos.z
+    };
 
+    // Step 2: Rotate by negative angle (inverse rotation)
+    float radians = -worldRotation * PI / 180.0f;  // Note the negative sign
+    float cos_r = cosf(radians);
+    float sin_r = sinf(radians);
+
+    vec3 rotatedPoint = {
+            translatedPoint.x * cos_r - translatedPoint.y * sin_r,
+            translatedPoint.x * sin_r + translatedPoint.y * cos_r,
+            translatedPoint.z
+    };
+
+    // Step 3: Inverse scale
+    vec3 localPoint = {
+            rotatedPoint.x / worldScale.x,
+            rotatedPoint.y / worldScale.y,
+            rotatedPoint.z / worldScale.z
+    };
+
+    return localPoint;
+}
+
+// Transform a point from local space to world space
+vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
+    // Step 1: Scale the local point
+    vec3 scaledPoint = {
+            localPoint.x * worldScale.x,
+            localPoint.y * worldScale.y,
+            localPoint.z * worldScale.z
+    };
+
+    // Step 2: Rotate the scaled point
+    float radians = worldRotation * PI / 180.0f;
+    float cos_r = cosf(radians);
+    float sin_r = sinf(radians);
+
+    vec3 rotatedPoint = {
+            scaledPoint.x * cos_r - scaledPoint.y * sin_r,
+            scaledPoint.x * sin_r + scaledPoint.y * cos_r,
+            scaledPoint.z
+    };
+
+    // Step 3: Translate to world position
+    vec3 worldPoint = {
+            rotatedPoint.x + worldPos.x,
+            rotatedPoint.y + worldPos.y,
+            rotatedPoint.z + worldPos.z
+    };
+
+    return worldPoint;
+}
 
 #endif //GAMEENGINE_VECTOR_H

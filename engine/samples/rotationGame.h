@@ -12,13 +12,29 @@ public:
     void Start() override {
         platform->LoadShaders();
 
-        sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
+/*        sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 0.5f;
         sprite->transform.height = 0.5f;
 //        sprite->transform.rot = {0,0,45};
 //        sprite->SetPosition(screen_to_normalized({960, 500, 0}));
         sprite->SetScale({2.0, 2.0, 0});
-        sprite->SetPosition({-1, 0, 1});
+        sprite->SetPosition({-1, 0, 1});*/
+
+        float referenceWidth = 1920;
+        float referenceHeight = 1080;
+
+        sprite = (Sprite*)platform->CreateSprite("assets/sprites/cardaction.png");
+        sprite->transform.width = 1024.0f / referenceWidth;
+        sprite->transform.height = 1024.0f / referenceHeight;
+        sprite->SetPosition({0, 0, 0});
+        sprite->SetScale({1.0, 1.0, 0});
+
+        spriteChild = (Sprite*)platform->CreateSprite("assets/sprites/CardScarlet.png");
+        spriteChild->transform.width = 1024.0f / referenceWidth;
+        spriteChild->transform.height = 1024.0f / referenceHeight;
+        spriteChild->SetPosition({0, 0, 0});
+        spriteChild->SetScale({1, 1, 0});
+        spriteChild->transform.parent = &sprite->transform;
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
@@ -67,11 +83,13 @@ public:
 
 //        triangle->Update();
         sprite->Update();
+        spriteChild->Update();
     }
 
 private:
     Triangle* triangle;
     Sprite* sprite;
+    Sprite* spriteChild;
 };
 
 #endif //GAMEENGINE_ROTATIONGAME_H

@@ -15,6 +15,8 @@ public:
     vec3 scale = {1, 1, 1};
     float width = 1;
     float height = 1;
+
+    Transform* parent;
 };
 
 class GameObject {
@@ -192,6 +194,31 @@ public:
     void SetPosition(vec3 position) {
         transform.pos = position;
 
+        vec3 localPosition = position;
+        vec3 absolutePosition = localPosition;
+        vec3 localScale = transform.scale;
+        vec3 absoluteScale = localScale;
+        vec3 localRot = transform.rot;
+        vec3 absoluteRot = localRot;
+
+        if (transform.parent != nullptr) {
+            absoluteScale.x *= transform.parent->scale.x;
+            absoluteScale.y *= transform.parent->scale.y;
+            absoluteScale.z *= transform.parent->scale.z;
+
+            absoluteRot.x += transform.parent->rot.x;
+            absoluteRot.y += transform.parent->rot.y;
+            absoluteRot.z += transform.parent->rot.z;
+
+            vec3 scaledLocalPosition = scale_vector(localPosition, transform.parent->scale);
+            vec3 rotatedLocalPosition = rotate_euler(scaledLocalPosition, transform.parent->rot.z);
+            absolutePosition.x = transform.parent->pos.x + rotatedLocalPosition.x;
+            absolutePosition.y = transform.parent->pos.y + rotatedLocalPosition.y;
+            absolutePosition.z = transform.parent->pos.z + rotatedLocalPosition.z;
+
+            absolutePosition = local_to_world(localPosition, transform.parent->pos, absoluteScale, -absoluteRot.z);
+        }
+
         // Start the object with the appropriate width and height at the origin in normalized coordinates
         vertices[0].x = -transform.width/2;
         vertices[0].y = +transform.height/2;
@@ -217,8 +244,8 @@ public:
         vertices[3] = {vertices[3].x - screenOriginAdjustment.x, vertices[3].y - screenOriginAdjustment.y, 1};
 
         // Create transformation matrix
-        vec3 translationPixels = normalized_to_screen(position);
-        Matrix3 transformation = matrix_transformation(translationPixels, transform.scale, transform.rot);
+        vec3 translationPixels = normalized_to_screen(absolutePosition);
+        Matrix3 transformation = matrix_transformation(translationPixels, absoluteScale, absoluteRot);
 
         // Apply transformation matrix to vertices in screen space
         vertices[0] = matrix_multiply_vec(transformation, vertices[0]);
