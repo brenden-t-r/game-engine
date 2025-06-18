@@ -58,6 +58,7 @@ vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
 
 /*
  * Creates a composite translation, scale and rotation matrix.
+ * Accepts position in terms of normalized coordinates.
  *
  *   scale.x * cos  -sin,            position.x
  *   sin            scale.y * cos    position.y
