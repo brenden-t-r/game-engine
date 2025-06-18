@@ -15,7 +15,7 @@ public:
         spriteBg = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
         spriteBg->transform.width = 2.0f;
         spriteBg->transform.height = 2.0f;
-        spriteBg->SetScale({0.7, 0.7, 0});
+        spriteBg->SetScale({1, 1, 0});
         spriteBg->SetPosition({0, 0, 1});
 
         float referenceWidth = 1920;
@@ -39,9 +39,8 @@ public:
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
         triangle->transform.height = 0.2f;
-        triangle->transform.rot = {0,0,45};
-        triangle->SetPosition(screen_to_normalized({300, 500, 0}));
-        triangle->SetScale({2.0, 2.0, 0});
+        triangle->SetScale({0.5, 0.5, 0});
+        triangle->transform.parent = &spriteChild->transform;
     }
 
     void Update() override {
@@ -49,42 +48,38 @@ public:
 
         if (platform->IsKeyPressed(KeyCode::Right) || platform->IsGamepadButtonPressed(GamepadButton::East)) {
             spriteBg->Rotate(1);
-            triangle->Rotate(1);
         }
         if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::West)) {
             spriteBg->Rotate(-1);
-            triangle->Rotate(-1);
         }
         if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::North)) {
-            spriteBg->transform.scale.x += 0.05;
-            spriteBg->transform.scale.y += 0.05;
+            spriteBg->transform.scale.x += 0.01;
+            spriteBg->transform.scale.y += 0.01;
         }
         if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
-            spriteBg->transform.scale.x -= 0.05;
-            spriteBg->transform.scale.y -= 0.05;
+            if (spriteBg->transform.scale.x > 0.001) {
+                spriteBg->transform.scale.x -= 0.01;
+                spriteBg->transform.scale.y -= 0.01;
+            }
         }
 
         if (platform->IsKeyPressed(KeyCode::W)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
             spriteBg->Translate({0,0.01,0});
-            triangle->Translate({0,0.01,0});
         }
         if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
             spriteBg->Translate({0,-0.01,0});
-            triangle->Translate({0,-0.01,0});
         }
         if (platform->IsKeyPressed(KeyCode::D)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
             spriteBg->Translate({0.01,0,0});
-            triangle->Translate({0.01,0,0});
         }
         if (platform->IsKeyPressed(KeyCode::A)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
             spriteBg->Translate({-0.01,0,0});
-            triangle->Translate({-0.01,0,0});
         }
 
-//        triangle->Update();
         spriteBg->Update();
         sprite->Update();
         spriteChild->Update();
+        triangle->Update();
     }
 
 private:
