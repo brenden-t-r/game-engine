@@ -81,15 +81,48 @@ Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
             0,       0,       1
     };
 
+
     // Translation
+    vec3 posScreen = normalized_to_screen(position);
     Matrix3 T = {
-            1, 0, position.x,
-            0, 1, position.y,
+            1, 0,  posScreen.x,
+            0, 1,  posScreen.y,
             0, 0, 1
     };
 
     // Scale -> Rotate -> Translate
-    return T.multiply(R).multiply(S);
+    Matrix3 CombinedTransformation = T.multiply(R).multiply(S);
+
+    // Adjustment for the origin difference between normalized coordinates and screen coordinates (center vs top-left)
+    vec3 screenOrigin = normalized_to_screen({ 0, 0, 0 });
+    Matrix3 OriginCenterToTopLeft = {
+            1, 0,  -screenOrigin.x,
+            0, 1,  -screenOrigin.y,
+            0, 0, 1
+    };
+
+    // Matrix for normalized to screen coordinates conversion
+    Matrix3 ToScreen = {
+            WINDOW_WIDTH * 0.5f,  0,                      WINDOW_WIDTH * 0.5f,
+            0,                    -WINDOW_HEIGHT * 0.5f,  WINDOW_HEIGHT * 0.5f,
+            0,                    0,                      1
+    };
+
+    // Matrix for screen to normalized coordinates conversion
+    Matrix3 ToNormalized = {
+            2.0f / WINDOW_WIDTH,  0,                       -1,
+            0,                    -2.0f / WINDOW_HEIGHT,   1,
+            0,                    0,                       1
+    };
+
+    // Convert to screen coordinates
+    // Translate from origin center to origin top-left
+    // Scale -> Rotate -> Translate
+    // Convert back to normalized coordinates
+    return  ToNormalized
+        .multiply(CombinedTransformation)
+        .multiply(OriginCenterToTopLeft)
+        .multiply(ToScreen);
 }
 
 #endif //GAMEPROJECT_MATRIX_H

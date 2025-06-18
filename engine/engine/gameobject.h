@@ -123,44 +123,18 @@ public:
         }
 
         // Start the object with the appropriate width and height at the origin in normalized coordinates
-        vertices[0].x = -transform.width/2;
-        vertices[0].y = +transform.height/2;
-        vertices[1].x = +transform.width/2;
-        vertices[1].y = +transform.height/2;
-        vertices[2].x = +transform.width/2;
-        vertices[2].y = -transform.height/2;
-        vertices[3].x = -transform.width/2;
-        vertices[3].y = -transform.height/2;
-
-        // Convert to screen coordinates since transformation matrix will be in screen coordinates
-        vertices[0] = normalized_to_screen(vertices[0]);
-        vertices[1] = normalized_to_screen(vertices[1]);
-        vertices[2] = normalized_to_screen(vertices[2]);
-        vertices[3] = normalized_to_screen(vertices[3]);
-
-        // In normalized coordinates (0,0) is center of screen; in screen coordinates (0,0) is top-left.
-        // Rotation happens about the origin, and our transformation matrix is in screen coordinates.
-        vec3 screenOriginAdjustment = normalized_to_screen({ 0, 0, 0 });
-        vertices[0] = {vertices[0].x - screenOriginAdjustment.x, vertices[0].y - screenOriginAdjustment.y, 1};
-        vertices[1] = {vertices[1].x - screenOriginAdjustment.x, vertices[1].y - screenOriginAdjustment.y, 1};
-        vertices[2] = {vertices[2].x - screenOriginAdjustment.x, vertices[2].y - screenOriginAdjustment.y, 1};
-        vertices[3] = {vertices[3].x - screenOriginAdjustment.x, vertices[3].y - screenOriginAdjustment.y, 1};
+        vertices[0] = {-transform.width/2, +transform.height/2, 1};
+        vertices[1] = {+transform.width/2, +transform.height/2, 1};
+        vertices[2] = {+transform.width/2, -transform.height/2, 1};
+        vertices[3] = {-transform.width/2, -transform.height/2, 1};
 
         // Create transformation matrix
-        vec3 translationPixels = normalized_to_screen(absolutePosition);
-        Matrix3 transformation = matrix_transformation(translationPixels, absoluteScale, absoluteRot);
+        Matrix3 transformation = matrix_transformation(absolutePosition, absoluteScale, absoluteRot);
 
-        // Apply transformation matrix to vertices in screen space
-        vertices[0] = matrix_multiply_vec(transformation, vertices[0]);
-        vertices[1] = matrix_multiply_vec(transformation, vertices[1]);
-        vertices[2] = matrix_multiply_vec(transformation, vertices[2]);
-        vertices[3] = matrix_multiply_vec(transformation, vertices[3]);
-
-        // Convert vertices back to normalized coordinates
-        vertices[0] = screen_to_normalized(vertices[0]);
-        vertices[1] = screen_to_normalized(vertices[1]);
-        vertices[2] = screen_to_normalized(vertices[2]);
-        vertices[3] = screen_to_normalized(vertices[3]);
+        // Apply transformation matrix
+        for (auto & vertice : vertices) {
+            vertice = matrix_multiply_vec(transformation, vertice);
+        }
     }
 
     void SetScale(vec3 newScale) {

@@ -8,9 +8,18 @@ constexpr float PI = 3.14159265358979323846f;
 constexpr float DEGREES_TO_RADIANS = PI/180;
 
 struct vec3 {
-    float x;
-    float y;
-    float z;
+    float x = 0, y = 0, z = 0;
+    vec3() = default;
+    vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    vec3(float x, float y) : x(x), y(y), z(0) {}
+
+    vec3 operator + (const vec3& other) const {
+        return {x + other.x, y + other.y, z + other.z};
+    }
+
+    vec3 operator - (const vec3& other) const {
+        return {x - other.x, y - other.y, z};
+    }
 };
 struct vec2 {
     float x;
@@ -79,13 +88,13 @@ static vec3 normalized_to_screen(vec3 vec) {
     // Convert normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
     float screenX = (vec.x + 1) * 0.5f * WINDOW_WIDTH;
     float screenY = (1 - vec.y) * 0.5f * WINDOW_HEIGHT;
-    return {screenX, screenY,0};
+    return {screenX, screenY, 1};
 }
 static vec3 screen_to_normalized(vec3 vec) {
     // Convert screen coordinates (0 to screenWidth/Height) to normalized coordinates (-1 to 1)
     float deviceX = (2 * vec.x) / WINDOW_WIDTH - 1;
     float deviceY = 1 - (2 * vec.y) / WINDOW_HEIGHT;
-    return {deviceX, deviceY,0};
+    return {deviceX, deviceY, 1};
 }
 static vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
     // Step 1: Translate to origin (inverse of translation)
