@@ -56,6 +56,27 @@ vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
     };
 }
 
+// Matrix for converting normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
+Matrix3 NormalizedToScreenMatrix = {
+        WINDOW_WIDTH * 0.5f,  0,                      WINDOW_WIDTH * 0.5f,
+        0,                    -WINDOW_HEIGHT * 0.5f,  WINDOW_HEIGHT * 0.5f,
+        0,                    0,                      1
+};
+// Matrix for screen to normalized coordinates conversion
+Matrix3 ScreenToNormalizedMatrix = {
+        2.0f / WINDOW_WIDTH,  0,                       -1,
+        0,                    -2.0f / WINDOW_HEIGHT,   1,
+        0,                    0,                       1
+};
+
+static vec3 normalized_to_screen_using_matrix(vec3 vec) {
+    return matrix_multiply_vec(NormalizedToScreenMatrix, vec);
+}
+
+static vec3 screen_to_normalized_using_matrix(vec3 vec) {
+    return matrix_multiply_vec(ScreenToNormalizedMatrix, vec);
+}
+
 /*
  * Creates a composite translation, scale and rotation matrix.
  * Accepts position in terms of normalized coordinates.
@@ -64,6 +85,7 @@ vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
  *   sin            scale.y * cos    position.y
  *   0,             0                1
  */
+#include <cmath>
 Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
     // Rotation matrix
     float angle = rotation.z * PI/180.0f;
@@ -102,28 +124,21 @@ Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
             0, 0, 1
     };
 
-    // Matrix for normalized to screen coordinates conversion
-    Matrix3 ToScreen = {
-            WINDOW_WIDTH * 0.5f,  0,                      WINDOW_WIDTH * 0.5f,
-            0,                    -WINDOW_HEIGHT * 0.5f,  WINDOW_HEIGHT * 0.5f,
-            0,                    0,                      1
-    };
-
-    // Matrix for screen to normalized coordinates conversion
-    Matrix3 ToNormalized = {
-            2.0f / WINDOW_WIDTH,  0,                       -1,
-            0,                    -2.0f / WINDOW_HEIGHT,   1,
-            0,                    0,                       1
-    };
-
     // Convert to screen coordinates
     // Translate from origin center to origin top-left
     // Scale -> Rotate -> Translate
     // Convert back to normalized coordinates
-    return  ToNormalized
+    Matrix3 result = ScreenToNormalizedMatrix
         .multiply(CombinedTransformation)
         .multiply(OriginCenterToTopLeft)
-        .multiply(ToScreen);
+        .multiply(NormalizedToScreenMatrix);
+#ifdef DEBUG_CLAMP
+    result._11 = std::roundf(result._11 * 1e5f) / 1e5f;
+    result._12 = std::roundf(result._12 * 1e5f) / 1e5f;
+    result._21 = std::roundf(result._21 * 1e5f) / 1e5f;
+    result._22 = std::roundf(result._22 * 1e5f) / 1e5f;
+#endif
+    return result;
 }
 
 #endif //GAMEPROJECT_MATRIX_H

@@ -9,10 +9,7 @@
   - Rectangle
   - Circle
 - Vector
-  - Rotation
-  - Scale
   - Collision detection (OBB, Rays)
-  - Orientation transforms (Screen, World, Object)
 - Text
   - Line wrapping
   - Outline effect
@@ -21,8 +18,6 @@
 - Gamepad
   - Triggers, axes
 - WebGL support
-- CICD
-- Library / Game separation
 
 ## Games
 
@@ -37,9 +32,3 @@
 - Asteroid spawning
 - Asteroid movement
 - Asteroid rotational force
-
-### Molt
-
-- Coroutines?
-- Events?
-

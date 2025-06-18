@@ -3,6 +3,11 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cmath>
+
+bool equalsFloat(float expected, float actual) {
+    return std::fabs(expected - actual) < 0.001;
+}
 
 static void tests_getUnitVectorFromAngleDegrees() {
     vec2 vec = get_unit_vector_from_angle_degrees(45);
@@ -61,14 +66,65 @@ static void tests_matrixMultiplyVec() {
 }
 
 static void tests_matrixTransformation() {
-    vec3 point  {1, 1, 0};
-    vec3 pos = {2, 3, 0};
-    vec3 scale = {2, 1, 1};
-    vec3 rot = {0, 0, 0.5235988};
+    // Scaling x and y equally
+    vec3 point = {-0.5, -0.5, 0};
+    vec3 pos = {0, 0, 0};
+    vec3 scale = {2, 2, 1};
+    vec3 rot = {0, 0, 0};
     Matrix3 result = matrix_transformation(pos, scale, rot);
     vec3 transformed = matrix_multiply_vec(result, point);
-    assert(transformed.x == 3.732);
-    assert(transformed.y == 4.5);
+    assert(transformed.x == -1);
+    assert(transformed.y == -1);
+
+    // Scaling x only
+    point = {-0.5, -0.5, 0};
+    pos = {0, 0, 0};
+    scale = {2, 1, 1};
+    rot = {0, 0, 0};
+    result = matrix_transformation(pos, scale, rot);
+    transformed = matrix_multiply_vec(result, point);
+    assert(transformed.x == -1);
+    assert(transformed.y == -0.5);
+
+    // Translation + scale
+    point = {-0.5, -0.5, 1};
+    pos = {0.7, 1, 1};
+    scale = {2, 1, 1};
+    rot = {0, 0, 0};
+    result = matrix_transformation(pos, scale, rot);
+    transformed = matrix_multiply_vec(result, point);
+    assert(equalsFloat(transformed.x, -0.3f) == true);
+    assert(equalsFloat(transformed.y, 0.5f) == true);
+
+    // Rotation
+    point = {-0.5, -0, 0};
+    pos = {0, 0, 0};
+    scale = {1, 1, 1};
+    rot = {0, 0, 180};
+    result = matrix_transformation(pos, scale, rot);
+    transformed = matrix_multiply_vec(result, point);
+    assert(equalsFloat(transformed.x, 0.5) == true);
+    assert(equalsFloat(transformed.y, 0) == true);
+}
+
+static void tests_normalizedToScreen() {
+    vec3 point {0, 0, 1};
+    vec3 a = normalized_to_screen(point);
+    vec3 b = normalized_to_screen_using_matrix(point);
+    assert(a.x == 1920.0/2);
+    assert(a.y == 1080.0/2);
+    assert(a.x == b.x);
+    assert(a.y == b.y);
+}
+
+static void tests_screenToNormalized() {
+    vec3 point {1920.0/2, 1080.0/2, 1};
+    vec3 a = screen_to_normalized(point);
+    vec3 b = screen_to_normalized_using_matrix(point);
+    assert(a.x == 0);
+    assert(a.y == 0);
+    assert(a.x == b.x);
+    assert(a.y == b.y);
 }
 
 int main() {
@@ -78,5 +134,7 @@ int main() {
     tests_matrixMultiply();
     tests_matrixMultiplyVec();
     tests_matrixTransformation();
+    tests_normalizedToScreen();
+    tests_screenToNormalized();
     return 0;
 }
