@@ -44,11 +44,11 @@ struct Matrix3 {
     }
 };
 
-Matrix3 matrix_multiply(Matrix3 a, Matrix3 b) {
+static Matrix3 matrix_multiply(Matrix3 a, Matrix3 b) {
     return a.multiply(b);
 }
 
-vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
+static vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
     return {
             dot(mat.Row(0), vec), // (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
             dot(mat.Row(1), vec),
@@ -63,7 +63,7 @@ vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
  *   sin            scale.y * cos    position.y
  *   0,             0                1
  */
-Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
+static Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
     // Rotation matrix
     float angle = rotation.z * PI/180.0f;
     float cos = cosf(angle);
