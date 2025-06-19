@@ -353,7 +353,7 @@ public:
         ~SpriteD3D() = default;
 
         void SetTexture(const WCHAR * path) {
-            LoadTextureFromFile(d3dDevice, path, &textureView);
+            LoadTextureFromFile(d3dDevice, d3dContext, path, &textureView);
         }
 
         void CreateBuffer() {
