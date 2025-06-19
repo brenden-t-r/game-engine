@@ -57,13 +57,13 @@ static vec3 matrix_multiply_vec(Matrix3 mat, vec3 vec) {
 }
 
 // Matrix for converting normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
-Matrix3 NormalizedToScreenMatrix = {
+static Matrix3 NormalizedToScreenMatrix = {
         WINDOW_WIDTH * 0.5f,  0,                      WINDOW_WIDTH * 0.5f,
         0,                    -WINDOW_HEIGHT * 0.5f,  WINDOW_HEIGHT * 0.5f,
         0,                    0,                      1
 };
 // Matrix for screen to normalized coordinates conversion
-Matrix3 ScreenToNormalizedMatrix = {
+static Matrix3 ScreenToNormalizedMatrix = {
         2.0f / WINDOW_WIDTH,  0,                       -1,
         0,                    -2.0f / WINDOW_HEIGHT,   1,
         0,                    0,                       1
