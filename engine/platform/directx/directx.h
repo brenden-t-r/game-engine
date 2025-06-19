@@ -624,16 +624,29 @@ private:
 
     void InitD3D(HWND hwnd)
     {
+        // Get window dimensions
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        UINT width = rc.right - rc.left;
+        UINT height = rc.bottom - rc.top;
+
+        WINDOW_WIDTH = width;
+        WINDOW_HEIGHT = height;
+
         // Swap chain descriptor
         DXGI_SWAP_CHAIN_DESC scd = {};
         scd.BufferCount = 1;
+        scd.BufferDesc.Width = width;
+        scd.BufferDesc.Height = height;
         scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        scd.BufferDesc.RefreshRate.Numerator = 60;
+        scd.BufferDesc.RefreshRate.Denominator = 1;
         scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         scd.OutputWindow = hwnd;
         scd.SampleDesc.Count = 1;
+        scd.SampleDesc.Quality = 0;
         scd.Windowed = TRUE;
-        scd.BufferDesc.Width = WINDOW_WIDTH;
-        scd.BufferDesc.Height = WINDOW_HEIGHT;
+        scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
         // Device creation flags
         UINT createDeviceFlags = 0;

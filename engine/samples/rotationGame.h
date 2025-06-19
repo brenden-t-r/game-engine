@@ -12,70 +12,81 @@ public:
     void Start() override {
         platform->LoadShaders();
 
-        sprite = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
-        sprite->transform.width = 0.5f;
-        sprite->transform.height = 0.5f;
-        sprite->transform.rot = {0,0,45};
-        sprite->SetPosition(screen_to_normalized({960, 500, 0}));
-        sprite->SetScale({2.0, 2.0, 0});
+        spriteBg = (Sprite*)platform->CreateSprite("assets/sprites/background.png");
+        spriteBg->transform.width = 2.0f;
+        spriteBg->transform.height = 2.0f;
+        spriteBg->SetScale({1, 1, 0});
+        spriteBg->SetPosition({0, 0, 1});
+
+        float referenceWidth = 1920;
+        float referenceHeight = 1080;
+
+        sprite = (Sprite*)platform->CreateSprite("assets/sprites/cardaction.png");
+        sprite->transform.width = 1024.0f / referenceWidth;
+        sprite->transform.height = 1024.0f / referenceHeight;
+        sprite->SetPosition({0, 0, 0});
+        sprite->SetScale({1.0, 1.0, 0});
+        sprite->Rotate(45);
+        sprite->transform.parent = &spriteBg->transform;
+
+        spriteChild = (Sprite*)platform->CreateSprite("assets/sprites/CardScarlet.png");
+        spriteChild->transform.width = 1024.0f / referenceWidth;
+        spriteChild->transform.height = 1024.0f / referenceHeight;
+        spriteChild->SetPosition({0, 0, 0});
+        spriteChild->SetScale({1, 1, 0});
+        spriteChild->transform.parent = &sprite->transform;
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.2f;
         triangle->transform.height = 0.2f;
-        triangle->transform.rot = {0,0,45};
-        triangle->SetPosition(screen_to_normalized({300, 500, 0}));
-        triangle->SetScale({2.0, 2.0, 0});
-
-        EnableCallback(KEY_RELEASED);
+        triangle->SetScale({0.5, 0.5, 0});
+        triangle->transform.parent = &spriteChild->transform;
     }
 
     void Update() override {
         printf(".");
 
-        if (platform->IsKeyPressed(KeyCode::W) || platform->IsGamepadButtonPressed(GamepadButton::North)) {
-            sprite->Rotate(1);
-            triangle->Rotate(1);
+        if (platform->IsKeyPressed(KeyCode::Right) || platform->IsGamepadButtonPressed(GamepadButton::East)) {
+            spriteBg->Rotate(1);
         }
-        if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
-            sprite->Rotate(-1);
-            triangle->Rotate(-1);
+        if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::West)) {
+            spriteBg->Rotate(-1);
         }
-
-        if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
-            sprite->Translate({0,0.01,0});
-            triangle->Translate({0,0.01,0});
+        if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::North)) {
+            spriteBg->transform.scale.x += 0.01;
+            spriteBg->transform.scale.y += 0.01;
         }
-        if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
-            sprite->Translate({0,-0.01,0});
-            triangle->Translate({0,-0.01,0});
-        }
-        if (platform->IsKeyPressed(KeyCode::Right)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
-            sprite->Translate({0.01,0,0});
-            triangle->Translate({0.01,0,0});
-        }
-        if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
-            sprite->Translate({-0.01,0,0});
-            triangle->Translate({-0.01,0,0});
+        if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
+            if (spriteBg->transform.scale.x > 0.001) {
+                spriteBg->transform.scale.x -= 0.01;
+                spriteBg->transform.scale.y -= 0.01;
+            }
         }
 
-        triangle->Update();
+        if (platform->IsKeyPressed(KeyCode::W)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
+            spriteBg->Translate({0,0.01,0});
+        }
+        if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
+            spriteBg->Translate({0,-0.01,0});
+        }
+        if (platform->IsKeyPressed(KeyCode::D)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
+            spriteBg->Translate({0.01,0,0});
+        }
+        if (platform->IsKeyPressed(KeyCode::A)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
+            spriteBg->Translate({-0.01,0,0});
+        }
+
+        spriteBg->Update();
         sprite->Update();
+        spriteChild->Update();
+        triangle->Update();
     }
 
 private:
     Triangle* triangle;
+    Sprite* spriteBg;
     Sprite* sprite;
-
-    void KeyReleasedCallback(KeyCode key) override {
-        if (key == KeyCode::D) {
-            sprite->SetScale({sprite->transform.scale.x*2, sprite->transform.scale.y*2, 0});
-            triangle->SetScale({triangle->transform.scale.x*2, triangle->transform.scale.y*2, 0});
-        }
-        if (key == KeyCode::A) {
-            sprite->SetScale({sprite->transform.scale.x/2, sprite->transform.scale.y/2, 0});
-            triangle->SetScale({triangle->transform.scale.x/2, triangle->transform.scale.y/2, 0});
-        }
-    }
+    Sprite* spriteChild;
 };
 
 #endif //GAMEENGINE_ROTATIONGAME_H
