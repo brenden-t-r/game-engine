@@ -32,7 +32,7 @@ public:
         spriteChild = (Sprite*)platform->CreateSprite("assets/sprites/CardScarlet.png");
         spriteChild->transform.width = 1024.0f / referenceWidth;
         spriteChild->transform.height = 1024.0f / referenceHeight;
-        spriteChild->SetPosition({0, 0, 0});
+        spriteChild->SetPosition({0.1, 0.3, 0});
         spriteChild->SetScale({1, 1, 0});
         spriteChild->transform.parent = &sprite->transform;
 
@@ -41,39 +41,43 @@ public:
         triangle->transform.height = 0.2f;
         triangle->SetScale({0.5, 0.5, 0});
         triangle->transform.parent = &spriteChild->transform;
+
+        spriteToTransform = sprite;
+
+        EnableCallback(MOUSE_RELEASED);
     }
 
     void Update() override {
         printf(".");
 
         if (platform->IsKeyPressed(KeyCode::Right) || platform->IsGamepadButtonPressed(GamepadButton::East)) {
-            spriteBg->Rotate(1);
+            spriteToTransform->Rotate(1);
         }
         if (platform->IsKeyPressed(KeyCode::Left)|| platform->IsGamepadButtonPressed(GamepadButton::West)) {
-            spriteBg->Rotate(-1);
+            spriteToTransform->Rotate(-1);
         }
         if (platform->IsKeyPressed(KeyCode::Up)|| platform->IsGamepadButtonPressed(GamepadButton::North)) {
-            spriteBg->transform.scale.x += 0.01;
-            spriteBg->transform.scale.y += 0.01;
+            spriteToTransform->transform.scale.x += 0.01;
+            spriteToTransform->transform.scale.y += 0.01;
         }
         if (platform->IsKeyPressed(KeyCode::Down)|| platform->IsGamepadButtonPressed(GamepadButton::South)) {
-            if (spriteBg->transform.scale.x > 0.001) {
-                spriteBg->transform.scale.x -= 0.01;
-                spriteBg->transform.scale.y -= 0.01;
+            if (spriteToTransform->transform.scale.x > 0.001) {
+                spriteToTransform->transform.scale.x -= 0.01;
+                spriteToTransform->transform.scale.y -= 0.01;
             }
         }
 
         if (platform->IsKeyPressed(KeyCode::W)|| platform->IsGamepadButtonPressed(GamepadButton::DUp)) {
-            spriteBg->Translate({0,0.01,0});
+            spriteToTransform->Translate({0,0.01,0});
         }
         if (platform->IsKeyPressed(KeyCode::S)|| platform->IsGamepadButtonPressed(GamepadButton::DDown)) {
-            spriteBg->Translate({0,-0.01,0});
+            spriteToTransform->Translate({0,-0.01,0});
         }
         if (platform->IsKeyPressed(KeyCode::D)|| platform->IsGamepadButtonPressed(GamepadButton::DRight)) {
-            spriteBg->Translate({0.01,0,0});
+            spriteToTransform->Translate({0.01,0,0});
         }
         if (platform->IsKeyPressed(KeyCode::A)|| platform->IsGamepadButtonPressed(GamepadButton::DLeft)) {
-            spriteBg->Translate({-0.01,0,0});
+            spriteToTransform->Translate({-0.01,0,0});
         }
 
         spriteBg->Update();
@@ -87,6 +91,20 @@ private:
     Sprite* spriteBg;
     Sprite* sprite;
     Sprite* spriteChild;
+
+    Sprite* spriteToTransform;
+
+    void MouseReleasedCallback(MouseButton btn) override {
+        printf("0");
+        if (spriteToTransform == sprite) {
+            printf("1");
+            spriteToTransform = spriteChild;
+        } else {
+            printf("2");
+            spriteToTransform = sprite;
+        }
+    }
+
 };
 
 #endif //GAMEENGINE_ROTATIONGAME_H

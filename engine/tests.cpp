@@ -9,6 +9,19 @@ bool equalsFloat(float expected, float actual) {
     return std::fabs(expected - actual) < 0.001;
 }
 
+bool equalsMatrix(Matrix3 expected, Matrix3 actual) {
+    if (!equalsFloat(expected._11, actual._11)) return false;
+    if (!equalsFloat(expected._12, actual._12)) return false;
+    if (!equalsFloat(expected._13, actual._13)) return false;
+    if (!equalsFloat(expected._21, actual._21)) return false;
+    if (!equalsFloat(expected._22, actual._22)) return false;
+    if (!equalsFloat(expected._23, actual._23)) return false;
+    if (!equalsFloat(expected._31, actual._31)) return false;
+    if (!equalsFloat(expected._32, actual._32)) return false;
+    if (!equalsFloat(expected._33, actual._33)) return false;
+    return true;
+}
+
 static void tests_getUnitVectorFromAngleDegrees() {
     vec2 vec = get_unit_vector_from_angle_degrees(45);
     assert(fabsf(vec.x - 0.707f) < 0.001f);
@@ -127,6 +140,62 @@ static void tests_screenToNormalized() {
     assert(a.y == b.y);
 }
 
+static void tests_transpose() {
+    Matrix3 M = {
+            0, 4, -2,
+            1, 1, -1,
+            -2, -8, 4
+    };
+    Matrix3 expected = {
+            0, 1, -2,
+            4, 1, -8,
+            -2, -1, 4
+    };
+    Matrix3 actual = transpose(M);
+    assert(equalsMatrix(expected, actual) == true);
+}
+
+static void tests_determinant() {
+    Matrix3 M = {
+            2, 1, 3,
+            0, 2, 4,
+            1, 1, 2
+    };
+    float expected = -2;
+    float actual = determinant(M);
+    assert(equalsFloat(expected, actual) == true);
+}
+
+static void tests_adjoint() {
+    Matrix3 M = {
+            3, 0, 2,
+            2, 1, 0,
+            1, 4, 2
+    };
+    Matrix3 expected = {
+            2, 8, -2,
+            -4, 4, 4,
+            7, -12, 3
+    };
+    Matrix3 actual = adjoint(M);
+    assert(equalsMatrix(expected, actual) == true);
+}
+
+static void tests_inverse() {
+    Matrix3 M = {
+            3, 0, 2,
+            2, 1, 0,
+            1, 4, 2
+    };
+    Matrix3 expected = {
+            1.0/10, 2.0/5, -1.0/10,
+            -1.0/5, 1.0/5, 1.0/5,
+            7.0/20, -3.0/5, 3.0/20
+    };
+    Matrix3 actual = matrix_inverse(M);
+    assert(equalsMatrix(expected, actual) == true);
+}
+
 int main() {
     printf("Running Tests\n");
     tests_getUnitVectorFromAngleDegrees();
@@ -136,5 +205,9 @@ int main() {
     tests_matrixTransformation();
     tests_normalizedToScreen();
     tests_screenToNormalized();
+    tests_transpose();
+    tests_determinant();
+    tests_adjoint();
+    tests_inverse();
     return 0;
 }

@@ -20,6 +20,10 @@ public:
     Transform* parent;
 };
 
+static Matrix3 to_transform_matrix(Transform* transform) {
+    return matrix_transformation(transform->pos, transform->scale, transform->rot);
+}
+
 class GameObject {
 public:
     Transform transform{};
@@ -47,32 +51,22 @@ public:
     void SetPosition(vec3 position) {
         transform.pos = position;
 
-        // Calculate local and absolute position, scale and rotation including inherited transforms
-        vec3 localPosition = position;
-        vec3 absolutePosition = localPosition;
-        vec3 localScale = transform.scale;
-        vec3 absoluteScale = localScale;
-        vec3 localRot = transform.rot;
-        vec3 absoluteRot = localRot;
-        Transform* parent = transform.parent;
-        while(parent != nullptr) {
-            absoluteScale.x *= parent->scale.x;
-            absoluteScale.y *= parent->scale.y;
-            absoluteScale.z *= parent->scale.z;
-            absoluteRot.x += parent->rot.x;
-            absoluteRot.y += parent->rot.y;
-            absoluteRot.z += parent->rot.z;
-            absolutePosition = local_to_world(localPosition, parent->pos, absoluteScale, absoluteRot.z);
-            parent = parent->parent;
-        }
-
         // Start the object with the appropriate width and height at the origin in normalized coordinates
         vertices[0] = {transform.width/2, -transform.height/2, 1};
         vertices[1] = {-transform.width/2, -transform.height/2, 1};
         vertices[2] = {0, transform.height/2, 1};
 
         // Create transformation matrix
-        Matrix3 transformation = matrix_transformation(absolutePosition, absoluteScale, absoluteRot);
+        Matrix3 localMatrix = to_transform_matrix(&transform);
+        Matrix3 transformation = localMatrix;
+
+        // Multiply by inherited transforms to get final transform matrix
+        Transform* parent = transform.parent;
+        while (parent != nullptr) {
+            Matrix3 parentMatrix = to_transform_matrix(parent);
+            transformation = parentMatrix.multiply(transformation);
+            parent = parent->parent;
+        }
 
         // Apply transformation matrix
         for (auto & vertice : vertices) {
@@ -122,25 +116,6 @@ public:
     void SetPosition(vec3 position) {
         transform.pos = position;
 
-        // Calculate local and absolute position, scale and rotation including inherited transforms
-        vec3 localPosition = position;
-        vec3 absolutePosition = localPosition;
-        vec3 localScale = transform.scale;
-        vec3 absoluteScale = localScale;
-        vec3 localRot = transform.rot;
-        vec3 absoluteRot = localRot;
-        Transform* parent = transform.parent;
-        while(parent != nullptr) {
-            absoluteScale.x *= parent->scale.x;
-            absoluteScale.y *= parent->scale.y;
-            absoluteScale.z *= parent->scale.z;
-            absoluteRot.x += parent->rot.x;
-            absoluteRot.y += parent->rot.y;
-            absoluteRot.z += parent->rot.z;
-            absolutePosition = local_to_world(localPosition, parent->pos, absoluteScale, absoluteRot.z);
-            parent = parent->parent;
-        }
-
         // Start the object with the appropriate width and height at the origin in normalized coordinates
         vertices[0] = {-transform.width/2, +transform.height/2, 1};
         vertices[1] = {+transform.width/2, +transform.height/2, 1};
@@ -148,7 +123,16 @@ public:
         vertices[3] = {-transform.width/2, -transform.height/2, 1};
 
         // Create transformation matrix
-        Matrix3 transformation = matrix_transformation(absolutePosition, absoluteScale, absoluteRot);
+        Matrix3 localMatrix = to_transform_matrix(&transform);
+        Matrix3 transformation = localMatrix;
+
+        // Multiply by inherited transforms to get final transform matrix
+        Transform* parent = transform.parent;
+        while (parent != nullptr) {
+            Matrix3 parentMatrix = to_transform_matrix(parent);
+            transformation = parentMatrix.multiply(transformation);
+            parent = parent->parent;
+        }
 
         // Apply transformation matrix
         for (auto & vertice : vertices) {
@@ -173,7 +157,7 @@ public:
 
 class Sound : public GameObject {
 public:
-    virtual ~Sound() = default;
+    ~Sound() override = default;
     virtual void Play() = 0;
     virtual void Stop() = 0;
     virtual void Reset() = 0;
