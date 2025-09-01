@@ -25,6 +25,7 @@ struct box_collider {
     enum PIVOT pivot;
 };
 
+//region AABB
 static int AABB_collision(
         struct vec2 p1, struct vec2 p2,
         struct box_collider c1, struct box_collider c2
@@ -54,16 +55,50 @@ static int AABB_collision(
 }
 
 static int AABB_collision(
+        struct vec2 p1, struct vec2 p2,
+        struct box_collider c1
+) {
+    float c1x = p1.x + c1.pos.x;
+    float c1y = p1.y + c1.pos.y;
+
+    if (c1.pivot == CENTER) {
+        c1x -= c1.width / 2;
+        c1y += c1.height / 2;
+    }
+
+    bool x_overlap = p2.x > c1x && p2.x < (c1x + c1.width);
+    bool y_overlap = p2.y < c1y && p2.y > (c1y - c1.height);
+    if (x_overlap && y_overlap) {
+        // We have a collision, folks.
+        return 1;
+    }
+
+    return 0;
+}
+
+static int AABB_collision(
         struct vec3 p1, struct vec3 p2,
         struct box_collider c1, struct box_collider c2
 ) {
     return AABB_collision(vec2{p1.x, p1.y}, vec2{p2.x, p2.y}, c1, c2);
 }
 
+static int AABB_collision(
+        struct vec3 p1, struct vec3 p2,
+        struct box_collider c1
+) {
+    return AABB_collision(vec2{p1.x, p1.y}, vec2{p2.x, p2.y}, c1);
+}
+
 static bool AABB_collision(GameObject* a, GameObject* b) {
     auto obj1_collider = box_collider{{0, 0}, a->transform.width, a->transform.height, PIVOT::CENTER};
     auto obj2_collider = box_collider{{0, 0}, b->transform.width,b->transform.height, PIVOT::CENTER};
     return AABB_collision(a->transform.pos, b->transform.pos, obj1_collider, obj2_collider);
+}
+
+static bool AABB_collision(GameObject* a, vec3 point) {
+    auto obj1_collider = box_collider{{0, 0}, a->transform.width, a->transform.height, PIVOT::CENTER};
+    return AABB_collision(a->transform.pos, point, obj1_collider);
 }
 
 struct aabb_hit_edge {
@@ -104,5 +139,26 @@ static aabb_hit_edge aabb_get_hit_edge(GameObject* a, GameObject* b) {
         hitFromLeft, hitFromRight, hitFromTop, hitFromBottom
     };
 }
+//endregion
+
+//region OOBB
+static int OOBB_collision(
+        Transform* a, vec3 point,
+        struct box_collider ca
+) {
+    // Convert point to be in A's local space
+    // Perform AABB using the pos of A.pos and B's position in A's local space
+    Matrix3 M_a = to_transform_matrix(a);
+    Matrix3 M_point = matrix_transformation(point, {1,1,1}, {0,0,0});
+    Matrix3 point_in_a = M_point.multiply(matrix_inverse(M_a));
+    vec3 bPos_in_a = matrix_multiply_vec(point_in_a, point);
+    return AABB_collision(a->pos, bPos_in_a, ca);
+}
+
+static bool OOBB_collision(GameObject* a, vec3 point) {
+    auto obj1_collider = box_collider{{0, 0}, a->transform.width, a->transform.height, PIVOT::CENTER};
+    return OOBB_collision(&a->transform, point, obj1_collider);
+}
+//endregion
 
 #endif // GAMEENGINE_COLLISION_H

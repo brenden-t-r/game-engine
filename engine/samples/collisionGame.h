@@ -28,17 +28,25 @@ public:
         objects[2]->transform.pos = vec3{0, 0, 0};
         objects[2]->transform.width = 0.25f;
         objects[2]->transform.height = 0.25f;
+        objects[2]->Rotate(30);
+        EnableCallback(MOUSE_RELEASED);
     }
 
     void Update() override {
         objects[1]->Update();
         objects[2]->Update();
 
-        int result = AABB_collision(objects[1], objects[2]);
-        if (result) {
+        mousePos = platform->GetMousePos();
+
+        // Check collision of two box colliders with no rotation
+        int resultAABB = AABB_collision(objects[2], objects[1]);
+
+        // Check collision of mouse position point against rotated box collider
+        int resultOOBBPoint = OOBB_collision(objects[2], mousePos);
+
+        if (resultAABB || resultOOBBPoint) {
             objects[0]->Update();
         }
-
         if (platform->IsKeyPressed(KeyCode::A)) {
             objects[1]->transform.pos.x -= speed;
         }
@@ -53,9 +61,14 @@ public:
         }
     }
 
+    void MouseReleasedCallback(MouseButton btn) override {
+        mousePos = platform->GetMousePos();
+    }
+
 private:
     Sprite* objects[3];
     float speed = 0.005;
+    vec3 mousePos;
 };
 
 #endif //GAMEENGINE_COLLISIONGAME_H
