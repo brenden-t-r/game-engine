@@ -10,6 +10,9 @@
 #ifndef GAMEENGINE_COLLISION_H
 #define GAMEENGINE_COLLISION_H
 
+#include "vector.h"
+#include "gameobject.h"
+
 enum PIVOT {
     TOP_LEFT = 0,
     CENTER = 1
