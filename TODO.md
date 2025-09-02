@@ -9,7 +9,7 @@
   - Rectangle
   - Circle
 - Vector
-  - Collision detection (OBB, Rays)
+  - Collision detection (Rays)
 - Text
   - Text color (shader color input)
   - Line wrapping
@@ -21,6 +21,8 @@
   - Triggers, axes
 - iOS
   - Game settings for virtual controller, orientation
+- Keyboard
+  - Key mappings
 - WebGL support
 - Android support
 - Custom shader cross-compilation and support

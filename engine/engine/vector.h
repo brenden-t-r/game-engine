@@ -5,7 +5,7 @@
 #include "../constants.h"
 
 constexpr float PI = 3.14159265358979323846f;
-constexpr float DEGREES_TO_RADIANS = PI/180;
+constexpr float DEGREES_TO_RADIANS = PI/180.0;
 
 struct vec3 {
     float x = 0, y = 0, z = 0;
@@ -24,6 +24,14 @@ struct vec3 {
 struct vec2 {
     float x;
     float y;
+
+    vec2 operator + (const vec2& other) const {
+        return {x + other.x, y + other.y};
+    }
+
+    vec2 operator - (const vec2& other) const {
+        return {x - other.x, y - other.y};
+    }
 };
 
 static float dot(vec3 a, vec3 b) {
@@ -154,8 +162,9 @@ static vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, floa
 }
 
 static vec2 rotate_euler(vec2 transform, float angle) {
-    float cos = cosf(angle);
-    float sin = sinf(angle);
+    float radians = angle * DEGREES_TO_RADIANS;
+    float cos = cosf(radians);
+    float sin = sinf(radians);
     float rotation_matrix[4] = { cos, -sin, sin, cos };
     return {
             (transform.x*rotation_matrix[0] + transform.y*rotation_matrix[1]),
@@ -163,7 +172,7 @@ static vec2 rotate_euler(vec2 transform, float angle) {
     };
 }
 static vec3 rotate_euler(vec3 transform, float angle) {
-    float radians = angle * PI/180.0f;
+    float radians = angle * DEGREES_TO_RADIANS;
     float cos = cosf(radians);
     float sin = sinf(radians);
     float rotation_matrix[4] = { cos, -sin, sin, cos };
