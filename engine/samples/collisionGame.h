@@ -1,6 +1,8 @@
 #ifndef GAMEENGINE_COLLISIONGAME_H
 #define GAMEENGINE_COLLISIONGAME_H
 
+#define DEBUG_COLLIDERS
+
 #include "../engine/game.h"
 #include "../engine/collision.h"
 
@@ -44,9 +46,25 @@ public:
         // Check collision of mouse position point against rotated box collider
         int resultOOBBPoint = OOBB_collision(objects[2], mousePos);
 
-        if (resultAABB || resultOOBBPoint) {
+        // Check collision of two object-oriented box colliders with rotation
+        OOBB_box_collider a = get_OOBB_box_collider(objects[2]);
+        OOBB_box_collider b = get_OOBB_box_collider(objects[1]);
+        int resultOOBB = OOBB_collision(a, b);
+
+#ifdef AABB
+        int boxColliderResult = resultAABB;
+#else
+        int boxColliderResult = resultOOBB;
+#ifdef DEBUG_COLLIDERS
+        debug_OOBB_collider(platform, a);
+        debug_OOBB_collider(platform, b);
+#endif
+#endif
+        if (boxColliderResult || resultOOBBPoint) {
             objects[0]->Update();
         }
+
+        // Movement
         if (platform->IsKeyPressed(KeyCode::A)) {
             objects[1]->transform.pos.x -= speed;
         }
@@ -58,6 +76,12 @@ public:
         }
         if (platform->IsKeyPressed(KeyCode::S)) {
             objects[1]->transform.pos.y -= speed;
+        }
+        if (platform->IsKeyPressed(KeyCode::Up)) {
+            objects[1]->transform.rot.z += 1;
+        }
+        if (platform->IsKeyPressed(KeyCode::Down)) {
+            objects[1]->transform.rot.z -= 1;
         }
     }
 
