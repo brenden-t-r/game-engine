@@ -146,25 +146,6 @@ static aabb_hit_edge aabb_get_hit_edge(GameObject* a, GameObject* b) {
 //endregion
 
 //region OOBB
-
-int OOBB_collision(
-        Transform* a, vec3 point,
-        struct box_collider ca
-) {
-    // Convert point to be in A's local space
-    // Perform AABB using the pos of A.pos and B's position in A's local space
-    Matrix3 M_a = to_transform_matrix(a);
-    Matrix3 M_point = matrix_transformation(point, {1,1,1}, {0,0,0});
-    Matrix3 point_in_a = M_point.multiply(matrix_inverse(M_a));
-    vec3 bPos_in_a = matrix_multiply_vec(point_in_a, point);
-    return AABB_collision(a->pos, bPos_in_a, ca);
-}
-
-bool OOBB_collision(GameObject* a, vec3 point) {
-    auto obj1_collider = box_collider{{0, 0}, a->transform.width, a->transform.height, PIVOT::CENTER};
-    return OOBB_collision(&a->transform, point, obj1_collider);
-}
-
 struct OOBB_box_collider {
     vec2 center;
     vec2 halfExtents; // half-widths along local axes
@@ -185,8 +166,8 @@ OOBB_box_collider get_OOBB_box_collider(Sprite* sprite) {
     float centerY = sumOfVertices.y * 0.25f;
 
     // Multiply by half the window width since NDC width/height is 2. Multiply by half again to get half width.
-    float halfWidth  = sprite->transform.width  * WINDOW_WIDTH  * 0.25f;
-    float halfHeight = sprite->transform.height * WINDOW_HEIGHT * 0.25f;
+    float halfWidth  = sprite->transform.width  * WINDOW_WIDTH  * 0.25f * sprite->transform.scale.x;
+    float halfHeight = sprite->transform.height * WINDOW_HEIGHT * 0.25f * sprite->transform.scale.y;
 
     return OOBB_box_collider {
             vec2{centerX, centerY},
@@ -238,6 +219,23 @@ bool OOBB_collision(const OOBB_box_collider& a, const OOBB_box_collider& b) {
     return true;
 }
 
+bool OOBB_collision(const OOBB_box_collider& box, const vec2& point) {
+    vec2 pointPx = normalized_to_screen(vec2{point.x, point.y});
+    vec2 translatedPoint = pointPx - box.center;
+    vec2 local = rotate_euler(translatedPoint, -box.rotation);
+
+    // Check against box extents
+    float hx = box.halfExtents.x;
+    float hy = box.halfExtents.y;
+    return (local.x >= -hx && local.x <= hx &&
+            local.y >= -hy && local.y <= hy);
+}
+
+bool OOBB_collision(Sprite* a, vec3 point) {
+    OOBB_box_collider collider = get_OOBB_box_collider(a);
+    return OOBB_collision(collider, vec2{point.x, point.y});
+}
+
 #ifdef DEBUG_COLLIDERS
 void debug_OOBB_collider(Platform* platform, OOBB_box_collider &oobb) {
     vec2 corners[4];
@@ -254,7 +252,6 @@ void debug_OOBB_collider(Platform* platform, OOBB_box_collider &oobb) {
     }
 }
 #endif
-
 //endregion
 
 #endif // GAMEENGINE_COLLISION_H

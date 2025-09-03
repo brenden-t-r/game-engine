@@ -31,6 +31,8 @@ public:
         objects[2]->transform.width = 0.25f;
         objects[2]->transform.height = 0.25f;
         objects[2]->Rotate(30);
+        objects[1]->SetScale(vec3{0.5, 0.5, 1});
+        objects[1]->Rotate(-45);
         EnableCallback(MOUSE_RELEASED);
     }
 
@@ -38,18 +40,17 @@ public:
         objects[1]->Update();
         objects[2]->Update();
 
-        mousePos = platform->GetMousePos();
-
         // Check collision of two box colliders with no rotation
         int resultAABB = AABB_collision(objects[2], objects[1]);
-
-        // Check collision of mouse position point against rotated box collider
-        int resultOOBBPoint = OOBB_collision(objects[2], mousePos);
 
         // Check collision of two object-oriented box colliders with rotation
         OOBB_box_collider a = get_OOBB_box_collider(objects[2]);
         OOBB_box_collider b = get_OOBB_box_collider(objects[1]);
         int resultOOBB = OOBB_collision(a, b);
+
+        // Check collision of mouse position point against rotated box collider
+        mousePos = platform->GetMousePos();
+        int resultOOBBPoint = OOBB_collision(objects[2], mousePos);
 
 #ifdef AABB
         int boxColliderResult = resultAABB;
