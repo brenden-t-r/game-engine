@@ -123,12 +123,15 @@ public:
 #endif
 
         // Create the window
+        RECT rect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+        AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
         hwnd = CreateWindow(
                 wc.lpszClassName,
                 "Direct3D 11 Triangle",
                 WS_OVERLAPPEDWINDOW,
                 100, 100,
-                WINDOW_WIDTH, WINDOW_HEIGHT,
+                rect.right - rect.left,
+                rect.bottom - rect.top,
                 nullptr, nullptr, wc.hInstance, nullptr
         );
         ShowWindow(hwnd, nCmdShow);
