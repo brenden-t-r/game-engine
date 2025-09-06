@@ -94,7 +94,7 @@ static vec3 screen_to_normalized_using_matrix(vec3 vec) {
     return matrix_multiply_vec(ScreenToNormalizedMatrix, vec);
 }
 
-Matrix3 local_to_word_matrix(vec3 position, vec3 scale, vec3 rotation) {
+static Matrix3 local_to_world_matrix(vec3 position, vec3 scale, vec3 rotation) {
     // Rotation matrix
     float angle = rotation.z * PI/180.0f;
     float cos = cosf(angle);
