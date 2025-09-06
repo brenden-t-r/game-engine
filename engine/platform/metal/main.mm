@@ -483,7 +483,15 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
-    virtual vec3 GetMousePos() override { return {}; }
+    virtual vec3 GetMousePos() override {
+        NSPoint mouseLocationScreen = [NSEvent mouseLocation];
+        NSPoint mouseLocationWindow = [metalAppDelegate.window convertPointFromScreen:mouseLocationScreen];
+        NSPoint mouseLocationView = [metalAppDelegate.metalView convertPoint:mouseLocationWindow fromView:nil];
+        NSRect viewBounds = [metalAppDelegate.metalView bounds];
+        float ndcX = (mouseLocationView.x / viewBounds.size.width) * 2.0f - 1.0f;
+        float ndcY = (mouseLocationView.y / viewBounds.size.height) * 2.0f - 1.0f;
+        return {ndcX, ndcY, 1};
+    }
     void Shutdown() override {
         Running = false;
     }
