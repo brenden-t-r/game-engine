@@ -94,6 +94,37 @@ static vec3 screen_to_normalized_using_matrix(vec3 vec) {
     return matrix_multiply_vec(ScreenToNormalizedMatrix, vec);
 }
 
+static Matrix3 local_to_world_matrix(vec3 position, vec3 scale, vec3 rotation) {
+    // Rotation matrix
+    float angle = rotation.z * PI/180.0f;
+    float cos = cosf(angle);
+    float sin = sinf(angle);
+    Matrix3 R = {
+            cos, -sin, 0,
+            sin, cos,  0,
+            0,   0,    1,
+    };
+
+    // Scale matrix
+    Matrix3 S = {
+            scale.x, 0,       0,
+            0,       scale.y, 0,
+            0,       0,       1
+    };
+
+
+    // Translation
+    Matrix3 T = {
+            1, 0,  position.x,
+            0, 1,  position.y,
+            0, 0, 1
+    };
+
+    // Scale -> Rotate -> Translate
+    Matrix3 CombinedTransformation = T.multiply(R).multiply(S);
+    return CombinedTransformation;
+}
+
 /*
  * Creates a composite translation, scale and rotation matrix.
  * Accepts position in terms of normalized coordinates.

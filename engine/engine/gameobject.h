@@ -23,6 +23,12 @@ public:
 static Matrix3 to_transform_matrix(Transform* transform) {
     return matrix_transformation(transform->pos, transform->scale, transform->rot);
 }
+static vec3 local_to_world_conversion(Transform* transform, vec3 point) {
+    vec3 posScreen = normalized_to_screen(transform->pos);
+    Matrix3 M = local_to_world_matrix(posScreen, transform->scale, transform->rot);
+    vec3 worldPoint = matrix_multiply_vec(M, point);
+    return screen_to_normalized(worldPoint);
+}
 
 class GameObject {
 public:

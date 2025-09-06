@@ -72,14 +72,12 @@ static vec2 get_unit_vector_from_angle_degrees(float angle) {
             x, y
     };
 }
-
 static int getRandomInt(int start, int end) {
     return start + (rand() % (end - start + 1));
 }
 static float getRandomFloat(float start, float end) {
     return start + static_cast<float>(rand()) / RAND_MAX * (end - start);
 }
-
 static vec2 normalized_to_screen(vec2 vec) {
     // Convert normalized coordinates (-1 to 1) to screen coordinates (0 to screenWidth/Height)
     float screenX = (vec.x + 1) * 0.5f * WINDOW_WIDTH;
@@ -104,63 +102,6 @@ static vec3 screen_to_normalized(vec3 vec) {
     float deviceY = 1 - (2 * vec.y) / WINDOW_HEIGHT;
     return {deviceX, deviceY, 1};
 }
-static vec3 world_to_local(vec3 worldPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
-    // Step 1: Translate to origin (inverse of translation)
-    vec3 translatedPoint = {
-            worldPoint.x - worldPos.x,
-            worldPoint.y - worldPos.y,
-            worldPoint.z - worldPos.z
-    };
-
-    // Step 2: Rotate by negative angle (inverse rotation)
-    float radians = -worldRotation * PI / 180.0f;  // Note the negative sign
-    float cos_r = cosf(radians);
-    float sin_r = sinf(radians);
-
-    vec3 rotatedPoint = {
-            translatedPoint.x * cos_r - translatedPoint.y * sin_r,
-            translatedPoint.x * sin_r + translatedPoint.y * cos_r,
-            translatedPoint.z
-    };
-
-    // Step 3: Inverse scale
-    vec3 localPoint = {
-            rotatedPoint.x / worldScale.x,
-            rotatedPoint.y / worldScale.y,
-            rotatedPoint.z / worldScale.z
-    };
-
-    return localPoint;
-}
-static vec3 local_to_world(vec3 localPoint, vec3 worldPos, vec3 worldScale, float worldRotation) {
-    // Step 1: Scale the local point
-    vec3 scaledPoint = {
-            localPoint.x * worldScale.x,
-            localPoint.y * worldScale.y,
-            localPoint.z * worldScale.z
-    };
-
-    // Step 2: Rotate the scaled point
-    float radians = worldRotation * PI / 180.0f;
-    float cos_r = cosf(radians);
-    float sin_r = sinf(radians);
-
-    vec3 rotatedPoint = {
-            scaledPoint.x * cos_r - scaledPoint.y * sin_r,
-            scaledPoint.x * sin_r + scaledPoint.y * cos_r,
-            scaledPoint.z
-    };
-
-    // Step 3: Translate to world position
-    vec3 worldPoint = {
-            rotatedPoint.x + worldPos.x,
-            rotatedPoint.y + worldPos.y,
-            rotatedPoint.z + worldPos.z
-    };
-
-    return worldPoint;
-}
-
 static vec2 rotate_euler(vec2 transform, float angle) {
     float radians = angle * DEGREES_TO_RADIANS;
     float cos = cosf(radians);
