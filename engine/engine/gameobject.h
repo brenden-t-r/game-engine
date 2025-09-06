@@ -30,11 +30,31 @@ static vec3 local_to_world_conversion(Transform* transform, vec3 point) {
     return screen_to_normalized(worldPoint);
 }
 
+class Component {
+public:
+    virtual ~Component() = default;
+    virtual void Update() = 0;
+    Transform* transform;
+};
+
 class GameObject {
 public:
     Transform transform{};
-    virtual ~GameObject()= default;
-    virtual void Update(){}
+    std::vector<Component*> components{};
+    virtual ~GameObject() {
+        for (auto & component : components) {
+            delete component;
+        }
+    };
+    virtual void Update(){
+        for (auto & component : components) {
+            component->Update();
+        }
+    }
+    void AddComponent(Component* component) {
+        component->transform = &transform;
+        components.push_back(component);
+    }
 };
 
 class Triangle : public GameObject {
@@ -50,8 +70,8 @@ public:
     }
 
     void Update() override {
-        GameObject::Update();
         SetPosition(transform.pos);
+        GameObject::Update();
     }
 
     void SetPosition(vec3 position) {
@@ -115,8 +135,8 @@ public:
     }
 
     void Update() override {
-        GameObject::Update();
         SetPosition(transform.pos);
+        GameObject::Update();
     }
 
     void SetPosition(vec3 position) {
