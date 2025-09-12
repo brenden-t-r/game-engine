@@ -588,6 +588,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
                                              selector:@selector(controllerDisconnected:)
                                                  name:GCControllerDidDisconnectNotification
                                                object:nil];
+#ifdef IOS_VIRTUAL_CONTROLLER
     if (!_virtualController) {
         GCVirtualControllerConfiguration *config = [[GCVirtualControllerConfiguration alloc] init];
         config.elements = [NSSet setWithArray:@[
@@ -604,6 +605,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
     if (GCController.controllers.count == 0 && _virtualController != nil) {
         [_virtualController connectWithReplyHandler:nil];
     }
+#endif
 }
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
@@ -678,9 +680,9 @@ static void RealMainMetal(MetalAppDelegate* app) {
     [super viewDidLayoutSubviews];
 }
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-#ifdef FORCE_PORTRAIT
+#ifdef IOS_FORCE_PORTRAIT
     return UIInterfaceOrientationMaskPortrait;
-#elif defined(FORCE_LANDSCAPE)
+#elif defined(IOS_FORCE_LANDSCAPE)
     return UIInterfaceOrientationMaskLandscape;
 #else
     return UIInterfaceOrientationMaskAll;
