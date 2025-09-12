@@ -72,7 +72,7 @@ GamepadButton GAMEPAD_BUTTONS[] = {GamepadButton::North, GamepadButton::South, G
                                  GamepadButton::DLeft, GamepadButton::DRight, GamepadButton::DUp, GamepadButton::DDown};
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
-void static(*mouseUpCallback)(MouseButton, void*);
+void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
@@ -227,7 +227,7 @@ public:
         keyUpCallback = func;
         keyCallbackContext = context;
     }
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*, vec3), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
@@ -236,19 +236,7 @@ public:
         gamepadCallbackContext = context;
     }
     vec3 GetMousePos() override {
-        RECT rect;
-        GetClientRect(hwnd, &rect);  // Get window size
-        int width = rect.right - rect.left;
-        int height = rect.bottom - rect.top;
-
-        POINT cursorPos;
-        if (GetCursorPos(&cursorPos)) {
-            ScreenToClient(hwnd, &cursorPos);  // Convert to client space
-
-            float ndcX = (2.0f * cursorPos.x) / width - 1.0f;
-            float ndcY = 1.0f - (2.0f * cursorPos.y) / height;  // Flip Y axis
-            return {ndcX, ndcY};
-        }
+        return _GetMousePos(hwnd);
     }
     // endregion
 
@@ -578,17 +566,17 @@ private:
                         // Check button states
                         if (rawM.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
                             if (mouseUpCallback) {
-                                mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+                                mouseUpCallback(MouseButton::Left, mouseCallbackContext, _GetMousePos(hWnd));
                             }
                         }
                         if (rawM.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
                             if (mouseUpCallback) {
-                                mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+                                mouseUpCallback(MouseButton::Right, mouseCallbackContext, _GetMousePos(hWnd));
                             }
                         }
                         if (rawM.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
                             if (mouseUpCallback) {
-                                mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+                                mouseUpCallback(MouseButton::Middle, mouseCallbackContext, _GetMousePos(hWnd));
                             }
                         }
                     }
@@ -623,6 +611,21 @@ private:
         if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
             printf("Failed to register raw input device.");
         }
+    }
+
+    static vec3 _GetMousePos(HWND hWnd) {
+        RECT rect;
+        GetClientRect(hWnd, &rect);  // Get window size
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+        POINT cursorPos;
+        if (GetCursorPos(&cursorPos)) {
+            ScreenToClient(hWnd, &cursorPos);  // Convert to client space
+
+            float ndcX = (2.0f * cursorPos.x) / width - 1.0f;
+            float ndcY = 1.0f - (2.0f * cursorPos.y) / height;  // Flip Y axis
+            return {ndcX, ndcY};
+        } else assert(false);
     }
 
     void InitD3D(HWND hwnd)

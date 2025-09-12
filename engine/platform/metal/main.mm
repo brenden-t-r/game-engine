@@ -129,7 +129,10 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
             NSError *error = nil;
 
             // Load the texture from the image data
-            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:nil error:&error];
+            NSDictionary *options = @{
+                    MTKTextureLoaderOptionSRGB : @NO // Needed this to fix "dark" sprites. May need to revisit.
+            };
+            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:options error:&error];
 
             if (texture) {
                 NSLog(@"Texture loaded successfully from %@", imageName);
@@ -749,7 +752,7 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     NSLog(@"applicationDidFinishLaunching");
-    NSRect frame = NSMakeRect(100, 100, 1280, 720);
+    NSRect frame = NSMakeRect(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)

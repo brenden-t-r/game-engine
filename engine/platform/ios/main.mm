@@ -41,7 +41,7 @@ static GamepadButton GetGamepadButton(GCExtendedGamepad *pad, GCControllerElemen
     if (btn == pad.buttonMenu) return GamepadButton::Select;
     else return GamepadButton::Unknown;
 }
-void static(*mouseUpCallback)(MouseButton, void*);
+void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
@@ -157,7 +157,10 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
             NSError *error = nil;
 
             // Load the texture from the image data
-            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:nil error:&error];
+            NSDictionary *options = @{
+                    MTKTextureLoaderOptionSRGB : @NO // Needed this to fix "dark" sprites. May need to revisit.
+            };
+            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:options error:&error];
 
             if (texture) {
                 NSLog(@"Texture loaded successfully from %@", imageName);
@@ -508,7 +511,7 @@ public:
     }
     bool IsGamepadButtonPressed(GamepadButton button) override { return [metalAppDelegate.viewController IsGamePadPressed: button]; }
     void SetKeyReleasedCallback(void (*func)(KeyCode, void*), void* context) override {}
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*, vec3), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
@@ -685,20 +688,27 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
 }
 - (void)handleTap:(UITapGestureRecognizer *)gesture {
-//    CGPoint location = [gesture locationInView:self.view];
-//    NSLog(@"Tap at: (%f, %f)", location.x, location.y);
+    CGPoint location = [gesture locationInView:self.view];
+    CGSize size = self.view.bounds.size;
+    float ndcX = (2.0f * (float)location.x / (float)size.width) - 1.0f;
+    float ndcY = 1.0f - (float)(2.0f * location.y / size.height); // flip Y
+    NSLog(@"Tap at NDC: (%f, %f)", ndcX, ndcY);
     if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext, vec3{ndcX, ndcY, 0});
     }
 }
 - (void)handleTwoFingerTap:(UITapGestureRecognizer *)gesture {
     if (gesture.numberOfTouches == 2) {
-//        CGPoint touch1 = [gesture locationOfTouch:0 inView:self.view];
-//        CGPoint touch2 = [gesture locationOfTouch:1 inView:self.view];
-//        CGPoint midpoint = CGPointMake((touch1.x + touch2.x) / 2, (touch1.y + touch2.y) / 2);
-//        NSLog(@"Two-finger tap midpoint: (%f, %f)", midpoint.x, midpoint.y);
+        CGPoint touch1 = [gesture locationOfTouch:0 inView:self.view];
+        CGPoint touch2 = [gesture locationOfTouch:1 inView:self.view];
+        CGPoint midpoint = CGPointMake((touch1.x + touch2.x) / 2, (touch1.y + touch2.y) / 2);
+        NSLog(@"Two-finger tap midpoint: (%f, %f)", midpoint.x, midpoint.y);
+        CGSize size = self.view.bounds.size;
+        float ndcX = (2.0f * (float)midpoint.x / (float)size.width) - 1.0f;
+        float ndcY = 1.0f - (float)(2.0f * midpoint.y / size.height); // flip Y
+        NSLog(@"Two-finger tap at NDC: (%f, %f)", ndcX, ndcY);
         if (mouseUpCallback != nil) {
-            mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+            mouseUpCallback(MouseButton::Right, mouseCallbackContext, vec3{ndcX, ndcY, 0});
         }
     }
 }

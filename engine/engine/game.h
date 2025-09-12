@@ -14,7 +14,7 @@ public:
     virtual void Start() = 0;
     virtual void Update() = 0;
     virtual void KeyReleasedCallback(KeyCode key) {}
-    virtual void MouseReleasedCallback(MouseButton key) {}
+    virtual void MouseReleasedCallback(MouseButton key, vec3 pos) {}
     virtual void GamepadReleasedCallback(GamepadButton key) {}
 
     void EnableCallback(Callback callbackType) {
@@ -28,9 +28,9 @@ public:
         auto _this = (Game*)context;
         _this->KeyReleasedCallback(key);
     }
-    static void MouseReleasedCallback(MouseButton button, void* context) {
+    static void MouseReleasedCallback(MouseButton button, void* context, vec3 pos) {
         auto _this = (Game*)context;
-        _this->MouseReleasedCallback(button);
+        _this->MouseReleasedCallback(button, pos);
     }
     static void GamepadReleasedCallback(GamepadButton button, void* context) {
         auto _this = (Game*)context;
@@ -51,6 +51,9 @@ public:
     virtual void Start() = 0;
     virtual void Update() = 0;
     virtual bool IsSceneChange() { return nextScene != -1; }
+    virtual void KeyReleasedCallback(KeyCode key) {}
+    virtual void MouseReleasedCallback(MouseButton key, vec3 pos) {}
+    virtual void GamepadReleasedCallback(GamepadButton key) {}
 
     int nextScene = -1;
 
