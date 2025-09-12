@@ -49,6 +49,7 @@ public:
     virtual GameObject* CreateGameObject(){ return new GameObject(); };
     virtual GameObject* CreateTriangle() = 0;
     virtual Sprite* CreateSprite(const char* path) = 0;
+    virtual Sprite* CreateSprite(Texture* texture) = 0;
     virtual Texture* CreateTexture(const char* path) = 0;
     virtual Sound* CreateSound(const char* path) = 0;
     virtual void Delete(GameObject* object) {

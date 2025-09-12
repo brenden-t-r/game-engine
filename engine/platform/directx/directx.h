@@ -439,6 +439,10 @@ public:
             d3dContext->Draw(4, 0);
         }
 
+        Texture* GetTexture() override {
+            return texture;
+        }
+
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
@@ -460,8 +464,8 @@ public:
         auto texture = (TextureD3D*)CreateTexture(path);
         return CreateSprite(texture);
     }
-    Sprite* CreateSprite(TextureD3D* texture) {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture, texture);
+    Sprite* CreateSprite(Texture* texture) {
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture, (TextureD3D*)texture);
         gameObject->CreateBuffer();
         return gameObject;
     }

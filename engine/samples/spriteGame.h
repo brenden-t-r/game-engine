@@ -2,6 +2,7 @@
 #define GAMEENGINE_SPRITEGAME_H
 
 #include "../engine/game.h"
+#include "../engine/resource.h"
 
 class SpriteGame : public Game {
 public:
@@ -17,12 +18,15 @@ public:
     void Start() override {
         platform->LoadShaders();
 
-        sprite = platform->CreateSprite("assets/sprites/background.png");
+        TextureCache* textureCache = new TextureCache();
+        Texture* texture = textureCache->GetOrLoad(platform, "assets/sprites/background.png");
+
+        sprite = platform->CreateSprite(texture);
         sprite->transform.width = 2.0f;
         sprite->transform.height = 2.0f;
         triangle = platform->CreateTriangle();
 
-        sprite2 = platform->CreateSprite("assets/sprites/background.png");
+        sprite2 = platform->CreateSprite(texture);
         sprite2->transform.width = 2.0f;
         sprite2->transform.height = 2.0f;
         triangle2 = platform->CreateTriangle();
