@@ -9,7 +9,7 @@ enum class CoordinateOrientation {
     Local = 1
 };
 
-class DebugTransformComponent : public Component {
+class DebugTransformComponent : public EngineComponent {
 public:
     explicit DebugTransformComponent(Platform* platform, CoordinateOrientation orientation)
             : platform(platform), orientation(orientation) {}

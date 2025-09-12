@@ -30,9 +30,9 @@ static vec3 local_to_world_conversion(Transform* transform, vec3 point) {
     return screen_to_normalized(worldPoint);
 }
 
-class Component {
+class EngineComponent {
 public:
-    virtual ~Component() = default;
+    virtual ~EngineComponent() = default;
     virtual void Update() = 0;
     Transform* transform;
 };
@@ -40,7 +40,7 @@ public:
 class GameObject {
 public:
     Transform transform{};
-    std::vector<Component*> components{};
+    std::vector<EngineComponent*> components{};
     virtual ~GameObject() {
         for (auto & component : components) {
             delete component;
@@ -51,7 +51,7 @@ public:
             component->Update();
         }
     }
-    void AddComponent(Component* component) {
+    void AddComponent(EngineComponent* component) {
         component->transform = &transform;
         components.push_back(component);
     }
