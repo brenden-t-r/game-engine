@@ -81,7 +81,7 @@ static GamepadButton GetGamepadButton(GCExtendedGamepad *pad, GCControllerElemen
 }
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
-void static(*mouseUpCallback)(MouseButton, void*);
+void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
@@ -478,7 +478,7 @@ public:
         keyUpCallback = func;
         keyCallbackContext = context;
     }
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*, vec3), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
@@ -660,19 +660,40 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     }
 }
 - (void)mouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext, vec3{xNDC, yNDC, 0});
     }
 }
 - (void)rightMouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Right, mouseCallbackContext, vec3{xNDC, yNDC, 0});
     }
 }
 - (void)otherMouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (event.buttonNumber == 2) {
         if (mouseUpCallback != nil) {
-            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+            mouseUpCallback(MouseButton::Middle, mouseCallbackContext, vec3{xNDC, yNDC, 0});
         }
     }
 }
