@@ -78,20 +78,30 @@ static KeyCode GetKeyCode(int glfwKey) {
 }
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
-void static(*mouseUpCallback)(MouseButton, void*);
+void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
+static vec3 get_mouse_pos(GLFWwindow* window) {
+    double cursorX, cursorY;
+    int width, height;
+    glfwGetCursorPos(window, &cursorX, &cursorY);
+    glfwGetWindowSize(window, &width, &height);
+    float ndcX = 2.0f * (float)cursorX / (float)width - 1.0f;
+    float ndcY = 1.0f - (2.0f * (float)cursorY) / (float)height;  // Flip Y axis
+    return {ndcX, ndcY, 0};
+}
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    vec3 mousePos = get_mouse_pos(window);
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && mouseUpCallback) {
-        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext, mousePos);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && mouseUpCallback) {
-        mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Right, mouseCallbackContext, mousePos);
     }
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE && mouseUpCallback) {
-        mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Middle, mouseCallbackContext, mousePos);
     }
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -230,7 +240,7 @@ public:
         keyUpCallback = func;
         keyCallbackContext = context;
     }
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*, vec3), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
@@ -239,13 +249,7 @@ public:
         gamepadCallbackContext = context;
     }
     vec3 GetMousePos() override {
-        double cursorX, cursorY;
-        int width, height;
-        glfwGetCursorPos(window, &cursorX, &cursorY);
-        glfwGetWindowSize(window, &width, &height);
-        float ndcX = 2.0f * (float)cursorX / (float)width - 1.0f;
-        float ndcY = 1.0f - (2.0f * (float)cursorY) / (float)height;  // Flip Y axis
-        return {ndcX, ndcY, 0};
+        return get_mouse_pos(window);
     }
     //endregion
 
@@ -555,7 +559,7 @@ private:
             // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             // Free image data

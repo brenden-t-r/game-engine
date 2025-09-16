@@ -10,6 +10,11 @@ option(BACKEND_OPENGL "Use OpenGL backend" OFF)
 option(BACKEND_METAL "Use Metal backend" OFF)
 option(PLATFORM_IOS "Build for iOS" OFF)
 
+# OPTIONAL SETTINGS
+#add_compile_definitions(IOS_VIRTUAL_CONTROLLER) # Enable iOS virtual on-screen gamepad
+#add_compile_definitions(IOS_FORCE_PORTRAIT) # Portrait orientation only on iOS
+#add_compile_definitions(IOS_FORCE_LANDSCAPE) # Landscape orientation only on iOS
+
 if (PLATFORM_IOS)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0")
 endif()

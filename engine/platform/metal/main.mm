@@ -81,7 +81,7 @@ static GamepadButton GetGamepadButton(GCExtendedGamepad *pad, GCControllerElemen
 }
 void static(*keyUpCallback)(KeyCode, void*);
 static void* keyCallbackContext;
-void static(*mouseUpCallback)(MouseButton, void*);
+void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
@@ -129,7 +129,10 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
             NSError *error = nil;
 
             // Load the texture from the image data
-            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:nil error:&error];
+            NSDictionary *options = @{
+                    MTKTextureLoaderOptionSRGB : @NO // Needed this to fix "dark" sprites. May need to revisit.
+            };
+            id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:options error:&error];
 
             if (texture) {
                 NSLog(@"Texture loaded successfully from %@", imageName);
@@ -475,7 +478,7 @@ public:
         keyUpCallback = func;
         keyCallbackContext = context;
     }
-    void SetMouseReleasedCallback(void (*func)(MouseButton, void*), void* context) override {
+    void SetMouseReleasedCallback(void (*func)(MouseButton, void*, vec3), void* context) override {
         mouseUpCallback = func;
         mouseCallbackContext = context;
     }
@@ -657,19 +660,40 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     }
 }
 - (void)mouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Left, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Left, mouseCallbackContext, vec3{xNDC, yNDC, 0});
     }
 }
 - (void)rightMouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (mouseUpCallback != nil) {
-        mouseUpCallback(MouseButton::Right, mouseCallbackContext);
+        mouseUpCallback(MouseButton::Right, mouseCallbackContext, vec3{xNDC, yNDC, 0});
     }
 }
 - (void)otherMouseUp:(NSEvent *)event {
+    NSPoint locInWindow = [event locationInWindow];
+    NSPoint locInView = [self convertPoint:locInWindow fromView:nil];
+    CGFloat width  = self.bounds.size.width;
+    CGFloat height = self.bounds.size.height;
+    float xNDC = (2.0f * locInView.x / width) - 1.0f;
+    float yNDC = (2.0f * locInView.y / height) - 1.0f;
+
     if (event.buttonNumber == 2) {
         if (mouseUpCallback != nil) {
-            mouseUpCallback(MouseButton::Middle, mouseCallbackContext);
+            mouseUpCallback(MouseButton::Middle, mouseCallbackContext, vec3{xNDC, yNDC, 0});
         }
     }
 }
@@ -749,7 +773,7 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     NSLog(@"applicationDidFinishLaunching");
-    NSRect frame = NSMakeRect(100, 100, 1280, 720);
+    NSRect frame = NSMakeRect(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)
