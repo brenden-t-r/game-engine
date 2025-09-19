@@ -50,7 +50,7 @@ public:
 //        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
 //        const char* png = "assets/sprites/fonts/burbank_atlas.png";
 //        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
-        const char* png = "assets/sprites/fonts/arial.png";
+        const char* png = "assets/sprites/fonts/burbank.png";
 //        const char* png = "assets/sprites/cardaction.png";
 
 //        LoadFontMeta(txt);
@@ -64,10 +64,14 @@ public:
 //        font->glyphY = 0;
 //        font->atlasWidth = atlasWidth;
 //        font->atlasHeight = atlasHeight;
-//        font->transform.width = 511.0 / WINDOW_WIDTH;
-//        font->transform.height = 511.0 / WINDOW_HEIGHT;
+        font->transform.width = 1024.0 / WINDOW_WIDTH;
+        font->transform.height = 1024.0 / WINDOW_HEIGHT;
         font->transform.scale = {1, 1, 1};
         font->transform.pos = {0,0,0};
+
+        sprites[0] = platform->CreateSprite("assets/sprites/background.png");
+        sprites[0]->transform.width = 2;
+        sprites[0]->transform.height = 2;
 
         auto gameObject = platform->CreateGameObject();
         gameObject->transform.rot.z = 45;
@@ -75,7 +79,7 @@ public:
     }
 
     void Update() override {
-
+//        sprites[0]->Update();
         font->Update();
 
 //        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);

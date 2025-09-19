@@ -5,18 +5,54 @@ out vec4 FragColor;
 
 uniform sampler2D spriteTexture;
 
-void main() {
-    // Sample texture and multiply by color for tinting
-    //vec4 texColor = texture(spriteTexture, TexCoords);
-    //FragColor = texColor;
-
-
-    vec4 texColor = texture(spriteTexture, TexCoords);
-    float dist = texColor.r;
-    float edge = 0.5;
-    float smoothing = fwidth(dist);  // pixel-dependent width
-    float alpha = smoothstep(edge - smoothing, edge + smoothing, dist);
-    FragColor = vec4(0,0,0,alpha);
-    //FragColor = texColor;
+float median(float r, float g, float b) {
+    return max(min(r, g), min(max(r, g), b));
 }
 
+float screenPxRange() {
+
+    float pxRange = 4.0;
+
+    vec2 unitRange = vec2(pxRange)/vec2(textureSize(spriteTexture, 0));
+    vec2 screenTexSize = vec2(1.0)/fwidth(TexCoords);
+    return max(0.5*dot(unitRange, screenTexSize), 1.0);
+}
+
+void main() {
+    // Sample texture and multiply by color for tinting
+    vec4 texColor = texture(spriteTexture, TexCoords);
+    //FragColor = texColor;
+
+    // SDF
+    //vec4 texColor = texture(spriteTexture, TexCoords);
+    //float dist = texColor.r;
+    //float edge = 0.5;
+    //float smoothing = fwidth(dist);  // pixel-dependent width
+    //float alpha = smoothstep(edge - smoothing, edge + smoothing, dist);
+    //FragColor = vec4(1,1,1,alpha);
+
+    //MSDF
+    vec4 bgColor = vec4(0,0,0,0);
+    vec4 fgColor = vec4(1,1,1,1);
+    vec3 msd = texture(spriteTexture, TexCoords).rgb;
+    float sd = median(msd.r, msd.g, msd.b);
+    float screenPxDistance = screenPxRange()*(sd - 0.5);
+    float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
+    vec4 color = mix(bgColor, fgColor, opacity);
+    FragColor = color;
+}
+
+
+// vec2 uv = TexCoords.xy;
+// float dist = texture(spriteTexture, TexCoords).r;
+// float width = fwidth(dist);
+// float alpha = contour( dist, width );
+// float dscale = 0.354; // half of 1/sqrt2; you can play with this
+// vec2 duv = dscale * (dFdx(uv) + dFdy(uv));
+// vec4 box = vec4(uv-duv, uv+duv);
+// float asum = samp( box.xy, width )
+//            + samp( box.zw, width )
+//            + samp( box.xw, width )
+//            + samp( box.zy, width );
+// alpha = (alpha + 0.5 * asum) / 3.0;
+// FragColor = vec4(0,0,0, alpha);
