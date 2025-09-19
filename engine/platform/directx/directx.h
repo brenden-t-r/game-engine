@@ -189,7 +189,7 @@ public:
                 }
 
                 // Clear the back buffer
-                float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
+                float clearColor[4] = {0,0,0,1};//{ 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
                 func(ctx);
@@ -373,7 +373,7 @@ public:
             d3d_vertices[2].position.x = vertices[3].x;
             d3d_vertices[2].position.y = vertices[3].y;
 
-            if (useAtlas) {
+            if (useAtlas && !useGlyph) {
                 d3d_vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
                 d3d_vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
                 d3d_vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
@@ -382,6 +382,25 @@ public:
                 d3d_vertices[1].texCoord.y = atlasCellSize * (float)atlasRow;
                 d3d_vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
                 d3d_vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
+            }
+            if (useAtlas && useGlyph) {
+
+
+
+                float u0 = (glyphX + 0.5f) / (float)atlasWidth;
+                float v0 = (glyphY + 1.0f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float u1 = (glyphX + glyphW - 0.5f) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - 0.5f) / (float)atlasHeight;
+
+
+//                float u0 = glyphX / (float)atlasWidth;
+//                float v0 = glyphY / (float)atlasHeight;
+//                float u1 = (glyphX + glyphW) / (float)atlasWidth;
+//                float v1 = (glyphY + glyphH) / (float)atlasHeight;
+                d3d_vertices[0].texCoord.x = u0; d3d_vertices[0].texCoord.y = v0;
+                d3d_vertices[1].texCoord.x = u1; d3d_vertices[1].texCoord.y = v0;
+                d3d_vertices[2].texCoord.x = u0; d3d_vertices[2].texCoord.y = v1;
+                d3d_vertices[3].texCoord.x = u1; d3d_vertices[3].texCoord.y = v1;
             }
 
             // Set the blend state
@@ -685,7 +704,8 @@ private:
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;

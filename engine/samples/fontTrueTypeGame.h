@@ -1,0 +1,132 @@
+#ifndef GAMEENGINE_FONTTRUETYPEGAME_H
+#define GAMEENGINE_FONTTRUETYPEGAME_H
+
+#include "../engine/game.h"
+#include "../engine/text.h"
+
+#include "string"
+#include "unordered_map"
+#include "fstream"
+
+
+std::unordered_map<char, Glyph> glyphs;
+int atlasWidth, atlasHeight;
+int baseline;
+
+void LoadFontMeta(const std::string &path) {
+    std::ifstream in(path);
+    if (!in) return;
+    in >> std::ws;
+    std::string tag;
+    in >> tag;
+    if (tag == "baseline") {
+        in >> baseline;
+    }
+    in >> tag;
+    if (tag == "atlas") {
+        in >> atlasWidth >> atlasHeight;
+    }
+    int c, x, y, w, h, xoff, yoff;
+    float adv;
+    while (in >> c >> x >> y >> w >> h >> xoff >> yoff >> adv) {
+        Glyph g = {x, y, w, h, xoff, yoff, adv};
+        glyphs[(char)c] = g;
+    }
+}
+
+
+class FontTrueTypeGame : public Game {
+public:
+    using Game::Game;
+
+    ~FontTrueTypeGame() override {
+
+    };
+
+    void Start() override {
+        platform->LoadShaders();
+
+
+        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
+        const char* png = "assets/sprites/fonts/burbank_atlas.png";
+//        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
+//        const char* png = "assets/sprites/fonts/arial_atlas.png";
+
+        LoadFontMeta(txt);
+
+        font = platform->CreateSprite(png);
+//        font->transform.width = 1024.0f/WINDOW_WIDTH;
+//        font->transform.height = 512.0f/WINDOW_HEIGHT;
+        //font->transform.pos = vec3{-1,0,1};
+        font->useAtlas = true;
+        font->useGlyph = true;
+        font->glyphW = 0;
+        font->glyphH = 0;
+        font->glyphX = 0;
+        font->glyphY = 0;
+        font->atlasWidth = atlasWidth;
+        font->atlasHeight = atlasHeight;
+        font->transform.scale = {1, 1, 1};
+
+        auto gameObject = platform->CreateGameObject();
+        gameObject->transform.rot.z = 45;
+        //font->transform.parent = &gameObject->transform;
+
+    }
+
+    void Update() override {
+        font->transform.pos = {-0.5, 0.5, 1};
+        font->transform.scale = {1, 1, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.5, 0.2, 1};
+        font->transform.scale = {2, 2, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.5, -0.2, 1};
+        font->transform.scale = {3.5, 3.5, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.5, -0.5, 1};
+        font->transform.scale = {0.25, 0.25, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.9, -0.8, 1};
+        font->transform.scale = {0.18, 0.18, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.9, -0.9, 1};
+        font->transform.scale = {0.5, 0.5, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        //font->Update();
+    }
+
+    void RenderText(Sprite* font, const std::string &text, float startX) {
+        float x = startX;
+        //float y = startY + baseline * scale;  // align baseline
+
+        for (char ch : text) {
+            auto it = glyphs.find(ch);
+            if (it == glyphs.end()) continue;
+            Glyph &g = it->second;
+
+            font->glyphX = g.x;
+            font->glyphY = g.y;
+            font->glyphW = g.w;
+            font->glyphH = g.h;
+            font->glyph = g;
+            font->transform.pos.x = x;
+            font->Update();
+            x += (g.advance/WINDOW_WIDTH*font->transform.scale.x);
+        }
+    }
+
+private:
+    Sprite* burbank;
+    Sprite* font;
+    Sprite* sprites[10]{};
+
+    float size = 0.4f;
+    int atlasNumRows = 8;
+    float atlasCellSize = 0.125f;
+    char buffer[100];
+    float tracking = 1;
+};
+
+
+#endif //GAMEENGINE_FONTTRUETYPEGAME_H

@@ -101,7 +101,11 @@ public:
         transform.rot.z += degrees;
     }
 };
-
+struct Glyph {
+    int x, y, w, h;
+    int xoff, yoff;
+    float advance;
+};
 class Sprite : public GameObject {
 public:
     vec3 vertices[4] {
@@ -117,6 +121,17 @@ public:
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
 
+    bool useGlyph;
+    float glyphX;
+    float glyphY;
+    float glyphW;
+    float glyphH;
+    float glyphxoff;
+    float glyphyoff;
+    float atlasWidth;
+    float atlasHeight;
+    Glyph glyph;
+
     Sprite() {
         SetPosition({0,0,0});
     }
@@ -130,10 +145,38 @@ public:
         transform.pos = position;
 
         // Start the object with the appropriate width and height at the origin in normalized coordinates
-        vertices[0] = {-transform.width/2, +transform.height/2, 1};
-        vertices[1] = {+transform.width/2, +transform.height/2, 1};
-        vertices[2] = {+transform.width/2, -transform.height/2, 1};
-        vertices[3] = {-transform.width/2, -transform.height/2, 1};
+        if (useAtlas && useGlyph) {
+//            float ndcXoff =  (glyphxoff / (float)WINDOW_WIDTH);  // scale to NDC
+//            float ndcYoff = -(glyphyoff / (float)WINDOW_HEIGHT);
+//            float width = glyphW/WINDOW_WIDTH;// + ndcXoff;
+//            float height = glyphH/WINDOW_HEIGHT;// + ndcYoff;
+//            vertices[0] = {-width/2, +height/2, 1};
+//            vertices[1] = {+width/2, +height/2, 1};
+//            vertices[2] = {+width/2, -height/2, 1};
+//            vertices[3] = {-width/2, -height/2, 1};
+
+            float ndcXoff = (glyph.xoff / (float)WINDOW_WIDTH)  ;  // scale to NDC
+            float ndcYoff = -(glyph.yoff / (float)WINDOW_HEIGHT) ;  // minus because screen Y vs baseline
+
+            float w = (glyph.w / (float)WINDOW_WIDTH)  ;
+            float h = (glyph.h / (float)WINDOW_HEIGHT) ;
+
+            float x0 = ndcXoff;
+            float y0 = ndcYoff;
+            float x1 = x0 + w;
+            float y1 = y0 - h;   // minus because top-left to bottom-left in NDC
+
+            vertices[0] = {x0, y0, 1};  // top-left
+            vertices[1] = {x1, y0, 1};  // top-right
+            vertices[2] = {x1, y1, 1};  // bottom-right
+            vertices[3] = {x0, y1, 1};  // bottom-left
+
+        } else {
+            vertices[0] = {-transform.width/2, +transform.height/2, 1};
+            vertices[1] = {+transform.width/2, +transform.height/2, 1};
+            vertices[2] = {+transform.width/2, -transform.height/2, 1};
+            vertices[3] = {-transform.width/2, -transform.height/2, 1};
+        }
 
         // Create transformation matrix
         Matrix3 localMatrix = to_transform_matrix(&transform);
