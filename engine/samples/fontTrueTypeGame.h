@@ -47,53 +47,68 @@ public:
         platform->LoadShaders();
 
 
-        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
-        const char* png = "assets/sprites/fonts/burbank_atlas.png";
+//        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
+//        const char* png = "assets/sprites/fonts/burbank_atlas.png";
 //        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
-//        const char* png = "assets/sprites/fonts/arial_atlas.png";
+        const char* png = "assets/sprites/fonts/arial.png";
+//        const char* png = "assets/sprites/cardaction.png";
 
-        LoadFontMeta(txt);
+//        LoadFontMeta(txt);
 
         font = platform->CreateSprite(png);
-//        font->transform.width = 1024.0f/WINDOW_WIDTH;
-//        font->transform.height = 512.0f/WINDOW_HEIGHT;
-        //font->transform.pos = vec3{-1,0,1};
-        font->useAtlas = true;
-        font->useGlyph = true;
-        font->glyphW = 0;
-        font->glyphH = 0;
-        font->glyphX = 0;
-        font->glyphY = 0;
-        font->atlasWidth = atlasWidth;
-        font->atlasHeight = atlasHeight;
+//        font->useAtlas = true;
+//        font->useGlyph = true;
+//        font->glyphW = 0;
+//        font->glyphH = 0;
+//        font->glyphX = 0;
+//        font->glyphY = 0;
+//        font->atlasWidth = atlasWidth;
+//        font->atlasHeight = atlasHeight;
+//        font->transform.width = 511.0 / WINDOW_WIDTH;
+//        font->transform.height = 511.0 / WINDOW_HEIGHT;
         font->transform.scale = {1, 1, 1};
+        font->transform.pos = {0,0,0};
 
         auto gameObject = platform->CreateGameObject();
         gameObject->transform.rot.z = 45;
         //font->transform.parent = &gameObject->transform;
-
     }
 
     void Update() override {
-        font->transform.pos = {-0.5, 0.5, 1};
-        font->transform.scale = {1, 1, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-        font->transform.pos = {-0.5, 0.2, 1};
-        font->transform.scale = {2, 2, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-        font->transform.pos = {-0.5, -0.2, 1};
-        font->transform.scale = {3.5, 3.5, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-        font->transform.pos = {-0.5, -0.5, 1};
-        font->transform.scale = {0.25, 0.25, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-        font->transform.pos = {-0.9, -0.8, 1};
-        font->transform.scale = {0.18, 0.18, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-        font->transform.pos = {-0.9, -0.9, 1};
-        font->transform.scale = {0.5, 0.5, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+
+        font->Update();
+
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+//        font->transform.pos = {-0.5, 0.2, 1};
+//        font->transform.scale = {2, 2, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+//        font->transform.pos = {-0.5, -0.2, 1};
+//        font->transform.scale = {3.5, 3.5, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+//        font->transform.pos = {-0.5, -0.5, 1};
+//        font->transform.scale = {0.25, 0.25, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+//        font->transform.pos = {-0.9, -0.8, 1};
+//        font->transform.scale = {0.18, 0.18, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+//        font->transform.pos = {-0.9, -0.9, 1};
+//        font->transform.scale = {0.5, 0.5, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
         //font->Update();
+        if (platform->IsKeyPressed(KeyCode::Up)) {
+            font->transform.scale.x += 0.01f;
+            font->transform.scale.y += 0.01f;
+        }
+        if (platform->IsKeyPressed(KeyCode::Down)) {
+            font->transform.scale.x -= 0.01f;
+            font->transform.scale.y -= 0.01f;
+        }
+        if (platform->IsKeyPressed(KeyCode::Right)) {
+            font->transform.rot.z += 1;
+        }
+        if (platform->IsKeyPressed(KeyCode::Left)) {
+            font->transform.rot.z -= 1;
+        }
     }
 
     void RenderText(Sprite* font, const std::string &text, float startX) {
