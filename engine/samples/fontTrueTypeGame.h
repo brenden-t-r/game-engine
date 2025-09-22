@@ -47,17 +47,16 @@ public:
         platform->LoadShaders();
 
 
-        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
-        const char* png = "assets/sprites/fonts/burbank_atlas.png";
-//        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
-//        const char* png = "assets/sprites/fonts/arial_atlas.png";
+//        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
+//        const char* png = "assets/sprites/fonts/burbank_atlas.png";
+        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
+        const char* png = "assets/sprites/fonts/arial_atlas.png";
+//        png = "assets/sprites/fonts/arial_atlas64_15.png";
+//        txt = "assets/sprites/fonts/arial_atlas64_15.txt";
 
         LoadFontMeta(txt);
 
         font = platform->CreateSprite(png);
-//        font->transform.width = 1024.0f/WINDOW_WIDTH;
-//        font->transform.height = 512.0f/WINDOW_HEIGHT;
-        //font->transform.pos = vec3{-1,0,1};
         font->useAtlas = true;
         font->useGlyph = true;
         font->glyphW = 0;
@@ -68,6 +67,27 @@ public:
         font->atlasHeight = atlasHeight;
         font->transform.scale = {1, 1, 1};
 
+//        sprites[0] = platform->CreateSprite("assets/sprites/fonts/arial_atlas64_15.png");
+//        sprites[0]->transform.width = 64.0/WINDOW_WIDTH*2.0;
+//        sprites[0]->transform.height = 64.0/WINDOW_HEIGHT*2.0;
+//        sprites[0]->transform.pos = vec3{0,0,0};
+//
+//        sprites[1] = platform->CreateSprite("assets/sprites/fonts/arial_atlas64_15.png");
+//        sprites[1]->transform.width = 64.0/WINDOW_WIDTH*1.5;
+//        sprites[1]->transform.height = 64.0/WINDOW_HEIGHT*1.5;
+//        sprites[1]->transform.pos = vec3{-0.4,0,0};
+//
+//        sprites[2] = platform->CreateSprite("assets/sprites/fonts/arial_atlas64_15.png");
+//        sprites[2]->transform.width = 64.0/WINDOW_WIDTH*1.75;
+//        sprites[2]->transform.height = 64.0/WINDOW_HEIGHT*1.75;
+//        sprites[2]->transform.pos = vec3{-0.2,0,0};
+
+        sprites[3] = platform->CreateSprite(png);
+        sprites[3]->transform.width = 64.0/WINDOW_WIDTH*2.0;
+        sprites[3]->transform.height = 64.0/WINDOW_HEIGHT*2.0;
+        sprites[3]->transform.pos = vec3{-0.2,0.4,0};
+
+
         auto gameObject = platform->CreateGameObject();
         gameObject->transform.rot.z = 45;
         //font->transform.parent = &gameObject->transform;
@@ -75,24 +95,35 @@ public:
     }
 
     void Update() override {
+//                sprites[0]->Update();
+//                sprites[1]->Update();
+//                sprites[2]->Update();
+                sprites[3]->Update();
+//                return;
         font->transform.pos = {-0.5, 0.5, 1};
-        font->transform.scale = {1, 1, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.scale = {1.9, 1.9, 1};
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
+
+
+
+//        font->transform.pos = {-0.5, 0.5, 1};
+//        font->transform.scale = {1, 1, 1};
+//        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         font->transform.pos = {-0.5, 0.2, 1};
         font->transform.scale = {2, 2, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         font->transform.pos = {-0.5, -0.2, 1};
         font->transform.scale = {3.5, 3.5, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         font->transform.pos = {-0.5, -0.5, 1};
         font->transform.scale = {0.25, 0.25, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         font->transform.pos = {-0.9, -0.8, 1};
         font->transform.scale = {0.18, 0.18, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         font->transform.pos = {-0.9, -0.9, 1};
         font->transform.scale = {0.5, 0.5, 1};
-        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        RenderText(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW. $100,234,567,890 !@#$%^&*()-_=+/[]{};'`'<>", -0.9);
         //font->Update();
     }
 
@@ -112,7 +143,7 @@ public:
             font->glyph = g;
             font->transform.pos.x = x;
             font->Update();
-            x += (g.advance/WINDOW_WIDTH*font->transform.scale.x);
+            x += (g.advance/WINDOW_WIDTH*font->transform.scale.x*1.3);
         }
     }
 
