@@ -15,17 +15,21 @@
   - Line wrapping
   - Outline effect
   - Shadow effect
-  - SDF
 - Orthographic projection
 - Gamepad
   - Triggers, axes
-- iOS
-  - Game settings for virtual controller, orientation
 - Keyboard
   - Key mappings
 - WebGL support
 - Android support
 - Custom shader cross-compilation and support
+
+Text
+- SDF atlas character mapping (dx, gl, mtl)
+- Consistent font size in SDF (dx, gl, mtl)
+- Consistent font size in bitmap (dx, gl, mtl)
+- Switch for small sizes to bitmap (dx, gl, mtl)
+- MTSDF vs MSDF
 
 ## Games
 

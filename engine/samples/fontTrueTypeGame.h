@@ -50,7 +50,7 @@ public:
 //        const char* txt = "assets/sprites/fonts/burbank_atlas.txt";
 //        const char* png = "assets/sprites/fonts/burbank_atlas.png";
 //        const char* txt = "assets/sprites/fonts/arial_atlas.txt";
-        const char* png = "assets/sprites/fonts/burbank.png";
+        const char* png = "assets/sprites/fonts/arial.png";
 //        const char* png = "assets/sprites/cardaction.png";
 
 //        LoadFontMeta(txt);
