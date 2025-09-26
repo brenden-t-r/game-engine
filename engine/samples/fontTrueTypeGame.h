@@ -82,14 +82,16 @@ public:
 //        font->glyphY = 0;
         font->atlasWidth = atlas.atlas.width;
         font->atlasHeight = atlas.atlas.height;
-        font->transform.width = atlas.atlas.width / WINDOW_WIDTH;
-        font->transform.height = atlas.atlas.height / WINDOW_HEIGHT;
+        font->transform.width = (float)atlas.atlas.width / (float)WINDOW_WIDTH;
+        font->transform.height = (float)atlas.atlas.height / (float)WINDOW_HEIGHT;
         font->transform.scale = {1, 1, 1};
         font->transform.pos = {0,0,0};
 
         sprites[0] = platform->CreateSprite(png);
-        sprites[0]->transform.width = 2;
-        sprites[0]->transform.height = 2;
+        sprites[0]->transform.width = (float)atlas.atlas.width / (float)WINDOW_WIDTH;
+        sprites[0]->transform.height = (float)atlas.atlas.height / (float)WINDOW_HEIGHT;
+        sprites[0]->transform.scale = {1,1,1};
+        sprites[0]->transform.pos = {0,0,0};
 
         auto gameObject = platform->CreateGameObject();
         gameObject->transform.rot.z = 45;
@@ -98,10 +100,10 @@ public:
 
     TEXT_MSDF::FontAtlas atlas;
     void Update() override {
-        sprites[0]->Update();
+//        sprites[0]->Update();
 //        font->Update();
 
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.5, atlas);
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
 
 //        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
 //        font->transform.pos = {-0.5, 0.2, 1};
@@ -161,7 +163,7 @@ public:
             font->glyphMsdf = g;
             font->transform.pos.x = x;
             font->Update();
-            float pixelAdvance = g.advance * 100;
+            float pixelAdvance = g.advance * atlas.atlas.size;
             x += (pixelAdvance/WINDOW_WIDTH*font->transform.scale.x);
         }
     }

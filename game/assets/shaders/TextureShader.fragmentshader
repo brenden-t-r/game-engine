@@ -11,7 +11,7 @@ float median(float r, float g, float b) {
 
 float screenPxRange() {
 
-    float pxRange = 4.0;
+    float pxRange = 30.0;
 
     vec2 unitRange = vec2(pxRange)/vec2(textureSize(spriteTexture, 0));
     vec2 screenTexSize = vec2(1.0)/fwidth(TexCoords);
