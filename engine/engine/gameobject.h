@@ -106,6 +106,19 @@ struct Glyph {
     int xoff, yoff;
     float advance;
 };
+#include "text_msdf.h"
+//struct Bounds {
+//    double left;
+//    double bottom;
+//    double right;
+//    double top;
+//};
+//struct GlyphMSDF {
+//    int unicode;
+//    double advance;
+//    Bounds planeBounds;
+//    Bounds atlasBounds;
+//};
 class Sprite : public GameObject {
 public:
     vec3 vertices[4] {
@@ -131,6 +144,7 @@ public:
     float atlasWidth;
     float atlasHeight;
     Glyph glyph;
+    TEXT_MSDF::Glyph glyphMsdf;
 
     Sprite() {
         SetPosition({0,0,0});
@@ -155,11 +169,13 @@ public:
 //            vertices[2] = {+width/2, -height/2, 1};
 //            vertices[3] = {-width/2, -height/2, 1};
 
-            float ndcXoff = (glyph.xoff / (float)WINDOW_WIDTH)  ;  // scale to NDC
-            float ndcYoff = -(glyph.yoff / (float)WINDOW_HEIGHT) ;  // minus because screen Y vs baseline
+//            float ndcXoff = (glyph.xoff / (float)WINDOW_WIDTH)  ;  // scale to NDC
+//            float ndcYoff = -(glyph.yoff / (float)WINDOW_HEIGHT) ;  // minus because screen Y vs baseline
+            float ndcXoff = 0.0;
+            float ndcYoff = 0.0;
 
-            float w = (glyph.w / (float)WINDOW_WIDTH)  ;
-            float h = (glyph.h / (float)WINDOW_HEIGHT) ;
+            float w = (glyphW / (float)WINDOW_WIDTH)  ;
+            float h = (glyphH / (float)WINDOW_HEIGHT) ;
 
             float x0 = ndcXoff;
             float y0 = ndcYoff;

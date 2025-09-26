@@ -307,7 +307,7 @@ public:
             };
 
             int row = atlasNumRows - atlasRow - 1;
-            if (useAtlas) {
+            if (useAtlas && !useGlyph) {
                 newVertices[3] = atlasCellSize * (float)atlasColumn; // Top-left
                 newVertices[4] = atlasCellSize * (float)row + atlasCellSize;
                 newVertices[8] = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top-right
@@ -316,6 +316,29 @@ public:
                 newVertices[14] = atlasCellSize * (float)row;
                 newVertices[18] = atlasCellSize * (float)atlasColumn;  // Bottom-left
                 newVertices[19] = atlasCellSize * (float)row;
+            }
+            if (useAtlas && useGlyph) {
+                float u0 = (glyphX + 0.5f) / (float)atlasWidth;
+                float v0 = (glyphY + 1.0f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float u1 = (glyphX + glyphW - 0.5f) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - 0.5f) / (float)atlasHeight;
+//                float u0 = glyphX / (float)atlasWidth;
+//                float v0 = glyphY / (float)atlasHeight;
+//                float u1 = (glyphX + glyphW) / (float)atlasWidth;
+//                float v1 = (glyphY + glyphH) / (float)atlasHeight;
+
+
+                v0 = 1.0 - v0;
+                v1 = 1.0 - v1;
+
+                newVertices[3] = u0; // Top-left
+                newVertices[4] = v0;
+                newVertices[8] = u1; // Top-right
+                newVertices[9] = v0;
+                newVertices[13] = u1; // Bottom-right
+                newVertices[14] = v1;
+                newVertices[18] = u0;  // Bottom-left
+                newVertices[19] = v1;
             }
 
             glEnable(GL_BLEND);

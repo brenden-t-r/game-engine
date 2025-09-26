@@ -3,11 +3,14 @@
 
 #include "../engine/game.h"
 #include "../engine/text.h"
+#include "../engine/text_msdf.h"
 
-#include "string"
-#include "unordered_map"
-#include "fstream"
-
+#include <unordered_map>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <cassert>
 
 std::unordered_map<char, Glyph> glyphs;
 int atlasWidth, atlasHeight;
@@ -34,6 +37,16 @@ void LoadFontMeta(const std::string &path) {
     }
 }
 
+std::string LoadFileData(const char* path) {
+    std::ifstream file(path);
+    if (!file) {
+        assert(false);
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string contents = buffer.str();
+    return buffer.str();
+}
 
 class FontTrueTypeGame : public Game {
 public:
@@ -53,23 +66,28 @@ public:
         const char* png = "assets/sprites/fonts/arial.png";
 //        const char* png = "assets/sprites/cardaction.png";
 
-//        LoadFontMeta(txt);
-
         font = platform->CreateSprite(png);
-//        font->useAtlas = true;
-//        font->useGlyph = true;
+
+        // MSDF atlas
+        std::string data = LoadFileData("assets/sprites/fonts/arial.json");
+        atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
+
+// True type bitmap
+//        LoadFontMeta(txt);
+        font->useAtlas = true;
+        font->useGlyph = true;
 //        font->glyphW = 0;
-//        font->glyphH = 0;
+//        font->glyphH = 0;-+9
 //        font->glyphX = 0;
 //        font->glyphY = 0;
-//        font->atlasWidth = atlasWidth;
-//        font->atlasHeight = atlasHeight;
-        font->transform.width = 1024.0 / WINDOW_WIDTH;
-        font->transform.height = 1024.0 / WINDOW_HEIGHT;
+        font->atlasWidth = atlas.atlas.width;
+        font->atlasHeight = atlas.atlas.height;
+        font->transform.width = atlas.atlas.width / WINDOW_WIDTH;
+        font->transform.height = atlas.atlas.height / WINDOW_HEIGHT;
         font->transform.scale = {1, 1, 1};
         font->transform.pos = {0,0,0};
 
-        sprites[0] = platform->CreateSprite("assets/sprites/background.png");
+        sprites[0] = platform->CreateSprite(png);
         sprites[0]->transform.width = 2;
         sprites[0]->transform.height = 2;
 
@@ -78,9 +96,12 @@ public:
         //font->transform.parent = &gameObject->transform;
     }
 
+    TEXT_MSDF::FontAtlas atlas;
     void Update() override {
-//        sprites[0]->Update();
-        font->Update();
+        sprites[0]->Update();
+//        font->Update();
+
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.5, atlas);
 
 //        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
 //        font->transform.pos = {-0.5, 0.2, 1};
@@ -112,6 +133,36 @@ public:
         }
         if (platform->IsKeyPressed(KeyCode::Left)) {
             font->transform.rot.z -= 1;
+        }
+    }
+
+    void RenderTextMSDF(Sprite* font, const std::string &text, float startX, TEXT_MSDF::FontAtlas atlas) {
+        float x = startX;
+        //float y = startY + baseline * scale;  // align baseline
+
+        for (char ch : text) {
+            TEXT_MSDF::Glyph g;
+            bool found = false;
+            for (TEXT_MSDF::Glyph gly : atlas.glyphs) {
+                if (gly.unicode == ch) {
+                    g = gly;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return;
+            }
+
+            font->glyphX = g.atlasBounds.left;
+            font->glyphY = atlas.atlas.height - g.atlasBounds.top;
+            font->glyphW = (g.atlasBounds.right - g.atlasBounds.left);
+            font->glyphH = (atlas.atlas.height - g.atlasBounds.bottom) - (atlas.atlas.height - g.atlasBounds.top);
+            font->glyphMsdf = g;
+            font->transform.pos.x = x;
+            font->Update();
+            float pixelAdvance = g.advance * 100;
+            x += (pixelAdvance/WINDOW_WIDTH*font->transform.scale.x);
         }
     }
 

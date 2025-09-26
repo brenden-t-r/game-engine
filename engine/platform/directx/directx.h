@@ -189,7 +189,7 @@ public:
                 }
 
                 // Clear the back buffer
-                float clearColor[4] = {0,0,0,1};//{ 0.0f, 0.2f, 0.4f, 1.0f };
+                float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
                 func(ctx);
@@ -386,9 +386,8 @@ public:
             if (useAtlas && useGlyph) {
 
 
-
                 float u0 = (glyphX + 0.5f) / (float)atlasWidth;
-                float v0 = (glyphY + 1.0f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float v0 = (glyphY + 0.5f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
                 float u1 = (glyphX + glyphW - 0.5f) / (float)atlasWidth;
                 float v1 = (glyphY + glyphH - 0.5f) / (float)atlasHeight;
 
@@ -498,7 +497,10 @@ public:
 
         // Compile and create the vertex shader
         ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        HRESULT hr = D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        if (!SUCCEEDED(hr)) {
+            printf("uhoh");
+        }
         d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderTexture);
 
         // Compile and create the pixel shader
@@ -704,8 +706,8 @@ private:
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
-//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
