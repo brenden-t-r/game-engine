@@ -171,8 +171,8 @@ public:
 
 //            float ndcXoff = (glyph.xoff / (float)WINDOW_WIDTH)  ;  // scale to NDC
 //            float ndcYoff = -(glyph.yoff / (float)WINDOW_HEIGHT) ;  // minus because screen Y vs baseline
-            float ndcXoff = 0.0;
-            float ndcYoff = 0.0;
+            float ndcXoff = glyphxoff;
+            float ndcYoff = glyphyoff;
 
             float w = (glyphW / (float)WINDOW_WIDTH)  ;
             float h = (glyphH / (float)WINDOW_HEIGHT) ;

@@ -100,7 +100,7 @@ public:
 
     TEXT_MSDF::FontAtlas atlas;
     void Update() override {
-//        sprites[0]->Update();
+        sprites[0]->Update();
 //        font->Update();
 
         RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
@@ -160,6 +160,8 @@ public:
             font->glyphY = atlas.atlas.height - g.atlasBounds.top;
             font->glyphW = (g.atlasBounds.right - g.atlasBounds.left);
             font->glyphH = (atlas.atlas.height - g.atlasBounds.bottom) - (atlas.atlas.height - g.atlasBounds.top);
+            font->glyphxoff = (g.planeBounds.left * atlas.atlas.size) / WINDOW_WIDTH;
+            font->glyphyoff = (g.planeBounds.top * atlas.atlas.size) / WINDOW_HEIGHT;
             font->glyphMsdf = g;
             font->transform.pos.x = x;
             font->Update();
