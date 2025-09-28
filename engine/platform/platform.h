@@ -42,6 +42,9 @@ public:
     virtual ~Platform() = default;
 
     virtual void Init() = 0;
+//    virtual void SetGameViewport(float topLeftX, float topLeftY, float width, float height);
+//    virtual void AddViewport(float topLeftX, float TopLeftY, float width, float height);
+//    virtual void RemoveViewport(int id);
     virtual void LoadShaders() = 0;
     virtual void Run(void (*func)(void*), void* context) = 0;
 

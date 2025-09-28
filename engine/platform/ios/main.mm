@@ -652,6 +652,21 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
 
+    CGSize drawableSize = view.drawableSize;
+    float scaleX = drawableSize.width / WINDOW_WIDTH; // divide by reference resolution
+    float scaleY = drawableSize.height / WINDOW_HEIGHT;
+    float w = scaleX * 1280;
+    float h = scaleY * 720;
+    MTLViewport viewport = {
+            (drawableSize.width - w)/2.0,
+            (drawableSize.height - h)/2.0,
+            scaleX * 1280,
+            scaleY * 720,
+            0.0,  // znear
+            1.0   // zfar
+    };
+    [renderCommandEncoder setViewport:viewport];
+
     for (TriangleMetal* gameObject : triangles) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
     }
@@ -678,6 +693,16 @@ static void RealMainMetal(MetalAppDelegate* app) {
 }
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+    // Set drawable view to safe area
+    UIEdgeInsets insets = self.view.safeAreaInsets;
+    CGFloat safeX = insets.left;
+    CGFloat safeY = insets.top;
+    CGFloat safeWidth = self.view.bounds.size.width - insets.left - insets.right;
+    CGFloat safeHeight = self.view.bounds.size.height - insets.top - insets.bottom;
+    self.metalView.frame = CGRectMake(safeX, safeY, safeWidth, safeHeight);
+    CGFloat scale = [UIScreen mainScreen].scale;
+    self.metalView.contentScaleFactor = scale;
+    self.metalView.drawableSize = CGSizeMake(safeWidth * scale, safeHeight * scale);
 }
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
 #ifdef IOS_FORCE_PORTRAIT
@@ -790,7 +815,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
         }
     }
 }
-
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);

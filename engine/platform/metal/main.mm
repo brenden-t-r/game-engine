@@ -612,6 +612,15 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     passDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
+    MTLViewport viewport = {
+            WINDOW_WIDTH/4.0,
+            WINDOW_HEIGHT/4.0,
+            WINDOW_WIDTH/2.0,
+            WINDOW_HEIGHT/2.0,
+            0.0,  // znear
+            1.0   // zfar
+    };
+    [renderCommandEncoder setViewport:viewport];
 
     for (TriangleMetal* gameObject : triangles) {
         gameObject->SetRenderCommandEncoder(renderCommandEncoder);
@@ -773,7 +782,10 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     NSLog(@"applicationDidFinishLaunching");
-    NSRect frame = NSMakeRect(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT);
+    CGFloat scale = [NSScreen mainScreen].backingScaleFactor;
+    CGFloat windowWidthInPoints = 1920 / scale;
+    CGFloat windowHeightInPoints = 1080 / scale;
+    NSRect frame = NSMakeRect(0, 0, windowWidthInPoints, windowHeightInPoints);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)
