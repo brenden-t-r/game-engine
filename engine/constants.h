@@ -1,7 +1,7 @@
 #ifndef GAMEENGINE_CONSTANTS
 #define GAMEENGINE_CONSTANTS
 
-static int WINDOW_WIDTH = 1920;
-static int WINDOW_HEIGHT = 1080;
+static int WINDOW_WIDTH = 1280;
+static int WINDOW_HEIGHT = 720;
 
 #endif //GAMEENGINE_CONSTANTS

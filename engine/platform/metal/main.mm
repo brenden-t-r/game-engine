@@ -359,11 +359,11 @@ public:
         this->renderCommandEncoder = commandEncoder;
     }
 
+    id<MTLRenderCommandEncoder> renderCommandEncoder;
 private:
     id<MTLDevice> metalDevice;
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderPipelineState> metalRenderPSO;
-    id<MTLRenderCommandEncoder> renderCommandEncoder;
     id<MTLTexture> texture;
 };
 class SoundMA : public Sound {
@@ -426,6 +426,22 @@ public:
     }
     void LoadShaders() override {
 
+    }
+    void SetViewport(float topLeftX, float topLeftY, float width, float height) override{
+//        NSSize viewSizePoints = metalAppDelegate.metalView.bounds.size;
+//        CGFloat scaleFactor = [metalAppDelegate.window backingScaleFactor]; // or [self contentScaleFactor] in some cases
+//        NSSize viewSizePixels = NSMakeSize(viewSizePoints.width * scaleFactor,
+//                                           viewSizePoints.height * scaleFactor);
+
+        auto renderCommandEncoder = sprites[0]->renderCommandEncoder;
+        MTLViewport viewport = {
+                topLeftX,
+                topLeftY,
+                width, height,
+                0.0,  // znear
+                1.0   // zfar
+        };
+        [renderCommandEncoder setViewport:viewport];
     }
     GameObject* CreateGameObject() override { return new GameObject(); };
     GameObject* CreateTriangle() override {
@@ -613,10 +629,10 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
     MTLViewport viewport = {
-            WINDOW_WIDTH/4.0,
-            WINDOW_HEIGHT/4.0,
-            WINDOW_WIDTH/2.0,
-            WINDOW_HEIGHT/2.0,
+            static_cast<double>(WINDOW_WIDTH),
+            static_cast<double>(WINDOW_HEIGHT),
+            static_cast<double>(WINDOW_WIDTH),
+            static_cast<double>(WINDOW_HEIGHT),
             0.0,  // znear
             1.0   // zfar
     };
@@ -782,10 +798,10 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 @implementation MetalAppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     NSLog(@"applicationDidFinishLaunching");
-    CGFloat scale = [NSScreen mainScreen].backingScaleFactor;
-    CGFloat windowWidthInPoints = 1920 / scale;
-    CGFloat windowHeightInPoints = 1080 / scale;
-    NSRect frame = NSMakeRect(0, 0, windowWidthInPoints, windowHeightInPoints);
+//    CGFloat scale = [NSScreen mainScreen].backingScaleFactor;
+//    CGFloat windowWidthInPoints = WINDOW_WIDTH * 1.0 / scale;
+//    CGFloat windowHeightInPoints = WINDOW_HEIGHT * 1.0 / scale;
+    NSRect frame = NSMakeRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     self.window = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)

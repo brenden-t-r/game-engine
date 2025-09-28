@@ -110,7 +110,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
+   // glViewport(0, 0, width, height);
 }
 //endregion
 
@@ -145,6 +145,9 @@ public:
 
         // Set the resize callback
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        framebuffer_size_callback(window, width, height);
 
         // Initialize glew
         if (glewInit() != GLEW_OK) {
@@ -206,6 +209,11 @@ public:
 
             glfwPollEvents();
 
+            //glViewport(0, WINDOW_HEIGHT/2.0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+            func(ctx);
+
+            //glViewport(WINDOW_WIDTH,WINDOW_HEIGHT/2.0, WINDOW_WIDTH, WINDOW_HEIGHT);
             func(ctx);
 
             glfwSwapBuffers(window);
@@ -215,6 +223,10 @@ public:
                 glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
                 glfwWindowShouldClose(window) == 0
         );
+    }
+
+    void SetViewport(float topLeftX, float topLeftY, float width, float height) override {
+        glViewport( topLeftX, topLeftY, width, height);
     }
 
     //region Input Handling

@@ -334,11 +334,11 @@ public:
         this->renderCommandEncoder = commandEncoder;
     }
 
+    id<MTLRenderCommandEncoder> renderCommandEncoder;
 private:
     id<MTLDevice> metalDevice;
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderPipelineState> metalRenderPSO;
-    id<MTLRenderCommandEncoder> renderCommandEncoder;
     id<MTLTexture> texture;
 };
 class SoundMetalAVAudioPlayer : public Sound {
@@ -464,6 +464,18 @@ public:
 
     void LoadShaders() override {}
 
+    void SetViewport(float topLeftX, float topLeftY, float width, float height) override{
+
+        auto renderCommandEncoder = sprites[0]->renderCommandEncoder;
+        MTLViewport viewport = {
+               topLeftX,
+               topLeftY,
+               width, height,
+                0.0,  // znear
+                1.0   // zfar
+        };
+        [renderCommandEncoder setViewport:viewport];
+    }
     GameObject* CreateGameObject() override {
         return new GameObject();
     };
@@ -684,6 +696,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
     [commandBuffer waitUntilCompleted];
 
 }
+
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
     NSLog(@"resized: %f, %f", size.width, size.height);
 }

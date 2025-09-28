@@ -30,15 +30,23 @@ public:
 
     void Update() override {
         printf(".");
+
+        platform->SetViewport(0, WINDOW_HEIGHT/2.0, WINDOW_WIDTH, WINDOW_HEIGHT);
+        sprite->Update();
+        sprite2->Update();
+        triangle->Update();
+        triangle2->Update();
+        platform->SetViewport(WINDOW_WIDTH, WINDOW_HEIGHT/2.0, WINDOW_WIDTH, WINDOW_HEIGHT);
         sprite->Update();
         sprite2->Update();
         triangle->Update();
         triangle2->Update();
 
-        triangle->transform.pos.x += 0.01f;
-        sprite->transform.pos.x += 0.01f;
-        triangle2->transform.pos.x -= 0.01f;
-        sprite2->transform.pos.x -= 0.01f;
+
+//        triangle->transform.pos.x += 0.01f;
+//        sprite->transform.pos.x += 0.01f;
+        //triangle2->transform.pos.x -= 0.01f;
+        //sprite2->transform.pos.x -= 0.01f;
     }
 
 private:
