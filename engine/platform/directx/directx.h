@@ -4,7 +4,7 @@
 #include "../../constants.h"
 #include "../platform.h"
 #include "file_util.h"
-#include "math.h"
+#include "../../engine/texture.h"
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -12,6 +12,7 @@
 #include <DirectXMath.h>
 #include <iostream>
 #include <Xinput.h>
+#include "math.h"
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "../../dependencies/miniaudio.h"
@@ -334,18 +335,32 @@ public:
         return gameObject;
     }
 
+    class TextureD3D : public Texture {
+    public:
+        explicit TextureD3D(ID3D11ShaderResourceView* textureView): textureView(textureView) {}
+        ~TextureD3D() override {
+            textureView->Release();
+        }
+        ID3D11ShaderResourceView* textureView{};
+    };
+    Texture* CreateTexture(const char* path) override {
+        auto wchar = convertToWCHAR(path);
+        ID3D11ShaderResourceView* textureView;
+        LoadTextureFromFile(d3dDevice, d3dContext, wchar, &textureView);
+        delete[] wchar;
+        auto texture = new TextureD3D(textureView);
+        return texture;
+    }
+
     class SpriteD3D : public Sprite {
     public:
         SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState,
-                  ID3D11InputLayout* inputLayout, ID3D11VertexShader *vertexShader, ID3D11PixelShader *pixelShader) :
+                  ID3D11InputLayout* inputLayout, ID3D11VertexShader *vertexShader, ID3D11PixelShader *pixelShader,
+                  TextureD3D* texture) :
                   d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState), inputLayout(inputLayout),
-                  vertexShader(vertexShader), pixelShader(pixelShader) {}
+                  vertexShader(vertexShader), pixelShader(pixelShader), texture(texture) {}
 
-        ~SpriteD3D() = default;
-
-        void SetTexture(const WCHAR * path) {
-            LoadTextureFromFile(d3dDevice, d3dContext, path, &textureView);
-        }
+        ~SpriteD3D() override = default;
 
         void CreateBuffer() {
             // Create the vertex buffer (same as before)
@@ -405,11 +420,15 @@ public:
             // Set the shaders
             d3dContext->VSSetShader(vertexShader, nullptr, 0);
             d3dContext->PSSetShader(pixelShader, nullptr, 0);
-            d3dContext->PSSetShaderResources(0, 1, &textureView);
+            d3dContext->PSSetShaderResources(0, 1, &texture->textureView);
             d3dContext->IASetInputLayout(inputLayout);
 
             // Draw
             d3dContext->Draw(4, 0);
+        }
+
+        Texture* GetTexture() override {
+            return texture;
         }
 
         ID3D11Device* d3dDevice = nullptr;
@@ -418,8 +437,8 @@ public:
         ID3D11InputLayout* inputLayout = nullptr;
         ID3D11VertexShader* vertexShader = nullptr;
         ID3D11PixelShader* pixelShader = nullptr;
-        ID3D11ShaderResourceView* textureView = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
+        TextureD3D* texture;
 
         Vertex d3d_vertices[4] {
                 // Order matters
@@ -429,13 +448,13 @@ public:
                 { DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f), DirectX::XMFLOAT2(1.0f, 1.0f) }, // Bottom Right
         };
     };
-
     Sprite* CreateSprite(const char * path) override {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture);
+        auto texture = (TextureD3D*)CreateTexture(path);
+        return CreateSprite(texture);
+    }
+    Sprite* CreateSprite(Texture* texture) {
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture, (TextureD3D*)texture);
         gameObject->CreateBuffer();
-        auto wchar = convertToWCHAR(path);
-        gameObject->SetTexture(wchar);
-        delete[] wchar;
         return gameObject;
     }
 

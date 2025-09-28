@@ -4,6 +4,7 @@
 #include "../constants.h"
 #include "vector.h"
 #include "matrix.h"
+#include "texture.h"
 
 #include <cstdio>
 #include <vector>
@@ -140,6 +141,8 @@ public:
     Sprite() {
         SetPosition({0,0,0});
     }
+
+    virtual Texture* GetTexture() = 0;
 
     void Update() override {
         SetPosition(transform.pos);
