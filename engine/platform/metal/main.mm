@@ -309,7 +309,6 @@ public:
     }
     id<MTLTexture> texture;
 };
-
 class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
@@ -459,8 +458,7 @@ public:
     }
     Sprite* CreateSprite(const char* path) override {
         TextureMTL* texture = CreateTexture(path);
-        auto gameObject = CreateSprite(texture);
-        return gameObject;
+        return CreateSprite(texture);
     }
     Sound* CreateSound(const char* path) override {
         auto sound = new SoundMA();

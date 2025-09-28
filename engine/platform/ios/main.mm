@@ -262,6 +262,15 @@ private:
     id<MTLRenderPipelineState> metalRenderPSO;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
 };
+
+class TextureMTL : public Texture{
+public:
+    explicit TextureMTL(id<MTLTexture> texture): texture(texture) {}
+    ~TextureMTL() override {
+        [texture release];
+    }
+    id<MTLTexture> texture;
+};
 class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
@@ -271,7 +280,7 @@ public:
     SpriteMetal(
             id <MTLDevice> metalDevice,
             id <MTLRenderPipelineState> metalRenderPSO,
-            id <MTLTexture> texture
+            TextureMTL* texture
     ){
         this->metalDevice = metalDevice;
         this->metalRenderPSO = metalRenderPSO;
@@ -323,8 +332,12 @@ public:
 
         [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
-        [renderCommandEncoder setFragmentTexture:texture atIndex:0];
+        [renderCommandEncoder setFragmentTexture:texture->texture atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
+    }
+
+    Texture* GetTexture() override {
+        return texture;
     }
 
     void SetRenderCommandEncoder(id<MTLRenderCommandEncoder> commandEncoder) {
@@ -336,7 +349,7 @@ private:
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderPipelineState> metalRenderPSO;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
-    id<MTLTexture> texture;
+    TextureMTL* texture;
 };
 class SoundMetalAVAudioPlayer : public Sound {
 public:
@@ -469,15 +482,22 @@ public:
         triangles.push_back(gameObject);
         return gameObject;
     }
-    Sprite* CreateSprite(const char* path) override {
+    TextureMTL* CreateTexture(const char* path) override {
         NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
         assert(texture != nullptr);
+        return new TextureMTL(texture);
+    }
+    Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteMetal(
-                metalAppDelegate.viewController.device, metalAppDelegate.viewController.texturePSO, texture
+                metalAppDelegate.viewController.device, metalAppDelegate.viewController.texturePSO, (TextureMTL*)texture
         );
         sprites.push_back(gameObject);
         return gameObject;
+    }
+    Sprite* CreateSprite(const char* path) override {
+        TextureMTL* texture = CreateTexture(path);
+        return CreateSprite(texture);
     }
     Sound* CreateSound(const char* path) override {
         return new SoundMetalAVAudioBuffered(path);
