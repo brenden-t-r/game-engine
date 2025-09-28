@@ -20,16 +20,16 @@ float screenPxRange() {
 
 void main() {
     // Sample texture and multiply by color for tinting
-    //vec4 texColor = texture(spriteTexture, TexCoords);
-    //FragColor = texColor;
+    vec4 texColor = texture(spriteTexture, TexCoords);
+    FragColor = texColor;
 
     // SDF
-    vec4 texColor = texture(spriteTexture, TexCoords);
-    float dist = texColor.r;
-    float edge = 0.5;
-    float smoothing = fwidth(dist);  // pixel-dependent width
-    float alpha = smoothstep(edge - smoothing, edge + smoothing, dist);
-    FragColor = vec4(1,1,1,alpha);
+    //vec4 texColor = texture(spriteTexture, TexCoords);
+    //float dist = texColor.r;
+    //float edge = 0.5;
+    //float smoothing = fwidth(dist);  // pixel-dependent width
+    //float alpha = smoothstep(edge - smoothing, edge + smoothing, dist);
+    //FragColor = vec4(1,1,1,alpha);
 
 }
 
