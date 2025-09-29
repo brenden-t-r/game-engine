@@ -104,23 +104,21 @@ public:
 //        font->Update();
 
         RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-//        font->transform.pos = {-0.5, 0.2, 1};
-//        font->transform.scale = {2, 2, 1};
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-//        font->transform.pos = {-0.5, -0.2, 1};
-//        font->transform.scale = {3.5, 3.5, 1};
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-//        font->transform.pos = {-0.5, -0.5, 1};
-//        font->transform.scale = {0.25, 0.25, 1};
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-//        font->transform.pos = {-0.9, -0.8, 1};
-//        font->transform.scale = {0.18, 0.18, 1};
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
-//        font->transform.pos = {-0.9, -0.9, 1};
-//        font->transform.scale = {0.5, 0.5, 1};
-//        RenderText(font, "@sphinx of black quartz, judge my vow.", -0.9);
+        font->transform.pos = {-0.5, 0.2, 1};
+        font->transform.scale = {2, 2, 1};
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        font->transform.pos = {-0.5, -0.2, 1};
+        font->transform.scale = {3.5, 3.5, 1};
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        font->transform.pos = {-0.5, -0.5, 1};
+        font->transform.scale = {0.25, 0.25, 1};
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        font->transform.pos = {-0.9, -0.8, 1};
+        font->transform.scale = {0.18, 0.18, 1};
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        font->transform.pos = {-0.9, -0.9, 1};
+        font->transform.scale = {0.5, 0.5, 1};
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
         //font->Update();
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;

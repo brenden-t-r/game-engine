@@ -27,5 +27,7 @@ float4 PSMain(VS_OUTPUT input) : SV_TARGET
 {
     // Sample the texture using texture coordinates
     float4 color =  texture0.Sample(sampler0, input.texCoord);
-    return color;
+float alpha = color.r;
+float3 cl = float3(1.0f,1.0f,1.0f);
+return float4(cl, alpha);
 }
