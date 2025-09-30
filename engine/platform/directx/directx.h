@@ -706,14 +706,14 @@ private:
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
-//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
         samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = 0;
+        samplerDesc.MaxLOD = 0; //D3D11_FLOAT32_MAX;
         ID3D11SamplerState* samplerState;
         d3dDevice->CreateSamplerState(&samplerDesc, &samplerState);
         d3dContext->PSSetSamplers(0, 1, &samplerState);

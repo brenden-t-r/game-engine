@@ -158,7 +158,7 @@ public:
         // Ensure we can capture the escape key being pressed below
         glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-        glClearColor(0.2, 0.4, 0.6, 1.0);
+        glClearColor(1.0,1.0,1.0, 1.0);
 
         // Setup VAOs
         setupVAOs();
@@ -583,9 +583,9 @@ private:
             // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
             // Free image data
             stbi_image_free(data);

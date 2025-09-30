@@ -21,7 +21,7 @@ float screenPxRange() {
 void main() {
     // Sample texture and multiply by color for tinting
     vec4 texColor = texture(spriteTexture, TexCoords);
-    FragColor = vec4(1,1,1,texColor.r);
+    FragColor = vec4(0,0,0,texColor.r);
 
     // SDF
     //vec4 texColor = texture(spriteTexture, TexCoords);

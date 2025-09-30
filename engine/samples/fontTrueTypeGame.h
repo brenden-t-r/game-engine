@@ -81,7 +81,10 @@ public:
     TEXT_MSDF::FontAtlas atlas25;
     TEXT_MSDF::FontAtlas atlas10;
     TEXT_MSDF::FontAtlas atlas15;
+    TEXT_MSDF::FontAtlas atlas8;
     Sprite* font15;
+    Sprite* font8;
+
 
     void Start() override {
         platform->LoadShaders();
@@ -91,6 +94,7 @@ public:
         font50 = LoadFont("arial_512", atlas50);
         font25 = LoadFont("arial_25", atlas25);
         font10 = LoadFont("arial_10", atlas10);
+        font8 = LoadFont("arial_8", atlas8);
         font15 = LoadFont("arial_15", atlas15);
         font15->transform.width = 2;
         font15->transform.height = 2;
@@ -107,6 +111,9 @@ public:
 //        font50->transform.parent = &gameObject->transform;
 //        font25->transform.parent = &gameObject->transform;
 //        font10->transform.parent = &gameObject->transform;
+
+        font->transform.pos = {-0.5, 0.7, 1};
+        font->transform.scale = {1, 1, 1}; //100
     }
 
     // 1920 x 1080 => 2 x 2
@@ -118,8 +125,8 @@ public:
         //font->Update();
 
         // Scale == 1, atlas is 1024, font is 100.
-        font->transform.pos = {-0.5, 0.7, 1};
-        font->transform.scale = {1, 1, 1}; //100
+//        font->transform.pos = {-0.5, 0.7, 1};
+//        font->transform.scale = {1, 1, 1}; //100
         RenderTextMSDF(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
         font50->transform.scale = {1, 1, 1}; // 40
@@ -129,10 +136,13 @@ public:
         RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, atlas25);
         font10->transform.pos = {-0.5, -0.8, 1};
         font10->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.5, atlas10);
+        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.3, atlas10);
         font15->transform.pos = {-0.5, -0.8, 1};
         font15->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.6, atlas15);
+        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.8, atlas15);
+        font8->transform.pos = {-0.5, -0.85, 1};
+        font8->transform.scale = {1.0, 1.0, 1}; // 5
+        RenderTextMSDF(font8, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.3, atlas8);
         //font->Update();
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
@@ -178,7 +188,7 @@ public:
             _font->transform.pos.x = x;
             _font->Update();
             float pixelAdvance = g.advance * _atlas.atlas.size * 2.0f;
-            x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.1);
+            x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.0);
         }
     }
 
