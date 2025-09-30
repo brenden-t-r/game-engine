@@ -120,19 +120,19 @@ public:
         // Scale == 1, atlas is 1024, font is 100.
         font->transform.pos = {-0.5, 0.7, 1};
         font->transform.scale = {1, 1, 1}; //100
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
         font50->transform.scale = {1, 1, 1}; // 40
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.1, atlas50);
+        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, atlas50);
         font25->transform.pos = {-0.5, -0.7, 1};
         font25->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
+        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, atlas25);
         font10->transform.pos = {-0.5, -0.8, 1};
         font10->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.", 0.5, atlas10);
+        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.5, atlas10);
         font15->transform.pos = {-0.5, -0.8, 1};
         font15->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow.", -0.6, atlas15);
+        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.6, atlas15);
         //font->Update();
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;

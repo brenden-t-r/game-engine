@@ -385,11 +385,11 @@ public:
             }
             if (useAtlas && useGlyph) {
 
-
-                float u0 = (glyphX + 0.5f) / (float)atlasWidth;
-                float v0 = (glyphY + 0.5f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
-                float u1 = (glyphX + glyphW - 0.5f) / (float)atlasWidth;
-                float v1 = (glyphY + glyphH - 0.5f) / (float)atlasHeight;
+                float modifier = 0.0f;
+                float u0 = (glyphX + modifier) / (float)atlasWidth;
+                float v0 = (glyphY + modifier) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
 
 
 //                float u0 = glyphX / (float)atlasWidth;
@@ -706,8 +706,8 @@ private:
     void InitPipeline() {
         // Create a sampler state
         D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-        //samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;

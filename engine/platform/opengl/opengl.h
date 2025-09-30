@@ -318,10 +318,11 @@ public:
                 newVertices[19] = atlasCellSize * (float)row;
             }
             if (useAtlas && useGlyph) {
-                float u0 = (glyphX + 0.5f) / (float)atlasWidth;
-                float v0 = (glyphY + 1.0f) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
-                float u1 = (glyphX + glyphW - 0.5f) / (float)atlasWidth;
-                float v1 = (glyphY + glyphH - 0.5f) / (float)atlasHeight;
+                float modifier = 0.0f;
+                float u0 = (glyphX + modifier) / (float)atlasWidth;
+                float v0 = (glyphY + modifier) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
 //                float u0 = glyphX / (float)atlasWidth;
 //                float v0 = glyphY / (float)atlasHeight;
 //                float u1 = (glyphX + glyphW) / (float)atlasWidth;
@@ -582,9 +583,9 @@ private:
             // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 //            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
             // Free image data
             stbi_image_free(data);
