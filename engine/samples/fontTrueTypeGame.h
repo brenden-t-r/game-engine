@@ -127,22 +127,22 @@ public:
         // Scale == 1, atlas is 1024, font is 100.
 //        font->transform.pos = {-0.5, 0.7, 1};
 //        font->transform.scale = {1, 1, 1}; //100
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, atlas);
+        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, 0.7, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
         font50->transform.scale = {1, 1, 1}; // 40
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, atlas50);
+        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, -0.1, atlas50);
         font25->transform.pos = {-0.5, -0.7, 1};
         font25->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, atlas25);
+        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, -0.7, atlas25);
         font10->transform.pos = {-0.5, -0.8, 1};
         font10->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.3, atlas10);
+        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", 0.3, -0.8,atlas10);
         font15->transform.pos = {-0.5, -0.8, 1};
         font15->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.8, atlas15);
+        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", -0.8, -0.8,atlas15);
         font8->transform.pos = {-0.5, -0.85, 1};
         font8->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font8, "@sphinx of black quartz, judge my vow. SPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", 0.3, atlas8);
+        RenderTextMSDF(font8, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", 0.1, -0.85,atlas8);
         //font->Update();
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
@@ -160,12 +160,18 @@ public:
         }
     }
 
-    void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, TEXT_MSDF::FontAtlas _atlas) {
+    void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, float startY, TEXT_MSDF::FontAtlas _atlas) {
         float x = startX;
+        float y = startY;
         //float y = startY + baseline * scale;  // align baseline
 
         for (char ch : text) {
             TEXT_MSDF::Glyph g;
+            if (ch == '\n') {
+                x = startX;
+                y -= round(_atlas.atlas.size*_atlas.metrics.lineHeight*_font->transform.scale.y) / WINDOW_HEIGHT*2.0f;
+                continue;
+            }
             bool found = false;
             for (TEXT_MSDF::Glyph gly : _atlas.glyphs) {
                 if (gly.unicode == ch) {
@@ -175,7 +181,8 @@ public:
                 }
             }
             if (!found) {
-                return;
+                continue;
+//                return;
             }
 
             _font->glyphX = g.atlasBounds.left;
@@ -186,6 +193,7 @@ public:
             _font->glyphyoff = (g.planeBounds.top * _atlas.atlas.size) / WINDOW_HEIGHT *2.0f;
             _font->glyphMsdf = g;
             _font->transform.pos.x = x;
+            _font->transform.pos.y = y;
             _font->Update();
             float pixelAdvance = g.advance * _atlas.atlas.size * 2.0f;
             x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.0);
