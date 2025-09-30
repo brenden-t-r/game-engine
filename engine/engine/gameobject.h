@@ -174,8 +174,8 @@ public:
             float ndcXoff = glyphxoff;
             float ndcYoff = glyphyoff;
 
-            float w = (glyphW / (float)WINDOW_WIDTH)  ;
-            float h = (glyphH / (float)WINDOW_HEIGHT) ;
+            float w = (glyphW*2.0f/ (float)WINDOW_WIDTH)  ;
+            float h = (glyphH*2.0f / (float)WINDOW_HEIGHT) ;
 
             float x0 = ndcXoff;
             float y0 = ndcYoff;

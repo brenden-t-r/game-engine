@@ -64,8 +64,8 @@ public:
         sprite->useGlyph = true;
         sprite->atlasWidth = _atlas.atlas.width;
         sprite->atlasHeight = _atlas.atlas.height;
-        sprite->transform.width = (float)_atlas.atlas.width / (float)WINDOW_WIDTH;
-        sprite->transform.height = (float)_atlas.atlas.height / (float)WINDOW_HEIGHT;
+        sprite->transform.width = atlas.atlas.width * 2.0 / (WINDOW_WIDTH*1.0);
+        sprite->transform.height = atlas.atlas.height * 2.0 / (WINDOW_HEIGHT*1.0);
         sprite->transform.scale = {1, 1, 1};
         sprite->transform.pos = {0,0,0};
         return sprite;
@@ -80,6 +80,8 @@ public:
     TEXT_MSDF::FontAtlas atlas50;
     TEXT_MSDF::FontAtlas atlas25;
     TEXT_MSDF::FontAtlas atlas10;
+    TEXT_MSDF::FontAtlas atlas15;
+    Sprite* font15;
 
     void Start() override {
         platform->LoadShaders();
@@ -89,11 +91,14 @@ public:
         font50 = LoadFont("arial_512", atlas50);
         font25 = LoadFont("arial_25", atlas25);
         font10 = LoadFont("arial_10", atlas10);
+        font15 = LoadFont("arial_15", atlas15);
+        font15->transform.width = 2;
+        font15->transform.height = 2;
 
         sprites[0] = platform->CreateSprite(png);
         sprites[0]->transform.width = (float)atlas.atlas.width / (float)WINDOW_WIDTH;
         sprites[0]->transform.height = (float)atlas.atlas.height / (float)WINDOW_HEIGHT;
-        sprites[0]->transform.scale = {2,2,1};
+        sprites[0]->transform.scale = {1,1,1};
         sprites[0]->transform.pos = {0,0,0};
 
         auto gameObject = platform->CreateGameObject();
@@ -104,7 +109,9 @@ public:
 //        font10->transform.parent = &gameObject->transform;
     }
 
+    // 1920 x 1080 => 2 x 2
 
+    // 1920 * 2 / 1920 = 2
 
     void Update() override {
 //        sprites[0]->Update();
@@ -112,104 +119,20 @@ public:
 
         // Scale == 1, atlas is 1024, font is 100.
         font->transform.pos = {-0.5, 0.7, 1};
-        font->transform.scale = {2, 2, 1}; //100
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-        font->transform.pos = {-0.5, 0.5, 1};
-        font->transform.scale = {1.8, 1.8, 1}; //90
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-        font->transform.pos = {-0.5, 0.35, 1};
-        font->transform.scale = {1.6, 1.6, 1}; //80
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-        font->transform.pos = {-0.5, 0.2, 1};
-        font->transform.scale = {1.4, 1.4, 1}; //70
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-        font->transform.pos = {-0.5, 0.1, 1};
-        font->transform.scale = {1.2, 1.2, 1}; //60
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-        font->transform.pos = {-0.5, 0, 1};
-        font->transform.scale = {1.1, 1.1, 1}; //50
+        font->transform.scale = {1, 1, 1}; //100
         RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
-        font50->transform.scale = {2, 2, 1}; // 40
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.2, 1};
-        font50->transform.scale = {1.8, 1.8, 1}; // 35
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.3, 1};
-        font50->transform.scale = {1.6, 1.6, 1}; // 30
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.4, 1};
-        font50->transform.scale = {1.5, 1.5, 1}; // 25
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.5, 1};
-        font50->transform.scale = {1.4, 1.4, 1}; // 20
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.6, 1};
-        font50->transform.scale = {1.3, 1.3, 1}; // 15
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.7, 1};
-        font50->transform.scale = {1.2, 1.2, 1}; // 10
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.8, 1};
-        font50->transform.scale = {1.1, 1.1, 1}; // 5
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.9, 1};
-        font50->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.95, 1};
-        font50->transform.scale = {0.8, 0.8, 1}; // 5
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
-        font50->transform.pos = {-0.5, -0.98, 1};
-        font50->transform.scale = {0.6, 0.6, 1}; // 5
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.9, atlas50);
+        font50->transform.scale = {1, 1, 1}; // 40
+        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.", -0.1, atlas50);
         font25->transform.pos = {-0.5, -0.7, 1};
-        font25->transform.scale = {2.0, 2.0, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.75, 1};
-        font25->transform.scale = {1.8, 1.8, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.8, 1};
-        font25->transform.scale = {1.6, 1.6, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.85, 1};
-        font25->transform.scale = {1.4, 1.4, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.9, 1};
-        font25->transform.scale = {1.2, 1.2, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.95, 1};
         font25->transform.scale = {1.0, 1.0, 1}; // 5
         RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font25->transform.pos = {-0.5, -0.97, 1};
-        font25->transform.scale = {0.8, 0.8, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.", -0.1, atlas25);
-        font10->transform.pos = {-0.5, -0.7, 1};
-        font10->transform.scale = {2.0, 2.0, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.", 0.5, atlas10);
-        font10->transform.pos = {-0.5, -0.75, 1};
-        font10->transform.scale = {1.75, 1.75, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.", 0.5, atlas10);
         font10->transform.pos = {-0.5, -0.8, 1};
-        font10->transform.scale = {1.5, 1.5, 1}; // 5
+        font10->transform.scale = {1.0, 1.0, 1}; // 5
         RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.", 0.5, atlas10);
-        font10->transform.pos = {-0.5, -0.85, 1};
-        font10->transform.scale = {1.3, 1.3, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.", 0.5, atlas10);
-//        font->transform.pos = {-0.5, 0.2, 1};
-//        font->transform.scale = {2, 2, 1};
-//        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-//        font->transform.pos = {-0.5, -0.2, 1};
-//        font->transform.scale = {3.5, 3.5, 1};
-//        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-//        font->transform.pos = {-0.5, -0.5, 1};
-//        font->transform.scale = {0.25, 0.25, 1};
-//        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-//        font->transform.pos = {-0.9, -0.8, 1};
-//        font->transform.scale = {0.18, 0.18, 1};
-//        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
-//        font->transform.pos = {-0.9, -0.9, 1};
-//        font->transform.scale = {0.5, 0.5, 1};
-//        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.", -0.9, atlas);
+        font15->transform.pos = {-0.5, -0.8, 1};
+        font15->transform.scale = {1.0, 1.0, 1}; // 5
+        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow.", -0.6, atlas15);
         //font->Update();
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
@@ -227,14 +150,14 @@ public:
         }
     }
 
-    void RenderTextMSDF(Sprite* font, const std::string &text, float startX, TEXT_MSDF::FontAtlas atlas) {
+    void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, TEXT_MSDF::FontAtlas _atlas) {
         float x = startX;
         //float y = startY + baseline * scale;  // align baseline
 
         for (char ch : text) {
             TEXT_MSDF::Glyph g;
             bool found = false;
-            for (TEXT_MSDF::Glyph gly : atlas.glyphs) {
+            for (TEXT_MSDF::Glyph gly : _atlas.glyphs) {
                 if (gly.unicode == ch) {
                     g = gly;
                     found = true;
@@ -245,17 +168,17 @@ public:
                 return;
             }
 
-            font->glyphX = g.atlasBounds.left;
-            font->glyphY = atlas.atlas.height - g.atlasBounds.top;
-            font->glyphW = (g.atlasBounds.right - g.atlasBounds.left);
-            font->glyphH = (atlas.atlas.height - g.atlasBounds.bottom) - (atlas.atlas.height - g.atlasBounds.top);
-            font->glyphxoff = (g.planeBounds.left * atlas.atlas.size) / WINDOW_WIDTH;
-            font->glyphyoff = (g.planeBounds.top * atlas.atlas.size) / WINDOW_HEIGHT;
-            font->glyphMsdf = g;
-            font->transform.pos.x = x;
-            font->Update();
-            float pixelAdvance = g.advance * atlas.atlas.size;
-            x += (pixelAdvance/WINDOW_WIDTH*font->transform.scale.x);
+            _font->glyphX = g.atlasBounds.left;
+            _font->glyphY = _atlas.atlas.height - g.atlasBounds.top;
+            _font->glyphW = (g.atlasBounds.right - g.atlasBounds.left);
+            _font->glyphH = (_atlas.atlas.height - g.atlasBounds.bottom) - (_atlas.atlas.height - g.atlasBounds.top);
+            _font->glyphxoff = (g.planeBounds.left * _atlas.atlas.size) / WINDOW_WIDTH * 2.0f;
+            _font->glyphyoff = (g.planeBounds.top * _atlas.atlas.size) / WINDOW_HEIGHT *2.0f;
+            _font->glyphMsdf = g;
+            _font->transform.pos.x = x;
+            _font->Update();
+            float pixelAdvance = g.advance * _atlas.atlas.size * 2.0f;
+            x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.1);
         }
     }
 
