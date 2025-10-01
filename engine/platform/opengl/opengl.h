@@ -37,7 +37,7 @@ static int GetGLFWMouseButton(MouseButton button) {
         case MouseButton::Left: return GLFW_MOUSE_BUTTON_LEFT;
         case MouseButton::Right: return GLFW_MOUSE_BUTTON_RIGHT;
         case MouseButton::Middle: return GLFW_MOUSE_BUTTON_MIDDLE;
-        default: -1;
+        default: return -1;
     }
 }
 static int GetGLFWGamepadButton(GamepadButton button) {
@@ -285,17 +285,21 @@ public:
         return gameObject;
     }
 
+    class TextureGL : public Texture {
+    public:
+        explicit TextureGL(GLuint textureID): textureID(textureID) {}
+        ~TextureGL() override {
+            glDeleteTextures(1, &textureID);
+        }
+        GLuint textureID;
+    };
+    TextureGL* CreateTexture(const char* path) override {
+        GLuint texture = loadTexture(path);
+        assert(texture != 0);
+        return new TextureGL(texture);
+    }
     class SpriteGL : public Sprite {
     public:
-        void SetTexture(const char* path) {
-            texture = loadTexture(path);
-
-            if (texture == 0) {
-                std::cerr << "Failed to load sprite texture!" << std::endl;
-                return;
-            }
-        }
-
         void Update() override {
             Sprite::Update();
             float newVertices[] = {
@@ -347,20 +351,29 @@ public:
             glUseProgram(shaderProgram);
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindTexture(GL_TEXTURE_2D, texture->textureID);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         }
-
-        GLuint texture = 0;
+        Texture* GetTexture() override {
+            return texture;
+        }
+        TextureGL* texture = nullptr;
         GLuint shaderProgram = 0;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
-
     Sprite* CreateSprite(const char* path) override {
         auto gameObject = new SpriteGL();
-        gameObject->SetTexture(path);
+        gameObject->texture = CreateTexture(path);
+        gameObject->shaderProgram = textureShader;
+        gameObject->vertexArrayObject = quadVAO;
+        gameObject->vertexBufferObject = quadVBO;
+        return gameObject;
+    }
+    Sprite* CreateSprite(Texture* texture) override {
+        auto gameObject = new SpriteGL();
+        gameObject->texture = (TextureGL*)texture;
         gameObject->shaderProgram = textureShader;
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
@@ -516,7 +529,7 @@ private:
         fp = fopen(fileName, "rb");
         if(fp == nullptr) {
             printf("Error reading %s\n", fileName);
-            return "";
+            assert(false);
         }
         fseek(fp, 0L, SEEK_END);
         size = ftell(fp)+1;
