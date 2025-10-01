@@ -12,31 +12,6 @@
 #include <sstream>
 #include <cassert>
 
-std::unordered_map<char, Glyph> glyphs;
-int atlasWidth, atlasHeight;
-int baseline;
-
-void LoadFontMeta(const std::string &path) {
-    std::ifstream in(path);
-    if (!in) return;
-    in >> std::ws;
-    std::string tag;
-    in >> tag;
-    if (tag == "baseline") {
-        in >> baseline;
-    }
-    in >> tag;
-    if (tag == "atlas") {
-        in >> atlasWidth >> atlasHeight;
-    }
-    int c, x, y, w, h, xoff, yoff;
-    float adv;
-    while (in >> c >> x >> y >> w >> h >> xoff >> yoff >> adv) {
-        Glyph g = {x, y, w, h, xoff, yoff, adv};
-        glyphs[(char)c] = g;
-    }
-}
-
 std::string LoadFileData(const char* path) {
     std::ifstream file(path);
     if (!file) {
@@ -52,9 +27,7 @@ class FontTrueTypeGame : public Game {
 public:
     using Game::Game;
 
-    ~FontTrueTypeGame() override {
-
-    };
+    ~FontTrueTypeGame() override {};
 
     Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas) {
         auto sprite = platform->CreateSprite(pngPath);
@@ -115,10 +88,6 @@ public:
         font->transform.pos = {-0.5, 0.7, 1};
         font->transform.scale = {1, 1, 1}; //100
     }
-
-    // 1920 x 1080 => 2 x 2
-
-    // 1920 * 2 / 1920 = 2
 
     void Update() override {
 //        sprites[0]->Update();
@@ -197,26 +166,6 @@ public:
             _font->Update();
             float pixelAdvance = g.advance * _atlas.atlas.size * 2.0f;
             x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.0);
-        }
-    }
-
-    void RenderText(Sprite* font, const std::string &text, float startX) {
-        float x = startX;
-        //float y = startY + baseline * scale;  // align baseline
-
-        for (char ch : text) {
-            auto it = glyphs.find(ch);
-            if (it == glyphs.end()) continue;
-            Glyph &g = it->second;
-
-            font->glyphX = g.x;
-            font->glyphY = g.y;
-            font->glyphW = g.w;
-            font->glyphH = g.h;
-            font->glyph = g;
-            font->transform.pos.x = x;
-            font->Update();
-            x += (g.advance/WINDOW_WIDTH*font->transform.scale.x);
         }
     }
 
