@@ -30,7 +30,8 @@ public:
     ~FontTrueTypeGame() override {};
 
     Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas) {
-        auto sprite = platform->CreateSprite(pngPath);
+        auto texture = platform->CreateTexture(pngPath, TextureSettings{TextureFilter::LINEAR});
+        auto sprite = platform->CreateSprite(texture);
         std::string data = LoadFileData(jsonPath);
         _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
         sprite->useAtlas = true;

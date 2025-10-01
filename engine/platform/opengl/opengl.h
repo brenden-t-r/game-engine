@@ -287,7 +287,8 @@ public:
 
     class TextureGL : public Texture {
     public:
-        explicit TextureGL(GLuint textureID): textureID(textureID) {}
+        explicit TextureGL(GLuint textureID): textureID(textureID), Texture(TextureSettings()),
+                                              Texture(TextureSettings()) {}
         ~TextureGL() override {
             glDeleteTextures(1, &textureID);
         }

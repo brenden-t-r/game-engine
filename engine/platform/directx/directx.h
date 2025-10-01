@@ -337,18 +337,26 @@ public:
 
     class TextureD3D : public Texture {
     public:
-        explicit TextureD3D(ID3D11ShaderResourceView* textureView): textureView(textureView) {}
+        TextureD3D(const char *path, TextureSettings settings, ID3D11ShaderResourceView* textureView, ID3D11SamplerState* samplerState)
+                : Texture(path, settings), textureView(textureView), samplerState(samplerState) {}
         ~TextureD3D() override {
             textureView->Release();
         }
-        ID3D11ShaderResourceView* textureView{};
+        ID3D11ShaderResourceView* textureView = nullptr;
+        ID3D11SamplerState* samplerState = nullptr;
     };
-    Texture* CreateTexture(const char* path) override {
+    Texture* CreateTexture(const char* path, TextureSettings textureSettings) override {
         auto wchar = convertToWCHAR(path);
         ID3D11ShaderResourceView* textureView;
         LoadTextureFromFile(d3dDevice, d3dContext, wchar, &textureView);
         delete[] wchar;
-        auto texture = new TextureD3D(textureView);
+        ID3D11SamplerState* samplerState;
+        if (textureSettings.filter == TextureFilter::POINT) {
+            samplerState = samplerStatePoint;
+        } else {
+            samplerState = samplerStateLinear;
+        }
+        auto texture = new TextureD3D(path, textureSettings, textureView, samplerState);
         return texture;
     }
 
@@ -399,18 +407,11 @@ public:
                 d3d_vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             }
             if (useAtlas && useGlyph) {
-
                 float modifier = 0.0f;
                 float u0 = (glyphX + modifier) / (float)atlasWidth;
-                float v0 = (glyphY + modifier) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
+                float v0 = (glyphY + modifier) / (float)atlasHeight;
                 float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
                 float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
-
-
-//                float u0 = glyphX / (float)atlasWidth;
-//                float v0 = glyphY / (float)atlasHeight;
-//                float u1 = (glyphX + glyphW) / (float)atlasWidth;
-//                float v1 = (glyphY + glyphH) / (float)atlasHeight;
                 d3d_vertices[0].texCoord.x = u0; d3d_vertices[0].texCoord.y = v0;
                 d3d_vertices[1].texCoord.x = u1; d3d_vertices[1].texCoord.y = v0;
                 d3d_vertices[2].texCoord.x = u0; d3d_vertices[2].texCoord.y = v1;
@@ -420,6 +421,9 @@ public:
             // Set the blend state
             float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
             d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
+            // Set the sampler state
+            d3dContext->PSSetSamplers(0, 1, &texture->samplerState);
 
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -467,10 +471,10 @@ public:
         };
     };
     Sprite* CreateSprite(const char * path) override {
-        auto texture = (TextureD3D*)CreateTexture(path);
+        auto texture = (TextureD3D*)CreateTexture(path, DEFAULT_TEXTURE_SETTINGS);
         return CreateSprite(texture);
     }
-    Sprite* CreateSprite(Texture* texture) {
+    Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture, (TextureD3D*)texture);
         gameObject->CreateBuffer();
         return gameObject;
@@ -570,6 +574,8 @@ private:
     ID3D11PixelShader* pixelShaderTexture = nullptr;
     ID3D11VertexShader* vertexShaderSimple = nullptr;
     ID3D11PixelShader* pixelShaderSimple = nullptr;
+    ID3D11SamplerState* samplerStatePoint = nullptr;
+    ID3D11SamplerState* samplerStateLinear = nullptr;
 
     // State vars
     XINPUT_STATE gamepadStateA = {};
@@ -723,19 +729,30 @@ private:
     }
 
     void InitPipeline() {
-        // Create a sampler state
-        D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;// D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-//        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = 0; //D3D11_FLOAT32_MAX;
-        ID3D11SamplerState* samplerState;
-        d3dDevice->CreateSamplerState(&samplerDesc, &samplerState);
-        d3dContext->PSSetSamplers(0, 1, &samplerState);
+        // Linear clamp
+        D3D11_SAMPLER_DESC samplerDescLinear = {};
+        samplerDescLinear.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDescLinear.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescLinear.MinLOD = 0;
+        samplerDescLinear.MaxLOD = 0;
+        d3dDevice->CreateSamplerState(&samplerDescLinear, &samplerStateLinear);
+
+        // Point clamp
+        D3D11_SAMPLER_DESC samplerDescPoint = {};;
+        samplerDescPoint.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDescPoint.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescPoint.MinLOD = 0;
+        samplerDescPoint.MaxLOD = D3D11_FLOAT32_MAX;
+        d3dDevice->CreateSamplerState(&samplerDescPoint, &samplerStatePoint);
+
+        // Set sampler state to linear
+        d3dContext->PSSetSamplers(0, 1, &samplerStateLinear);
 
         // Update the blend state to handle alpha
         D3D11_BLEND_DESC blendDesc = { 0 };
