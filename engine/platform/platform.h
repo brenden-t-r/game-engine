@@ -3,7 +3,9 @@
 
 #include "../engine/gameobject.h"
 #include "../engine/texture.h"
+#include "../engine/material.h"
 
+//region: Enums
 enum class KeyCode {
     Unknown = 0,
     Up,
@@ -16,26 +18,24 @@ enum class KeyCode {
     D,
     // Add more keys as needed
 };
-
 enum class MouseButton {
     Unknown = 0,
     Left,
     Middle,
     Right
 };
-
 enum class GamepadButton {
     Unknown = 0,
     North, South, East, West,
     RB, LB, R3, L3, Start, Select,
     DLeft, DRight, DUp, DDown
 };
-
 enum Callback {
     KEY_RELEASED,
     MOUSE_RELEASED,
     GAMEPAD_RELEASED
 };
+//endregion
 
 class Platform {
 public:
@@ -51,6 +51,7 @@ public:
     virtual Sprite* CreateSprite(const char* path) = 0;
     virtual Sprite* CreateSprite(Texture* texture) = 0;
     virtual Texture* CreateTexture(const char* path) = 0;
+    virtual Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) = 0;
     virtual Sound* CreateSound(const char* path) = 0;
     virtual void Delete(GameObject* object) {
         delete object;
