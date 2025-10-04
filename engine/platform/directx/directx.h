@@ -270,10 +270,6 @@ public:
             d3d_vertices[2].position.x = vertices[2].x;
             d3d_vertices[2].position.y = vertices[2].y;
 
-            // "Unset" the blend state
-            float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-            d3dContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
-
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;
             HRESULT hr = d3dContext->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -295,6 +291,15 @@ public:
             d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
             d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
+            auto mat = (MaterialColor*)material;
+            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
+            D3D11_MAPPED_SUBRESOURCE constBufferMappedResource;
+            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constBufferMappedResource);
+            MaterialColor::ConstantBufferData* dataPtr = (MaterialColor::ConstantBufferData*)constBufferMappedResource.pData;
+            dataPtr->Color = buf->Color;
+            d3dContext->Unmap(constantBuffer, 0);
+            d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+
             // Draw the triangle
             d3dContext->Draw(3, 0); // Draw 3 vertices
         }
@@ -302,6 +307,7 @@ public:
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11Device* d3dDevice = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
+        ID3D11Buffer* constantBuffer = nullptr;
         Vertex d3d_vertices[3] {
                 { DirectX::XMFLOAT3(0.5f,  -0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
                 { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.0f), DirectX::XMFLOAT2(0.5f, 0.0f) },
@@ -329,6 +335,14 @@ public:
             UINT offset = 0;
             d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
             d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+            // Constant buffer
+            D3D11_BUFFER_DESC cbd = {};
+            cbd.Usage = D3D11_USAGE_DYNAMIC;
+            cbd.ByteWidth = sizeof(MaterialColor::ConstantBufferData);
+            cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+            cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
         }
     };
     GameObject* CreateTriangle() override {
@@ -765,8 +779,8 @@ private:
             vertexBuffer = nullptr;
         }
 //        inputLayoutSimple->Release();
-        vertexShaderTexture->Release();
-        pixelShaderTexture->Release();
+//        vertexShaderTexture->Release();
+//        pixelShaderTexture->Release();
         renderTargetView->Release();
         swapChain->Release();
         d3dDevice->Release();

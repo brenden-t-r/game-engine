@@ -9,6 +9,11 @@ struct VS_OUTPUT
     float4 position : SV_POSITION;
 };
 
+cbuffer ColorBuffer : register(b0)
+{
+    float4 Color;
+};
+
 VS_OUTPUT VSMain(VS_INPUT input)
 {
     VS_OUTPUT output;
@@ -19,6 +24,5 @@ VS_OUTPUT VSMain(VS_INPUT input)
 // Simple pixel shader for solid color
 float4 PSMain(VS_OUTPUT input) : SV_TARGET
 {
-    // Return a solid light green color
-    return float4(0.5f, 1.0f, 0.5f, 1.0f);  // RGBA for light green
+    return Color;
 }

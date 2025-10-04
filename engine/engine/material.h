@@ -58,7 +58,7 @@ public:
 
 #ifdef BACKEND_DIRECTX
     struct ConstantBufferData {
-        DirectX::XMFLOAT4 color;
+        DirectX::XMFLOAT4 Color;
     };
     void* GetConstantBuffer() override {
         auto* constantBufferData = new ConstantBufferData{

@@ -30,15 +30,19 @@ public:
         auto spriteMaterial = (MaterialSprite*)sprite->material;
     }
 
+    float dir = 1;
+    int ind = 3;
     void Update() override {
         sprite->Update();
-        triangle->Update();
         auto colorMaterial = (MaterialColor*)triangle->material;
-        if (colorMaterial->color[0] < 1.0) {
-            colorMaterial->color[0] += 0.01;
-        } else {
-            colorMaterial->color[0] -= 0.01;
+        triangle->Update();
+
+        if (colorMaterial->color[ind] > 0.9) {
+            dir = -1;
+        } else if (colorMaterial->color[ind] < 0.1) {
+            dir = 1;
         }
+        colorMaterial->color[ind] += 0.03 * dir;
     }
 
 private:
