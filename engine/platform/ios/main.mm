@@ -268,7 +268,7 @@ private:
 
 class TextureMTL : public Texture{
 public:
-    explicit TextureMTL(id<MTLTexture> texture): texture(texture) {}
+    explicit TextureMTL(const char *path, id <MTLTexture> texture) : texture(texture) {}
     ~TextureMTL() override {
         [texture release];
     }
@@ -489,7 +489,7 @@ public:
         NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
         assert(texture != nullptr);
-        return new TextureMTL(texture);
+        return new TextureMTL(nullptr, texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteMetal(

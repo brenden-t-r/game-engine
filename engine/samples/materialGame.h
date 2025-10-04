@@ -19,7 +19,7 @@ public:
         triangle->transform.width = 0.5;
         triangle->transform.height = 0.5;
         auto colorMaterial = (MaterialColor*)triangle->material;
-        colorMaterial->color[0] = 0.3;
+        colorMaterial->color[0] = 1.0;
         colorMaterial->color[1] = 0.5;
         colorMaterial->color[2] = 0.7;
         colorMaterial->color[3] = 1.0;
@@ -27,7 +27,7 @@ public:
         sprite = platform->CreateSprite("assets/sprites/background.png");
         sprite->transform.width = 2.0;
         sprite->transform.height = 2.0;
-        auto spriteMaterial = (MaterialSprite*)sprite->material;
+//        auto spriteMaterial = (MaterialSprite*)sprite->material;
     }
 
     float dir = 1;
@@ -35,7 +35,6 @@ public:
     void Update() override {
         sprite->Update();
         auto colorMaterial = (MaterialColor*)triangle->material;
-        triangle->Update();
 
         if (colorMaterial->color[ind] > 0.9) {
             dir = -1;
@@ -43,6 +42,8 @@ public:
             dir = 1;
         }
         colorMaterial->color[ind] += 0.03f * dir;
+
+        triangle->Update();
     }
 
 private:
