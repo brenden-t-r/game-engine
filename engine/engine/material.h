@@ -88,7 +88,7 @@ public:
         textures = std::vector<TextureBuffer>{};
         textures.push_back(TextureBuffer{texture, 0});
     }
-    std::vector<TextureBuffer> GetTextures() {
+    std::vector<TextureBuffer> GetTextures() override {
         textures[0].texture = texture;
         return textures;
     }

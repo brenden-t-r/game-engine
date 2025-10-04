@@ -255,7 +255,6 @@ public:
                     vertices[1].x, vertices[1].y, 0.0f,
                     vertices[2].x, vertices[2].y, 0.0f,
             };
-//            glDisable(GL_BLEND);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -328,7 +327,22 @@ public:
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glUseProgram(shaderProgram);
+
+            // Bind shader resources
+            /*
+             *     auto shader = (ShaderD3D*)material->shader;
+            auto tex = (TextureD3D*)((MaterialSprite*)material)->texture;
+            d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
+            d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
+            d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
+            d3dContext->IASetInputLayout(shader->inputLayout);
+             */
+
+            auto shader = (ShaderGL*)material->shader;
+            glUseProgram(shader->shaderProgram);
+//            auto mat = (MaterialSprite*)material;
+//            mat->GetTextures();
+
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBindTexture(GL_TEXTURE_2D, texture->textureID);
@@ -339,22 +353,17 @@ public:
             return texture;
         }
         TextureGL* texture = nullptr;
-        GLuint shaderProgram = 0;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
     Sprite* CreateSprite(const char* path) override {
-        auto gameObject = new SpriteGL();
-        gameObject->texture = CreateTexture(path);
-        gameObject->shaderProgram = textureShader->shaderProgram;
-        gameObject->vertexArrayObject = quadVAO;
-        gameObject->vertexBufferObject = quadVBO;
-        return gameObject;
+        auto texture = CreateTexture(path);
+        return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteGL();
         gameObject->texture = (TextureGL*)texture;
-        gameObject->shaderProgram = textureShader->shaderProgram;
+        gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
         return gameObject;
