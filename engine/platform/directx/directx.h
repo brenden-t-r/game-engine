@@ -249,15 +249,12 @@ public:
     // endregion
 
     //region GameObjects
+    //region Triangle
     class TriangleD3D : public Triangle {
     public:
-        explicit TriangleD3D(ID3D11DeviceContext* d3dContext, ID3D11Device* d3dDevice, ID3D11InputLayout* inputLayout,
-                             ID3D11VertexShader* vertexShader, ID3D11PixelShader* pixelShader) {
+        explicit TriangleD3D(ID3D11DeviceContext* d3dContext, ID3D11Device* d3dDevice) {
             this->d3dContext = d3dContext;
             this->d3dDevice = d3dDevice;
-            this->inputLayout = inputLayout;
-            this->vertexShader = vertexShader;
-            this->pixelShader = pixelShader;
             Init();
         }
         ~TriangleD3D() {
@@ -291,22 +288,12 @@ public:
             d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
             d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            if (components.size() == 1) {
-                auto matComp = (MaterialComponent*)components[0];
-                auto mat = (MaterialColor*)matComp->material;
-                auto shader = (ShaderD3D*)mat->shader;
-                // Set the shaders
-                ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-                d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
-                d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
-                d3dContext->PSSetShaderResources(0, 1, nullSRV);
-            } else {
-                // Set the shaders
-                ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-                d3dContext->VSSetShader(vertexShader, nullptr, 0);
-                d3dContext->PSSetShader(pixelShader, nullptr, 0);
-                d3dContext->PSSetShaderResources(0, 1, nullSRV);
-            }
+            // Bind shader resources
+            auto shader = (ShaderD3D*)material->shader;
+            ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+            d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
+            d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
+            d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
             // Draw the triangle
             d3dContext->Draw(3, 0); // Draw 3 vertices
@@ -315,9 +302,6 @@ public:
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11Device* d3dDevice = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
-        ID3D11InputLayout* inputLayout = nullptr;
-        ID3D11VertexShader* vertexShader = nullptr;
-        ID3D11PixelShader* pixelShader = nullptr;
         Vertex d3d_vertices[3] {
                 { DirectX::XMFLOAT3(0.5f,  -0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
                 { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.0f), DirectX::XMFLOAT2(0.5f, 0.0f) },
@@ -347,15 +331,16 @@ public:
             d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         }
     };
-
     GameObject* CreateTriangle() override {
-        auto gameObject = new TriangleD3D(d3dContext, d3dDevice, inputLayoutSimple, vertexShaderSimple, pixelShaderSimple);
+        auto gameObject = new TriangleD3D(d3dContext, d3dDevice);
+        gameObject->material = new MaterialColor(colorShader);
         return gameObject;
     }
-
+    //endregion
+    //region Texture
     class TextureD3D : public Texture {
     public:
-        explicit TextureD3D(ID3D11ShaderResourceView* textureView): textureView(textureView) {}
+        explicit TextureD3D(const char* path, ID3D11ShaderResourceView* textureView): Texture(path), textureView(textureView) {}
         ~TextureD3D() override {
             textureView->Release();
         }
@@ -366,17 +351,15 @@ public:
         ID3D11ShaderResourceView* textureView;
         LoadTextureFromFile(d3dDevice, d3dContext, wchar, &textureView);
         delete[] wchar;
-        auto texture = new TextureD3D(textureView);
+        auto texture = new TextureD3D(path, textureView);
         return texture;
     }
-
+    //endregion
+    //region Sprite
     class SpriteD3D : public Sprite {
     public:
-        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState,
-                  ID3D11InputLayout* inputLayout, ID3D11VertexShader *vertexShader, ID3D11PixelShader *pixelShader,
-                  TextureD3D* texture) :
-                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState), inputLayout(inputLayout),
-                  vertexShader(vertexShader), pixelShader(pixelShader), texture(texture) {}
+        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState, TextureD3D* texture) :
+                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState), texture(texture) {}
 
         ~SpriteD3D() override = default;
 
@@ -435,23 +418,13 @@ public:
             d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
             d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-            if (components.size() == 1) {
-                auto matComp = (MaterialComponent*)components[0];
-                auto mat = (MaterialSprite*)matComp->material;
-                auto shader = (ShaderD3D*)mat->shader;
-                auto tex = (TextureD3D*)mat->texture;
-                // Set the shaders
-                d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
-                d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
-                d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
-                d3dContext->IASetInputLayout(shader->inputLayout);
-            } else {
-                // Set the shaders
-                d3dContext->VSSetShader(vertexShader, nullptr, 0);
-                d3dContext->PSSetShader(pixelShader, nullptr, 0);
-                d3dContext->PSSetShaderResources(0, 1, &texture->textureView);
-                d3dContext->IASetInputLayout(inputLayout);
-            }
+            // Bind shader resources
+            auto shader = (ShaderD3D*)material->shader;
+            auto tex = (TextureD3D*)((MaterialSprite*)material)->texture;
+            d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
+            d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
+            d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
+            d3dContext->IASetInputLayout(shader->inputLayout);
 
             // Draw
             d3dContext->Draw(4, 0);
@@ -464,9 +437,6 @@ public:
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
-        ID3D11InputLayout* inputLayout = nullptr;
-        ID3D11VertexShader* vertexShader = nullptr;
-        ID3D11PixelShader* pixelShader = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
         TextureD3D* texture;
 
@@ -482,12 +452,14 @@ public:
         auto texture = (TextureD3D*)CreateTexture(path);
         return CreateSprite(texture);
     }
-    Sprite* CreateSprite(Texture* texture) {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, inputLayoutTexture, vertexShaderTexture, pixelShaderTexture, (TextureD3D*)texture);
+    Sprite* CreateSprite(Texture* texture) override {
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, (TextureD3D*)texture);
+        gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->CreateBuffer();
         return gameObject;
     }
-
+    //endregion
+    //region Audio
     class MiniAudioSound : public Sound {
     public:
         ~MiniAudioSound() override{
@@ -522,7 +494,9 @@ public:
         return sound;
     }
     //endregion
+    //endregion
 
+    //region Shaders
     // Consider making this an abstraction class with dynamic creation
     D3D11_INPUT_ELEMENT_DESC INPUT_LAYOUT_POSITION[1] = {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -537,7 +511,13 @@ public:
         ID3D11PixelShader* pixelShader;
         ID3D11InputLayout* inputLayout;
     };
-    Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) override {
+    Shader* colorShader = nullptr;
+    Shader* textureShader = nullptr;
+    void LoadShaders() override {
+        colorShader = LoadShader("assets/shaders/SimpleShader.hlsl", InputLayoutType::POSITION);
+        textureShader = LoadShader("assets/shaders/TextureShader.hlsl", InputLayoutType::POSITION_TEXCOORD);
+    }
+    Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) {
         D3D11_INPUT_ELEMENT_DESC* layout;
         int numElements;
         switch (inputLayoutType) {
@@ -569,36 +549,7 @@ public:
         shader->inputLayout = inputLayout;
         return shader;
     }
-
-    void LoadShaders() override {
-        const WCHAR * SHADER_TEXTURE = L"assets/shaders/TextureShader.hlsl";
-
-        // Compile and create the vertex shader
-        ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderTexture);
-
-        // Compile and create the pixel shader
-        ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(SHADER_TEXTURE, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderTexture);
-
-        // Define the input layout (add texture coordinates)
-        D3D11_INPUT_ELEMENT_DESC layout[] =
-                {
-                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-                };
-
-        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutTexture);
-        d3dContext->IASetInputLayout(inputLayoutTexture);
-
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
-
-        LoadSimpleShader();
-    }
+    //endregion
 
     void Shutdown() override {
         CleanD3D();
@@ -820,33 +771,6 @@ private:
         swapChain->Release();
         d3dDevice->Release();
         d3dContext->Release();
-    }
-
-    void LoadSimpleShader() {
-        const WCHAR * shader = L"assets/shaders/SimpleShader.hlsl";
-
-        // Compile and create the vertex shader
-        ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(shader, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShaderSimple);
-
-        // Compile and create the pixel shader
-        ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(shader, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShaderSimple);
-
-        // Define the input layout (add texture coordinates)
-        D3D11_INPUT_ELEMENT_DESC layout[] =
-                {
-                        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                };
-
-        d3dDevice->CreateInputLayout(layout, ARRAYSIZE(layout), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayoutSimple);
-        d3dContext->IASetInputLayout(inputLayoutSimple);
-
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
     }
 };
 

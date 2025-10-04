@@ -11,6 +11,10 @@
 #include "GL/glew.h"
 #endif
 
+enum class ShaderType {
+    COLOR, TEXTURE, FONT
+};
+
 enum class InputLayoutType {
     POSITION, POSITION_TEXCOORD
 };
@@ -42,13 +46,6 @@ protected:
     // Consider vector - is there value in multiple constant buffers?
     void* constantBuffer{};
     std::vector<TextureBuffer> textures;
-};
-
-class MaterialComponent: public EngineComponent{
-public:
-    MaterialComponent(Material* material): material(material){}
-    void Update() override{}
-    Material* material;
 };
 
 class MaterialColor : public Material {
@@ -89,7 +86,7 @@ public:
     Texture* texture;
     MaterialSprite(Shader *shader, Texture* texture) : Material(shader), texture(texture) {
         textures = std::vector<TextureBuffer>{};
-        textures.push_back(TextureBuffer{nullptr, 0});
+        textures.push_back(TextureBuffer{texture, 0});
     }
     std::vector<TextureBuffer> GetTextures() {
         textures[0].texture = texture;

@@ -3,6 +3,7 @@
 
 class Texture {
 public:
+    Texture(const char * path): path(path) {}
     virtual ~Texture() = default;
     const char* path;
 };

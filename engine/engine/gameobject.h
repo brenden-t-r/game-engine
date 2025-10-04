@@ -5,6 +5,7 @@
 #include "vector.h"
 #include "matrix.h"
 #include "texture.h"
+#include "material.h"
 
 #include <cstdio>
 #include <vector>
@@ -48,6 +49,7 @@ public:
 class GameObject {
 public:
     Transform transform{};
+    Material* material;
     std::vector<EngineComponent*> components{};
     virtual ~GameObject() {
         for (auto & component : components) {
