@@ -51,7 +51,7 @@ protected:
 class MaterialColor : public Material {
 public:
     float color[4]{0,0,0,0};
-    MaterialColor(Shader* shader): Material(shader){}
+    explicit MaterialColor(Shader* shader): Material(shader){}
     ~MaterialColor() override {
         delete (ConstantBufferData*) constantBuffer;
     }

@@ -1,6 +1,7 @@
 #ifndef GAMEENGINE_OPENGL_H
 #define GAMEENGINE_OPENGL_H
 
+//region Imports
 #include "../../constants.h"
 #include "../platform.h"
 
@@ -17,6 +18,7 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "../../dependencies/miniaudio.h"
 static ma_engine g_engine;
+//endregion
 
 //region Input Helpers / Callbacks
 static int GetGLFWKey(KeyCode keyCode) {
@@ -172,17 +174,6 @@ public:
         assert(result == MA_SUCCESS);
     }
 
-    void LoadShaders() override {
-        triangleShader = loadShaderProgram(
-                "assets/shaders/SimpleVertexShader.vertexshader",
-                "assets/shaders/SimpleFragmentShader.fragmentshader"
-        );
-        textureShader = loadShaderProgram(
-                "assets/shaders/TextureShader.vertexshader",
-                "assets/shaders/TextureShader.fragmentshader"
-        );
-    }
-
     void Run(void (*func)(void*), void* ctx) override{
         glfwSetMouseButtonCallback(window, mouse_button_callback);
         glfwSetKeyCallback(window, key_callback);
@@ -254,8 +245,8 @@ public:
     //endregion
 
     //region GameObjects
+    //region Triangle
     class TriangleGL : public Triangle{
-
     public:
         void Update() override {
             Triangle::Update();
@@ -264,30 +255,41 @@ public:
                     vertices[1].x, vertices[1].y, 0.0f,
                     vertices[2].x, vertices[2].y, 0.0f,
             };
-            glDisable(GL_BLEND);
-            glUseProgram(shaderProgram);
+//            glDisable(GL_BLEND);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            // Bind shaders and uniforms
+            auto shader = (ShaderGL*)material->shader;
+            GLint loc = glGetUniformLocation(shader->shaderProgram, "Color");
+            glUseProgram(shader->shaderProgram);
+            auto mat = (MaterialColor*)material;
+            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
+            glUniform4f(loc, buf->color[0], buf->color[1], buf->color[2], buf->color[3]);
+
+            // Bind VAO, VBO
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
+
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
-        GLuint shaderProgram = 0;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
-
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-        gameObject->shaderProgram = triangleShader;
+        gameObject->material = new MaterialColor(colorShader);
         gameObject->vertexArrayObject = triangleVAO;
         gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
     }
-
+    //endregion
+    //region Texture
     class TextureGL : public Texture {
     public:
-        explicit TextureGL(GLuint textureID): textureID(textureID) {}
+        TextureGL(const char *path, GLuint textureID) : Texture(path), textureID(textureID) {}
         ~TextureGL() override {
             glDeleteTextures(1, &textureID);
         }
@@ -296,8 +298,10 @@ public:
     TextureGL* CreateTexture(const char* path) override {
         GLuint texture = loadTexture(path);
         assert(texture != 0);
-        return new TextureGL(texture);
+        return new TextureGL(nullptr, texture);
     }
+    //endregion
+    //region Sprite
     class SpriteGL : public Sprite {
     public:
         void Update() override {
@@ -342,7 +346,7 @@ public:
     Sprite* CreateSprite(const char* path) override {
         auto gameObject = new SpriteGL();
         gameObject->texture = CreateTexture(path);
-        gameObject->shaderProgram = textureShader;
+        gameObject->shaderProgram = textureShader->shaderProgram;
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
         return gameObject;
@@ -350,12 +354,13 @@ public:
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteGL();
         gameObject->texture = (TextureGL*)texture;
-        gameObject->shaderProgram = textureShader;
+        gameObject->shaderProgram = textureShader->shaderProgram;
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
         return gameObject;
     }
-
+    //endregion
+    //region Audio
     class MiniAudioSound : public Sound {
     public:
         ~MiniAudioSound() override{
@@ -390,24 +395,94 @@ public:
         return sound;
     }
     //endregion
+    //endregion
 
-    void Shutdown() override{
+    // region: Shaders
+    class ShaderGL: public Shader{
+    public:
+        GLuint shaderProgram;
+    };
+    ShaderGL* colorShader = nullptr;
+    ShaderGL* textureShader = nullptr;
+    void LoadShaders() override {
+        colorShader = LoadShader(
+                "assets/shaders/color.glsl.vert",
+                "assets/shaders/color.glsl.frag"
+        );
+        textureShader = LoadShader(
+                "assets/shaders/texture.glsl.vert",
+                "assets/shaders/texture.glsl.frag"
+        );
+    }
+    static ShaderGL* LoadShader(const char* vertexPath, const char* fragmentPath) {
+        auto vertexSource = getFileContent(vertexPath);
+        auto fragmentSource = getFileContent(fragmentPath);
+
+        // Compile shaders
+        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
+        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
+
+        // Create program
+        GLuint program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        // Check for linking errors
+        GLint success;
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(program, 512, nullptr, infoLog);
+            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
+        }
+
+        // Cleanup
+        glDetachShader(program, vertexShader);
+        glDetachShader(program, fragmentShader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        // Create shader
+        auto* shader = new ShaderGL();
+        shader->shaderProgram = program;
+        return shader;
+    }
+    static GLuint compileShader(const char* source, GLenum type) {
+        GLuint shader = glCreateShader(type);
+        glShaderSource(shader, 1, &source, nullptr);
+        glCompileShader(shader);
+
+        // Check for compilation errors
+        GLint success;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetShaderInfoLog(shader, 512, NULL, infoLog);
+            std::cerr << "Shader compilation failed: " << infoLog << std::endl;
+        }
+
+        return shader;
+    }
+    //endregion
+
+    void Shutdown() override {
         glDisableVertexAttribArray(0);
         glDeleteVertexArrays(1, &triangleVAO);
-        glDeleteProgram(textureShader);
+        glDeleteProgram(colorShader->shaderProgram);
+        glDeleteProgram(textureShader->shaderProgram);
 
         // Close OpenGL window and terminate GLFW
         glfwTerminate();
     }
 
 private:
+
     GLFWwindow *window = nullptr;
     GLuint triangleVAO = 0;
     GLuint triangleVBO = 0;
-    GLuint triangleShader = 0;
     GLuint quadVAO = 0;
     GLuint quadVBO = 0;
-    GLuint textureShader = 0;
     GLFWgamepadstate gamepadStateA = {};
     GLFWgamepadstate gamepadStateB = {};
 
@@ -462,81 +537,7 @@ private:
         glBindVertexArray(0); // Unbind VAO
     }
 
-    //region Shaders
-    static GLuint loadShaderProgram(const char* vertex, const char* fragment) {
-        auto vertexSource = getFileContent(vertex);
-        auto fragmentSource = getFileContent(fragment);
 
-        // Compile shaders
-        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
-        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
-
-        // Create program
-        GLuint program = glCreateProgram();
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-        glLinkProgram(program);
-
-        // Check for linking errors
-        GLint success;
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
-        }
-
-        // Cleanup
-        glDetachShader(program, vertexShader);
-        glDetachShader(program, fragmentShader);
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-
-        return program;
-    }
-
-    static char* getFileContent(const char* fileName)
-    {
-        FILE *fp;
-        long size = 0;
-        char* shaderContent;
-
-        /* Read File to get size */
-        fp = fopen(fileName, "rb");
-        if(fp == nullptr) {
-            printf("Error reading %s\n", fileName);
-            assert(false);
-        }
-        fseek(fp, 0L, SEEK_END);
-        size = ftell(fp)+1;
-        fclose(fp);
-
-        /* Read File for Content */
-        fp = fopen(fileName, "r");
-        shaderContent = static_cast<char *>(memset(malloc(size), '\0', size));
-        fread(shaderContent, 1, size-1, fp);
-        fclose(fp);
-
-        return shaderContent;
-    }
-
-    static GLuint compileShader(const char* source, GLenum type) {
-        GLuint shader = glCreateShader(type);
-        glShaderSource(shader, 1, &source, NULL);
-        glCompileShader(shader);
-
-        // Check for compilation errors
-        GLint success;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader, 512, NULL, infoLog);
-            std::cerr << "Shader compilation failed: " << infoLog << std::endl;
-        }
-
-        return shader;
-    }
-    //endregion
 
     static GLuint loadTexture(const char* path) {
         GLuint textureID;
@@ -585,9 +586,30 @@ private:
 
         return textureID;
     }
+    static char* getFileContent(const char* fileName)
+    {
+        FILE *fp;
+        long size = 0;
+        char* shaderContent;
+
+        /* Read File to get size */
+        fp = fopen(fileName, "rb");
+        if(fp == nullptr) {
+            printf("Error reading %s\n", fileName);
+            assert(false);
+        }
+        fseek(fp, 0L, SEEK_END);
+        size = ftell(fp)+1;
+        fclose(fp);
+
+        /* Read File for Content */
+        fp = fopen(fileName, "r");
+        shaderContent = static_cast<char *>(memset(malloc(size), '\0', size));
+        fread(shaderContent, 1, size-1, fp);
+        fclose(fp);
+
+        return shaderContent;
+    }
 };
-
-
-
 
 #endif //GAMEENGINE_OPENGL_H

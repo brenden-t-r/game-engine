@@ -257,7 +257,7 @@ public:
             this->d3dDevice = d3dDevice;
             Init();
         }
-        ~TriangleD3D() {
+        ~TriangleD3D() override {
             this->vertexBuffer->Release();
         }
 
@@ -284,18 +284,18 @@ public:
             d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
             d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            // Bind shader resources
+            // Bind shaders
             auto shader = (ShaderD3D*)material->shader;
             ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
             d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
             d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
             d3dContext->PSSetShaderResources(0, 1, nullSRV);
-
+            // Bind constant buffer
             auto mat = (MaterialColor*)material;
             auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
             D3D11_MAPPED_SUBRESOURCE constBufferMappedResource;
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constBufferMappedResource);
-            MaterialColor::ConstantBufferData* dataPtr = (MaterialColor::ConstantBufferData*)constBufferMappedResource.pData;
+            auto* dataPtr = (MaterialColor::ConstantBufferData*)constBufferMappedResource.pData;
             dataPtr->Color = buf->Color;
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);

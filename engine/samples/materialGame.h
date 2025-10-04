@@ -33,7 +33,7 @@ public:
     float dir = 1;
     int ind = 3;
     void Update() override {
-        sprite->Update();
+//        sprite->Update();
         auto colorMaterial = (MaterialColor*)triangle->material;
         triangle->Update();
 
@@ -42,7 +42,7 @@ public:
         } else if (colorMaterial->color[ind] < 0.1) {
             dir = 1;
         }
-        colorMaterial->color[ind] += 0.03 * dir;
+        colorMaterial->color[ind] += 0.03f * dir;
     }
 
 private:
