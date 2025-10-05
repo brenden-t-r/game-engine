@@ -224,12 +224,11 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
     return colorSample;
 }
 )";
-//endregion
-
 class ShaderMTL : public Shader {
 public:
     id<MTLRenderPipelineState> renderPipelineState;
 };
+//endregion
 
 //region MetalView/MetalAppDelegate declarations
 @interface MetalView : MTKView <MTKViewDelegate>
@@ -306,7 +305,7 @@ private:
 //region Texture
 class TextureMTL : public Texture{
 public:
-    explicit TextureMTL(const char *path, id <MTLTexture> texture): Texture(path), texture(texture) {}
+    TextureMTL(const char *path, id <MTLTexture> texture) : Texture(path), texture(texture) {}
     ~TextureMTL() override {
         [texture release];
     }
