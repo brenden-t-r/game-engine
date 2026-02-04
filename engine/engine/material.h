@@ -5,10 +5,13 @@
 
 #include "cstring"
 #include <vector>
+
 #ifdef BACKEND_DIRECTX
 #include "DirectXMath.h"
 #elif BACKEND_OPENGL
 #include "GL/glew.h"
+#elif BACKEND_METAL
+#import <simd/simd.h>
 #endif
 
 enum class ShaderType {
@@ -76,6 +79,15 @@ public:
         constantBuffer = buf;
         return constantBuffer;
     }
+#elif BACKEND_METAL
+    struct ConstantBufferData {
+        vector_float4 Color;
+    };
+    void* GetConstantBuffer() override {
+        auto* buf = new ConstantBufferData();
+        buf->Color = {color[0], color[1], color[2], color[3]};
+        return buf;
+    }
 #else
     assert(false);
 #endif
@@ -137,6 +149,14 @@ public:
         memcpy(buf->outlineColor, outlineColor, sizeof(float) * 4);
         constantBuffer = buf;
         return constantBuffer;
+    }
+#elif BACKEND_METAL
+    struct ConstantBufferData {
+        vector_float4 color;
+    };
+    void* GetConstantBuffer() override {
+        auto* buf = new ConstantBufferData();
+        return buf;
     }
 #else
     assert(false);
