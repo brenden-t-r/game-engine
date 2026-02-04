@@ -3,11 +3,11 @@
 
 #include "texture.h"
 
-#include "cstring"
+#include <cstdint>
 #include <vector>
 
 enum class InputLayoutType {
-    POSITION, POSITION_TEXCOORD
+    POSITION, POSITION_TEXCOORDk
 };
 struct ShaderDef {
     // Path to a consolidated vertex + fragment shader
