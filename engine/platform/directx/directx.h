@@ -528,8 +528,8 @@ public:
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
     void LoadShaders() override {
-        colorShader = LoadShader("assets/shaders/SimpleShader.hlsl", InputLayoutType::POSITION);
-        textureShader = LoadShader("assets/shaders/TextureShader.hlsl", InputLayoutType::POSITION_TEXCOORD);
+        colorShader = LoadShader("assets/shaders/color.hlsl", InputLayoutType::POSITION);
+        textureShader = LoadShader("assets/shaders/texture.hlsl", InputLayoutType::POSITION_TEXCOORD);
     }
     Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) {
         D3D11_INPUT_ELEMENT_DESC* layout;
