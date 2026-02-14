@@ -374,8 +374,8 @@ public:
     //region Sprite
     class SpriteD3D : public Sprite {
     public:
-        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState, TextureD3D* texture) :
-                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState), texture(texture) {}
+        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState) :
+                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {}
 
         ~SpriteD3D() override = default;
 
@@ -447,14 +447,13 @@ public:
         }
 
         Texture* GetTexture() override {
-            return texture;
+            return (TextureD3D*)((MaterialSprite*)material)->texture;
         }
 
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
-        TextureD3D* texture;
 
         Vertex d3d_vertices[4] {
                 // Order matters
@@ -469,7 +468,7 @@ public:
         return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, (TextureD3D*)texture);
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState);
         gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->CreateBuffer();
         return gameObject;

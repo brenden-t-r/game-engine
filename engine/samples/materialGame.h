@@ -48,9 +48,10 @@ public:
     void Start() override {
         platform->LoadShaders();
         sprite = platform->CreateSprite("assets/sprites/background.png");
+        texture = sprite->GetTexture();
         sprite->transform.width = 2.0;
         sprite->transform.height = 2.0;
-        auto spriteMaterial = (MaterialSprite*)sprite->material;
+        texture2 = platform->CreateTexture("assets/sprites/CardScarlet.png");
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.5;
@@ -60,11 +61,12 @@ public:
         triangle->material = m;
     }
 
+    Texture* texture;
+    Texture* texture2;
     float dir = 1;
     int ind = 2;
     void Update() override {
-        sprite->Update();
-
+        // Adjust constant buffer colors
         auto colorMaterial = (MaterialWithUniformBuffer*)triangle->material;
         if (colorMaterial->uniformFields[0].f4[ind] > 0.9) {
             dir = -1;
@@ -74,6 +76,11 @@ public:
         }
         colorMaterial->uniformFields[0].f4[ind] += 0.05f * dir;
 
+        // Adjust sprite texture
+        auto spriteMaterial = (MaterialSprite*)sprite->material;
+        spriteMaterial->texture = dir == 1 ? texture : texture2;
+
+        sprite->Update();
         triangle->Update();
     }
 

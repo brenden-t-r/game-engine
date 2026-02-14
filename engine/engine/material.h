@@ -18,11 +18,18 @@
 enum class ShaderType {
     COLOR, TEXTURE, FONT
 };
-
 enum class InputLayoutType {
     POSITION, POSITION_TEXCOORD
 };
-
+struct ShaderDef {
+    // Path to a consolidated vertex + fragment shader
+    const char* path;
+    // Path to a vertex shader
+    const char* vertexPath;
+    // Path to a fragment shader
+    const char* fragmentPath;
+    InputLayoutType inputLayoutType;
+};
 class Shader {
 public:
     InputLayoutType inputLayoutType;
@@ -208,15 +215,5 @@ public:
     assert(false);
 #endif
 };*/
-
-struct ShaderDef {
-    // Path to a consolidated vertex + fragment shader
-    const char* path;
-    // Path to a vertex shader
-    const char* vertexPath;
-    // Path to a fragment shader
-    const char* fragmentPath;
-    InputLayoutType inputLayoutType;
-};
 
 #endif //GAMEPROJECT_MATERIAL_H
