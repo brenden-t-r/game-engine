@@ -294,23 +294,13 @@ public:
             d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
             // Bind constant buffer
-//            auto mat = (MaterialColor*)material;
-//            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
-//            D3D11_MAPPED_SUBRESOURCE constBufferMappedResource;
-//            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constBufferMappedResource);
-//            auto* dataPtr = (MaterialColor::ConstantBufferData*)constBufferMappedResource.pData;
-//            dataPtr->Color = buf->Color;
-//            d3dContext->Unmap(constantBuffer, 0);
-//            d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
-
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
-            auto mat = (MaterialTwoColors*)material;
+            auto mat = (Material*)material;
             mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
-            // d3dContext->VSSetConstantBuffers(0, 1, &constantBuffer);
 
             // Draw the triangle
             d3dContext->Draw(3, 0); // Draw 3 vertices
@@ -359,7 +349,7 @@ public:
     };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleD3D(d3dContext, d3dDevice);
-        gameObject->material = new MaterialTwoColors(colorShader);
+        gameObject->material = new MaterialWithUniformBuffer(colorShader);
         return gameObject;
     }
     //endregion
@@ -555,7 +545,7 @@ public:
         // Compile vertex shader
         ID3D11VertexShader* vertexShader;
         ID3DBlob* vsBlob = nullptr;
-        HRESULT hr = D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
         d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
         // Compile pixel shader
         ID3D11PixelShader* pixelShader;

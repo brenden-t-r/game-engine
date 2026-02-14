@@ -37,70 +37,11 @@ public:
 class Material {
 public:
     explicit Material(Shader* shader): shader(shader){}
-    virtual ~Material() {}
-    virtual void* GetConstantBuffer() {
-        return nullptr;
-    }
+    virtual ~Material() = default;
     virtual std::vector<TextureBuffer> GetTextures() {
         return textures;
     }
-
     Shader* shader;
-protected:
-    // Consider vector - is there value in multiple constant buffers?
-    void* constantBuffer{};
-    std::vector<TextureBuffer> textures;
-};
-
-class MaterialColor : public Material {
-public:
-    float color[4]{0,0,0,0};
-    explicit MaterialColor(Shader* shader): Material(shader){}
-    ~MaterialColor() override {
-        delete (ConstantBufferData*) constantBuffer;
-    }
-
-#ifdef BACKEND_DIRECTX
-    struct ConstantBufferData {
-        DirectX::XMFLOAT4 Color;
-    };
-    void* GetConstantBuffer() override {
-        auto* constantBufferData = new ConstantBufferData{
-                DirectX::XMFLOAT4(color)
-        };
-        return constantBufferData;
-    }
-#elif BACKEND_OPENGL
-    struct ConstantBufferData {
-        GLfloat color[4];
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        memcpy(buf->color, color, sizeof(float) * 4);
-        constantBuffer = buf;
-        return constantBuffer;
-    }
-    void BindConstantBuffer(GLuint shaderProgram) {
-        GLint loc = glGetUniformLocation(shaderProgram, "Color");
-        glUniform4f(loc, color[0], color[1], color[2], color[3]);
-    }
-#elif BACKEND_METAL
-    struct ConstantBufferData {
-        vector_float4 Color;
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        buf->Color = {color[0], color[1], color[2], color[3]};
-        return buf;
-    }
-#else
-    assert(false);
-#endif
-};
-
-class MaterialWithUniformBuffer: public Material {
-public:
-    explicit MaterialWithUniformBuffer(Shader* shader): Material(shader){}
     enum UniformFieldType {
         FLOAT, FLOAT4
     };
@@ -112,11 +53,25 @@ public:
             float f4[4]{0,0,0,0};
         };
     };
-    std::vector<UniformField> fields;
 
 #ifdef BACKEND_DIRECTX
-    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
-        for (auto f : fields) {
+    virtual void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst){}
+#elif BACKEND_OPENGL
+    virtual void BindConstantBuffer(GLuint shaderProgram){}
+#endif
+
+protected:
+    std::vector<TextureBuffer> textures;
+};
+
+class MaterialWithUniformBuffer: public Material {
+public:
+    explicit MaterialWithUniformBuffer(Shader* shader): Material(shader){}
+    std::vector<UniformField> uniformFields;
+
+#ifdef BACKEND_DIRECTX
+    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
+        for (auto f : uniformFields) {
             auto var = cb->GetVariableByName(f.name);
             if (!var) {
                 printf("Cannot find shader variable with name %s", f.name);
@@ -135,8 +90,8 @@ public:
         }
     }
 #elif BACKEND_OPENGL
-    void BindConstantBuffer(GLuint shaderProgram) {
-        for (auto f : fields) {
+    void BindConstantBuffer(GLuint shaderProgram) override {
+        for (auto f : uniformFields) {
             GLint loc = glGetUniformLocation(shaderProgram, f.name);
             switch(f.type) {
                 case FLOAT:
@@ -151,82 +106,53 @@ public:
 #endif
 };
 
-class MaterialTwoColors : public Material {
+class MaterialColor : public MaterialWithUniformBuffer {
 public:
-    float color1[4]{0,0,0,0};
-    float color2[4]{0,0,0,0};
-    explicit MaterialTwoColors(Shader* shader): Material(shader){}
-    ~MaterialTwoColors() override {
-        delete (ConstantBufferData*) constantBuffer;
+    explicit MaterialColor(Shader* shader): MaterialWithUniformBuffer(shader){
+        UniformField field{};
+        field.name = "Color";
+        field.type = UniformFieldType::FLOAT4;
+        uniformFields.push_back(field);
     }
+    ~MaterialColor() override = default;
+    float color[4]{0,0,0,0};
 
 #ifdef BACKEND_DIRECTX
-    struct ConstantBufferData {
-        DirectX::XMFLOAT4 Color;
-    };
-    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
-        auto var = cb->GetVariableByName("Color1");
-        assert(var != nullptr);
-        D3D11_SHADER_VARIABLE_DESC varDesc;
-        var->GetDesc(&varDesc);
-        DirectX::XMFLOAT4 c1{
-                color1[0], color1[1], color1[2], color1[3]
-        };
-        memcpy(dst + varDesc.StartOffset, &c1, sizeof(c1));
-
-        auto var1 = cb->GetVariableByName("Color2");
-        assert(var1 != nullptr);
-        D3D11_SHADER_VARIABLE_DESC varDesc1;
-        var1->GetDesc(&varDesc1);
-        DirectX::XMFLOAT4 c2{
-                color2[0], color2[1], color2[2], color2[3]
-        };
-        memcpy(dst + varDesc1.StartOffset, &c2, sizeof(c2));
+    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
+        UpdateColor();
+        MaterialWithUniformBuffer::BindConstantBuffer(cb, dst);
     }
 #elif BACKEND_OPENGL
-    struct ConstantBufferData {
-        GLfloat color[4];
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        memcpy(buf->color, color1, sizeof(float) * 4);
-        constantBuffer = buf;
-        return constantBuffer;
+    void BindConstantBuffer(GLuint shaderProgram) override {
+        UpdateColor();
+        MaterialWithUniformBuffer::BindConstantBuffer(shaderProgram);
     }
-    void BindConstantBuffer(GLuint shaderProgram) {
-        GLint loc = glGetUniformLocation(shaderProgram, "Color1");
-        glUniform4f(loc, color1[0], color1[1], color1[2], color1[3]);
-        GLint loc1 = glGetUniformLocation(shaderProgram, "Color2");
-        glUniform4f(loc1, color2[0], color2[1], color2[2], color2[3]);
-    }
-#elif BACKEND_METAL
-    struct ConstantBufferData {
-        vector_float4 Color;
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        buf->Color = {color[0], color[1], color[2], color[3]};
-        return buf;
-    }
-#else
-    assert(false);
 #endif
+
+private:
+    void UpdateColor() {
+        uniformFields[0].f4[0] = color[0];
+        uniformFields[0].f4[1] = color[1];
+        uniformFields[0].f4[2] = color[2];
+        uniformFields[0].f4[3] = color[3];
+    }
 };
 
 class MaterialSprite : public Material {
 public:
-    Texture* texture;
     MaterialSprite(Shader *shader, Texture* texture) : Material(shader), texture(texture) {
         textures = std::vector<TextureBuffer>{};
         textures.push_back(TextureBuffer{texture, 0});
     }
+    Texture* texture;
+
     std::vector<TextureBuffer> GetTextures() override {
         textures[0].texture = texture;
         return textures;
     }
 };
 
-class MaterialFont : public Material {
+/*class MaterialFont : public Material {
 public:
     float color[4]{0,0,0,0};
     float outlineColor[4]{0,0,0,0};
@@ -281,6 +207,6 @@ public:
 #else
     assert(false);
 #endif
-};
+};*/
 
 #endif //GAMEPROJECT_MATERIAL_H

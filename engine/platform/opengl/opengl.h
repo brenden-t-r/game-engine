@@ -261,7 +261,7 @@ public:
             // Bind shaders and uniforms
             auto shader = (ShaderGL*)material->shader;
             glUseProgram(shader->shaderProgram);
-            auto mat = (MaterialTwoColors*)material;
+            auto mat = (Material*)material;
             mat->BindConstantBuffer(shader->shaderProgram);
 
             // Bind VAO, VBO
@@ -277,7 +277,7 @@ public:
     };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-        gameObject->material = new MaterialColor(twoColorsShader);
+        gameObject->material = new MaterialWithUniformBuffer(twoColorsShader);
         gameObject->vertexArrayObject = triangleVAO;
         gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
