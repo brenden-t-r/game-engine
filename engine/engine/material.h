@@ -15,9 +15,6 @@
 #import <simd/simd.h>
 #endif
 
-enum class ShaderType {
-    COLOR, TEXTURE, FONT
-};
 enum class InputLayoutType {
     POSITION, POSITION_TEXCOORD
 };
@@ -30,11 +27,7 @@ struct ShaderDef {
     const char* fragmentPath;
     InputLayoutType inputLayoutType;
 };
-class Shader {
-public:
-    InputLayoutType inputLayoutType;
-};
-
+class Shader {};
 class TextureBuffer {
 public:
     Texture* texture;
@@ -45,9 +38,6 @@ class Material {
 public:
     explicit Material(Shader* shader): shader(shader){}
     virtual ~Material() = default;
-    virtual std::vector<TextureBuffer> GetTextures() {
-        return textures;
-    }
     Shader* shader;
     enum UniformFieldType {
         FLOAT, FLOAT4
@@ -62,22 +52,7 @@ public:
     };
 
 #ifdef BACKEND_DIRECTX
-    virtual void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst){}
-#elif BACKEND_OPENGL
-    virtual void BindConstantBuffer(GLuint shaderProgram){}
-#endif
-
-protected:
-    std::vector<TextureBuffer> textures;
-};
-
-class MaterialWithUniformBuffer: public Material {
-public:
-    explicit MaterialWithUniformBuffer(Shader* shader): Material(shader){}
-    std::vector<UniformField> uniformFields;
-
-#ifdef BACKEND_DIRECTX
-    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
+    virtual void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
         for (auto f : uniformFields) {
             auto var = cb->GetVariableByName(f.name);
             if (!var) {
@@ -97,7 +72,7 @@ public:
         }
     }
 #elif BACKEND_OPENGL
-    void BindConstantBuffer(GLuint shaderProgram) override {
+    virtual void BindConstantBuffer(GLuint shaderProgram) {
         for (auto f : uniformFields) {
             GLint loc = glGetUniformLocation(shaderProgram, f.name);
             switch(f.type) {
@@ -111,11 +86,15 @@ public:
         }
     }
 #endif
+
+    std::vector<UniformField> uniformFields;
+protected:
+    std::vector<TextureBuffer> textures;
 };
 
-class MaterialColor : public MaterialWithUniformBuffer {
+class MaterialColor : public Material {
 public:
-    explicit MaterialColor(Shader* shader): MaterialWithUniformBuffer(shader){
+    explicit MaterialColor(Shader* shader): Material(shader){
         UniformField field{};
         field.name = "Color";
         field.type = UniformFieldType::FLOAT4;
@@ -127,12 +106,12 @@ public:
 #ifdef BACKEND_DIRECTX
     void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
         UpdateColor();
-        MaterialWithUniformBuffer::BindConstantBuffer(cb, dst);
+        Material::BindConstantBuffer(cb, dst);
     }
 #elif BACKEND_OPENGL
     void BindConstantBuffer(GLuint shaderProgram) override {
         UpdateColor();
-        MaterialWithUniformBuffer::BindConstantBuffer(shaderProgram);
+        Material::BindConstantBuffer(shaderProgram);
     }
 #endif
 
@@ -152,11 +131,6 @@ public:
         textures.push_back(TextureBuffer{texture, 0});
     }
     Texture* texture;
-
-    std::vector<TextureBuffer> GetTextures() override {
-        textures[0].texture = texture;
-        return textures;
-    }
 };
 
 /*class MaterialFont : public Material {

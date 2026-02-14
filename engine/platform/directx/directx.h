@@ -560,7 +560,6 @@ public:
         d3dContext->IASetInputLayout(inputLayout);
 
         auto* shader = new ShaderD3D();
-        shader->inputLayoutType = inputLayoutType;
         shader->vertexShader = vertexShader;
         shader->pixelShader = pixelShader;
         shader->inputLayout = inputLayout;

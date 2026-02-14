@@ -25,7 +25,7 @@ public:
     }
 
     Material* Get2ColorMaterial(Shader* shader) {
-        auto m = new MaterialWithUniformBuffer(shader);
+        auto m = new Material(shader);
         Material::UniformField field{};
         field.name = "Color1";
         field.type = Material::UniformFieldType::FLOAT4;
@@ -67,7 +67,7 @@ public:
     int ind = 2;
     void Update() override {
         // Adjust constant buffer colors
-        auto colorMaterial = (MaterialWithUniformBuffer*)triangle->material;
+        auto colorMaterial = (Material*)triangle->material;
         if (colorMaterial->uniformFields[0].f4[ind] > 0.9) {
             dir = -1;
         } else if (colorMaterial->uniformFields[0].f4[ind] < 0.1) {
