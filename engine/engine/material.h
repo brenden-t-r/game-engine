@@ -8,6 +8,7 @@
 
 #ifdef BACKEND_DIRECTX
 #include "DirectXMath.h"
+#include "d3d11shader.h"
 #elif BACKEND_OPENGL
 #include "GL/glew.h"
 #elif BACKEND_METAL
@@ -78,6 +79,125 @@ public:
         memcpy(buf->color, color, sizeof(float) * 4);
         constantBuffer = buf;
         return constantBuffer;
+    }
+    void BindConstantBuffer(GLuint shaderProgram) {
+        GLint loc = glGetUniformLocation(shaderProgram, "Color");
+        glUniform4f(loc, color[0], color[1], color[2], color[3]);
+    }
+#elif BACKEND_METAL
+    struct ConstantBufferData {
+        vector_float4 Color;
+    };
+    void* GetConstantBuffer() override {
+        auto* buf = new ConstantBufferData();
+        buf->Color = {color[0], color[1], color[2], color[3]};
+        return buf;
+    }
+#else
+    assert(false);
+#endif
+};
+
+class MaterialWithUniformBuffer: public Material {
+public:
+    explicit MaterialWithUniformBuffer(Shader* shader): Material(shader){}
+    enum UniformFieldType {
+        FLOAT, FLOAT4
+    };
+    struct UniformField {
+        UniformFieldType type;
+        const char* name;
+        union {
+            float f;
+            float f4[4]{0,0,0,0};
+        };
+    };
+    std::vector<UniformField> fields;
+
+#ifdef BACKEND_DIRECTX
+    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
+        for (auto f : fields) {
+            auto var = cb->GetVariableByName(f.name);
+            if (!var) {
+                printf("Cannot find shader variable with name %s", f.name);
+                continue;
+            }
+            D3D11_SHADER_VARIABLE_DESC varDesc;
+            var->GetDesc(&varDesc);
+            switch(f.type) {
+                case FLOAT:
+                    memcpy(dst + varDesc.StartOffset, &f.f, sizeof(float));
+                    break;
+                case FLOAT4:
+                    memcpy(dst + varDesc.StartOffset, f.f4, sizeof(float) * 4);
+                    break;
+            }
+        }
+    }
+#elif BACKEND_OPENGL
+    void BindConstantBuffer(GLuint shaderProgram) {
+        for (auto f : fields) {
+            GLint loc = glGetUniformLocation(shaderProgram, f.name);
+            switch(f.type) {
+                case FLOAT:
+                    glUniform1f(loc, f.f);
+                    break;
+                case FLOAT4:
+                    glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
+                    break;
+            }
+        }
+    }
+#endif
+};
+
+class MaterialTwoColors : public Material {
+public:
+    float color1[4]{0,0,0,0};
+    float color2[4]{0,0,0,0};
+    explicit MaterialTwoColors(Shader* shader): Material(shader){}
+    ~MaterialTwoColors() override {
+        delete (ConstantBufferData*) constantBuffer;
+    }
+
+#ifdef BACKEND_DIRECTX
+    struct ConstantBufferData {
+        DirectX::XMFLOAT4 Color;
+    };
+    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
+        auto var = cb->GetVariableByName("Color1");
+        assert(var != nullptr);
+        D3D11_SHADER_VARIABLE_DESC varDesc;
+        var->GetDesc(&varDesc);
+        DirectX::XMFLOAT4 c1{
+                color1[0], color1[1], color1[2], color1[3]
+        };
+        memcpy(dst + varDesc.StartOffset, &c1, sizeof(c1));
+
+        auto var1 = cb->GetVariableByName("Color2");
+        assert(var1 != nullptr);
+        D3D11_SHADER_VARIABLE_DESC varDesc1;
+        var1->GetDesc(&varDesc1);
+        DirectX::XMFLOAT4 c2{
+                color2[0], color2[1], color2[2], color2[3]
+        };
+        memcpy(dst + varDesc1.StartOffset, &c2, sizeof(c2));
+    }
+#elif BACKEND_OPENGL
+    struct ConstantBufferData {
+        GLfloat color[4];
+    };
+    void* GetConstantBuffer() override {
+        auto* buf = new ConstantBufferData();
+        memcpy(buf->color, color1, sizeof(float) * 4);
+        constantBuffer = buf;
+        return constantBuffer;
+    }
+    void BindConstantBuffer(GLuint shaderProgram) {
+        GLint loc = glGetUniformLocation(shaderProgram, "Color1");
+        glUniform4f(loc, color1[0], color1[1], color1[2], color1[3]);
+        GLint loc1 = glGetUniformLocation(shaderProgram, "Color2");
+        glUniform4f(loc1, color2[0], color2[1], color2[2], color2[3]);
     }
 #elif BACKEND_METAL
     struct ConstantBufferData {

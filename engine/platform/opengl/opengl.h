@@ -260,11 +260,9 @@ public:
 
             // Bind shaders and uniforms
             auto shader = (ShaderGL*)material->shader;
-            GLint loc = glGetUniformLocation(shader->shaderProgram, "Color");
             glUseProgram(shader->shaderProgram);
-            auto mat = (MaterialColor*)material;
-            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
-            glUniform4f(loc, buf->color[0], buf->color[1], buf->color[2], buf->color[3]);
+            auto mat = (MaterialTwoColors*)material;
+            mat->BindConstantBuffer(shader->shaderProgram);
 
             // Bind VAO, VBO
             glBindVertexArray(vertexArrayObject);
@@ -279,7 +277,7 @@ public:
     };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-        gameObject->material = new MaterialColor(colorShader);
+        gameObject->material = new MaterialColor(twoColorsShader);
         gameObject->vertexArrayObject = triangleVAO;
         gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
@@ -412,11 +410,16 @@ public:
         GLuint shaderProgram;
     };
     ShaderGL* colorShader = nullptr;
+    ShaderGL* twoColorsShader = nullptr;
     ShaderGL* textureShader = nullptr;
     void LoadShaders() override {
         colorShader = LoadShader(
                 "assets/shaders/color.glsl.vert",
                 "assets/shaders/color.glsl.frag"
+        );
+        twoColorsShader = LoadShader(
+                "assets/shaders/color.glsl.vert",
+                "assets/shaders/2colors.glsl.frag"
         );
         textureShader = LoadShader(
                 "assets/shaders/texture.glsl.vert",
