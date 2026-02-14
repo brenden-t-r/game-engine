@@ -277,7 +277,7 @@ public:
     };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-        gameObject->material = new MaterialWithUniformBuffer(twoColorsShader);
+        gameObject->material = new MaterialColor(colorShader);
         gameObject->vertexArrayObject = triangleVAO;
         gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
@@ -410,21 +410,19 @@ public:
         GLuint shaderProgram;
     };
     ShaderGL* colorShader = nullptr;
-    ShaderGL* twoColorsShader = nullptr;
     ShaderGL* textureShader = nullptr;
     void LoadShaders() override {
         colorShader = LoadShader(
                 "assets/shaders/color.glsl.vert",
                 "assets/shaders/color.glsl.frag"
         );
-        twoColorsShader = LoadShader(
-                "assets/shaders/color.glsl.vert",
-                "assets/shaders/2colors.glsl.frag"
-        );
         textureShader = LoadShader(
                 "assets/shaders/texture.glsl.vert",
                 "assets/shaders/texture.glsl.frag"
         );
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return LoadShader(shaderDef.vertexPath, shaderDef.fragmentPath);
     }
     static ShaderGL* LoadShader(const char* vertexPath, const char* fragmentPath) {
         auto vertexSource = getFileContent(vertexPath);

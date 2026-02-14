@@ -349,7 +349,7 @@ public:
     };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleD3D(d3dContext, d3dDevice);
-        gameObject->material = new MaterialWithUniformBuffer(colorShader);
+        gameObject->material = new MaterialColor(colorShader);
         return gameObject;
     }
     //endregion
@@ -531,8 +531,11 @@ public:
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
     void LoadShaders() override {
-        colorShader = LoadShader("assets/shaders/2colors.hlsl", InputLayoutType::POSITION);
+        colorShader = LoadShader("assets/shaders/color.hlsl", InputLayoutType::POSITION);
         textureShader = LoadShader("assets/shaders/texture.hlsl", InputLayoutType::POSITION_TEXCOORD);
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return LoadShader(shaderDef.path, shaderDef.inputLayoutType);
     }
     Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) {
         D3D11_INPUT_ELEMENT_DESC* layout;
@@ -569,7 +572,7 @@ public:
                 psBlob->GetBufferSize(),
                 IID_ID3D11ShaderReflection,
                 (void**)&reflection
-        );
+                );
         D3D11_SHADER_DESC shaderDesc;
         reflection->GetDesc(&shaderDesc);
         if (shaderDesc.ConstantBuffers > 0) {

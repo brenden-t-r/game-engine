@@ -115,7 +115,7 @@ public:
         uniformFields.push_back(field);
     }
     ~MaterialColor() override = default;
-    float color[4]{0,0,0,0};
+    float color[4]{1.0,1.0,1.0,1.0};
 
 #ifdef BACKEND_DIRECTX
     void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
@@ -208,5 +208,15 @@ public:
     assert(false);
 #endif
 };*/
+
+struct ShaderDef {
+    // Path to a consolidated vertex + fragment shader
+    const char* path;
+    // Path to a vertex shader
+    const char* vertexPath;
+    // Path to a fragment shader
+    const char* fragmentPath;
+    InputLayoutType inputLayoutType;
+};
 
 #endif //GAMEPROJECT_MATERIAL_H

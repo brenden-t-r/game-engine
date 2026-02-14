@@ -44,6 +44,7 @@ public:
 
     virtual void Init() = 0;
     virtual void LoadShaders() = 0;
+    virtual Shader* LoadShader(ShaderDef shaderDef) = 0;
     virtual void Run(void (*func)(void*), void* context) = 0;
 
     virtual GameObject* CreateGameObject(){ return new GameObject(); };

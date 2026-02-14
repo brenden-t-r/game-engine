@@ -12,29 +12,20 @@ public:
     ~MaterialGame() override {
     };
 
-    void Start() override {
-        platform->LoadShaders();
+    Shader* LoadShader() {
+        ShaderDef shaderDef{};
+#if BACKEND_DIRECTX
+        shaderDef.path = "assets/shaders/2colors.hlsl";
+        shaderDef.inputLayoutType = InputLayoutType::POSITION;
+#elif BACKEND_OPENGL
+        shaderDef.vertexPath = "assets/shaders/color.glsl.vert";
+        shaderDef.fragmentPath = "assets/shaders/2colors.glsl.frag";
+#endif
+        return platform->LoadShader(shaderDef);
+    }
 
-        triangle = (Triangle*)platform->CreateTriangle();
-        triangle->transform.width = 0.5;
-        triangle->transform.height = 0.5;
-//        auto colorMaterial = (MaterialTwoColors*)triangle->material;
-//        colorMaterial->color1[0] = 1.0;
-//        colorMaterial->color1[1] = 0.0;
-//        colorMaterial->color1[2] = 0.0;
-//        colorMaterial->color1[3] = 1.0;
-//        colorMaterial->color2[0] = 0.0;
-//        colorMaterial->color2[1] = 1.0;
-//        colorMaterial->color2[2] = 0.0;
-//        colorMaterial->color2[3] = 1.0;
-
-        sprite = platform->CreateSprite("assets/sprites/background.png");
-        sprite->transform.width = 2.0;
-        sprite->transform.height = 2.0;
-        auto spriteMaterial = (MaterialSprite*)sprite->material;
-
-//        auto* m = new MaterialWithUniformBuffer(nullptr);
-        auto m = (MaterialWithUniformBuffer*)triangle->material;
+    Material* Get2ColorMaterial(Shader* shader) {
+        auto m = new MaterialWithUniformBuffer(shader);
         Material::UniformField field{};
         field.name = "Color1";
         field.type = Material::UniformFieldType::FLOAT4;
@@ -51,7 +42,22 @@ public:
         field2.f4[2] = 1.0f;
         field2.f4[3] = 0.0f;
         m->uniformFields.push_back(field2);
+        return m;
+    }
 
+    void Start() override {
+        platform->LoadShaders();
+        sprite = platform->CreateSprite("assets/sprites/background.png");
+        sprite->transform.width = 2.0;
+        sprite->transform.height = 2.0;
+        auto spriteMaterial = (MaterialSprite*)sprite->material;
+
+        triangle = (Triangle*)platform->CreateTriangle();
+        triangle->transform.width = 0.5;
+        triangle->transform.height = 0.5;
+        Shader* shader = LoadShader();
+        Material* m = Get2ColorMaterial(shader);
+        triangle->material = m;
     }
 
     float dir = 1;
@@ -60,13 +66,13 @@ public:
         sprite->Update();
 
         auto colorMaterial = (MaterialWithUniformBuffer*)triangle->material;
-        if (colorMaterial->uniformFields[1].f4[ind] > 0.9) {
+        if (colorMaterial->uniformFields[0].f4[ind] > 0.9) {
             dir = -1;
-        } else if (colorMaterial->uniformFields[1].f4[ind] < 0.1) {
+        } else if (colorMaterial->uniformFields[0].f4[ind] < 0.1) {
             dir = 1;
             ind = ind == 2 ? 1 : 2;
         }
-        colorMaterial->uniformFields[1].f4[ind] += 0.05f * dir;
+        colorMaterial->uniformFields[0].f4[ind] += 0.05f * dir;
 
         triangle->Update();
     }
