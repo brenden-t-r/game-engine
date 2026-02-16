@@ -330,6 +330,8 @@ public:
             auto tex = (TextureGL*)((MaterialSprite*)material)->texture;
 
             glUseProgram(shader->shaderProgram);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(shader->shaderProgram);
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBindTexture(GL_TEXTURE_2D, tex->textureID);

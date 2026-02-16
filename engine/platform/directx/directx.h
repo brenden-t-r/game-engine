@@ -390,6 +390,14 @@ public:
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = d3d_vertices;
 
+            // Constant buffer
+            D3D11_BUFFER_DESC cbd = {};
+            cbd.ByteWidth = 32;
+            cbd.Usage = D3D11_USAGE_DYNAMIC;
+            cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+            cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
+
             d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
         }
 
@@ -442,6 +450,15 @@ public:
             d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
             d3dContext->IASetInputLayout(shader->inputLayout);
 
+            // Bind constant buffer
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
+            d3dContext->Unmap(constantBuffer, 0);
+            d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+
             // Draw
             d3dContext->Draw(4, 0);
         }
@@ -454,6 +471,7 @@ public:
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
+        ID3D11Buffer* constantBuffer = nullptr;
 
         Vertex d3d_vertices[4] {
                 // Order matters

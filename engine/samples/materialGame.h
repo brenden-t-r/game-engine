@@ -52,6 +52,8 @@ public:
         sprite->transform.width = 2.0;
         sprite->transform.height = 2.0;
         texture2 = platform->CreateTexture("assets/sprites/CardScarlet.png");
+        auto mat = (MaterialSprite*)sprite->material;
+        mat->color[3] = 0.8f;
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.5;
@@ -61,10 +63,6 @@ public:
         triangle->material = m;
     }
 
-    Texture* texture;
-    Texture* texture2;
-    float dir = 1;
-    int ind = 2;
     void Update() override {
         // Adjust constant buffer colors
         auto colorMaterial = (Material*)triangle->material;
@@ -87,6 +85,10 @@ public:
 private:
     Triangle* triangle;
     Sprite* sprite;
+    Texture* texture;
+    Texture* texture2;
+    float dir = 1;
+    int ind = 2;
 };
 
 #endif //GAMEPROJECT_MATERIALGAME_H

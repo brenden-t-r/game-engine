@@ -124,70 +124,13 @@ private:
     }
 };
 
-class MaterialSprite : public Material {
+class MaterialSprite : public MaterialColor {
 public:
-    MaterialSprite(Shader *shader, Texture* texture) : Material(shader), texture(texture) {
+    MaterialSprite(Shader *shader, Texture* texture) : MaterialColor(shader), texture(texture) {
         textures = std::vector<TextureBuffer>{};
         textures.push_back(TextureBuffer{texture, 0});
     }
     Texture* texture;
 };
-
-/*class MaterialFont : public Material {
-public:
-    float color[4]{0,0,0,0};
-    float outlineColor[4]{0,0,0,0};
-    Texture* textureBitmap;
-    Texture* textureSDF;
-    MaterialFont(Shader *shader, Texture* textureBitmap, Texture* textureSDF):
-        Material(shader), textureBitmap(textureBitmap), textureSDF(textureSDF) {
-        textures = std::vector<TextureBuffer>{};
-        textures.push_back(TextureBuffer{nullptr, 0});
-        textures.push_back(TextureBuffer{nullptr, 1});
-    }
-    ~MaterialFont() override {
-        delete (ConstantBufferData*) constantBuffer;
-    }
-    std::vector<TextureBuffer> GetTextures() override {
-        textures[0].texture = textureBitmap;
-        textures[0].texture = textureSDF;
-        return textures;
-    }
-
-#ifdef BACKEND_DIRECTX
-    struct ConstantBufferData {
-        DirectX::XMFLOAT4 color;
-        DirectX::XMFLOAT4 outlineColor;
-    };
-    void* GetConstantBuffer() override {
-        auto* constantBufferData = new ConstantBufferData{
-                DirectX::XMFLOAT4(color), DirectX::XMFLOAT4(outlineColor)
-        };
-       return constantBufferData;
-    }
-#elif BACKEND_OPENGL
-    struct ConstantBufferData {
-        GLfloat color[4];
-        GLfloat outlineColor[4];
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        memcpy(buf->color, color, sizeof(float) * 4);
-        memcpy(buf->outlineColor, outlineColor, sizeof(float) * 4);
-        constantBuffer = buf;
-        return constantBuffer;
-    }
-#elif BACKEND_METAL
-    struct ConstantBufferData {
-        vector_float4 color;
-    };
-    void* GetConstantBuffer() override {
-        auto* buf = new ConstantBufferData();
-        return buf;
-    }
-#else
-    assert(false);
-#endif
-};*/
 
 #endif //GAMEPROJECT_MATERIAL_H
