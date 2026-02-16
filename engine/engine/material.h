@@ -13,6 +13,7 @@
 #include "GL/glew.h"
 #elif BACKEND_METAL
 #import <simd/simd.h>
+#include <unordered_map>
 #endif
 
 enum class InputLayoutType {
@@ -50,6 +51,10 @@ public:
             float f4[4]{0,0,0,0};
         };
     };
+    struct UniformFieldOffset {
+        const char* name;
+        uint32_t offset;
+    };
 
 #ifdef BACKEND_DIRECTX
     virtual void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
@@ -85,6 +90,30 @@ public:
             }
         }
     }
+#elif BACKEND_METAL
+    virtual void BindConstantBuffer(std::unordered_map<std::string, UniformFieldOffset> uniformFieldMap, uint8_t* dst)
+    {
+        for (auto& f : uniformFields)
+        {
+            auto it = uniformFieldMap.find(f.name);
+            if (it == uniformFieldMap.end()) {
+                printf("Cannot find shader variable with name %s", f.name);
+                continue;
+            }
+            uint32_t offset = it->second.offset;
+            switch (f.type)
+            {
+                case FLOAT:
+                    memcpy(dst + offset, &f.f, sizeof(float));
+                    break;
+
+                case FLOAT4:
+                    memcpy(dst + offset, f.f4, sizeof(float) * 4);
+                    break;
+            }
+        }
+    }
+
 #endif
 
     std::vector<UniformField> uniformFields;
@@ -112,6 +141,11 @@ public:
     void BindConstantBuffer(GLuint shaderProgram) override {
         UpdateColor();
         Material::BindConstantBuffer(shaderProgram);
+    }
+#elif BACKEND_METAL
+    void BindConstantBuffer(std::unordered_map<std::string, UniformFieldOffset> uniformFieldMap, uint8_t* dst) override {
+        UpdateColor();
+        Material::BindConstantBuffer(uniformFieldMap, dst);
     }
 #endif
 

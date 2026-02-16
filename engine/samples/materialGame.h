@@ -20,6 +20,9 @@ public:
 #elif BACKEND_OPENGL
         shaderDef.vertexPath = "assets/shaders/color.glsl.vert";
         shaderDef.fragmentPath = "assets/shaders/2colors.glsl.frag";
+#elif BACKEND_METAL
+        shaderDef.vertexPath = "assets/shaders/color.vert.metal";
+        shaderDef.fragmentPath = "assets/shaders/2colors.frag.metal";
 #endif
         return platform->LoadShader(shaderDef);
     }
@@ -52,15 +55,15 @@ public:
         sprite->transform.width = 2.0;
         sprite->transform.height = 2.0;
         texture2 = platform->CreateTexture("assets/sprites/CardScarlet.png");
-        auto mat = (MaterialSprite*)sprite->material;
-        mat->color[3] = 0.8f;
+//        auto mat = (MaterialSprite*)sprite->material;
+//        mat->color[3] = 0.8f;
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.5;
         triangle->transform.height = 0.5;
         Shader* shader = LoadShader();
         Material* m = Get2ColorMaterial(shader);
-        triangle->material = m;
+        triangle->SetMaterial(m);
     }
 
     void Update() override {
@@ -75,8 +78,8 @@ public:
         colorMaterial->uniformFields[0].f4[ind] += 0.05f * dir;
 
         // Adjust sprite texture
-        auto spriteMaterial = (MaterialSprite*)sprite->material;
-        spriteMaterial->texture = dir == 1 ? texture : texture2;
+//        auto spriteMaterial = (MaterialSprite*)sprite->material;
+//        spriteMaterial->texture = dir == 1 ? texture : texture2;
 
         sprite->Update();
         triangle->Update();

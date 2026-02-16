@@ -84,6 +84,10 @@ public:
         GameObject::Update();
     }
 
+    virtual void SetMaterial(Material* mat) {
+        material = mat;
+    }
+
     void SetPosition(vec3 position) {
         transform.pos = position;
 
