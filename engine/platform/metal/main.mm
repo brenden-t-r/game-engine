@@ -235,10 +235,17 @@ using namespace metal;
 #include <simd/simd.h>
 using namespace simd;
 
+struct ConstantBufferData {
+    float4 Color;
+};
+
 fragment float4 fragment_main(VertexOut in [[stage_in]],
-                               texture2d<float> colorTexture [[texture(0)]]) {
+                               texture2d<float> colorTexture [[texture(0)]],
+                                constant ConstantBufferData& uniforms [[buffer(0)]]
+) {
     constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
-    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    colorSample *= uniforms.Color;
     return colorSample;
 }
 )";
@@ -304,6 +311,7 @@ public:
         };
         memcpy([vertexBuffer contents], metal_vertices, sizeof(metal_vertices));
 
+        // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
         auto mat = (Material*)material;
         uint8_t* dst = (uint8_t*)constantBuffer.contents;
@@ -350,6 +358,13 @@ public:
         this->texture = texture;
     }
 
+    void SetMaterial(Material* mat) override {
+        [constantBuffer release];
+        material = mat;
+        auto shader = (ShaderMTL*)material->shader;
+        constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
+    }
+
     void Update() override {
         Sprite::Update();
         VertexData newVertices[]{
@@ -381,16 +396,24 @@ public:
                                                 length:sizeof(newVertices)
                                                options:MTLResourceStorageModeShared];
 
+        // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
+        auto mat = (Material*)material;
+        uint8_t* dst = (uint8_t*)constantBuffer.contents;
+        mat->BindConstantBuffer(shader->uniformFieldMap, dst);
+
+        // Bind texture
+        auto tex = (TextureMTL*)((MaterialSprite*)material)->texture;
 
         [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
-        [renderCommandEncoder setFragmentTexture:texture->texture atIndex:0];
+        [renderCommandEncoder setFragmentTexture:tex->texture atIndex:0];
+        [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
     Texture* GetTexture() override {
-        return texture;
+        return (TextureMTL*)((MaterialSprite*)material)->texture;
     }
 
     void SetRenderCommandEncoder(id<MTLRenderCommandEncoder> commandEncoder) {
@@ -402,6 +425,7 @@ private:
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
     TextureMTL* texture = nullptr;
+    id<MTLBuffer> constantBuffer;
 };
 //endregion
 //region Sound
@@ -489,6 +513,7 @@ public:
                 metalAppDelegate.metalView.device, (TextureMTL*)texture
         );
         gameObject->material = new MaterialSprite([metalAppDelegate.metalView textureShader], texture);
+        gameObject->SetMaterial(gameObject->material);
         sprites.push_back(gameObject);
         return gameObject;
     }

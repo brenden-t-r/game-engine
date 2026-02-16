@@ -48,6 +48,17 @@ public:
         return m;
     }
 
+    // todo: clean up:
+    //  - move bind to platform layer
+    //  - hide uniformFields on base material/color material? How to support this in a non-confusing way for colormaterial?
+    //  - ^ probably instead just make uniformsFields hidden and add a relevnat method to Add and Get the parameters
+    //          in a more Godot style api
+    //  - move base shaders to files?
+    //  - hide gameobject->material in place of getter/setter.. How to make getter immutable?
+    //          - alternatively, could do a uuid on the material and then at runtime do constabt buffer re-alloc if needed
+    //  - ios
+
+
     void Start() override {
         platform->LoadShaders();
         sprite = platform->CreateSprite("assets/sprites/background.png");
@@ -55,8 +66,8 @@ public:
         sprite->transform.width = 2.0;
         sprite->transform.height = 2.0;
         texture2 = platform->CreateTexture("assets/sprites/CardScarlet.png");
-//        auto mat = (MaterialSprite*)sprite->material;
-//        mat->color[3] = 0.8f;
+        auto mat = (MaterialSprite*)sprite->material;
+        mat->color[3] = 0.8f;
 
         triangle = (Triangle*)platform->CreateTriangle();
         triangle->transform.width = 0.5;
@@ -78,8 +89,8 @@ public:
         colorMaterial->uniformFields[0].f4[ind] += 0.05f * dir;
 
         // Adjust sprite texture
-//        auto spriteMaterial = (MaterialSprite*)sprite->material;
-//        spriteMaterial->texture = dir == 1 ? texture : texture2;
+        auto spriteMaterial = (MaterialSprite*)sprite->material;
+        spriteMaterial->texture = dir == 1 ? texture : texture2;
 
         sprite->Update();
         triangle->Update();

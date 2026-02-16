@@ -7,6 +7,5 @@ struct ConstantBufferData {
 };
 
 fragment float4 fragment_main(constant ConstantBufferData& uniforms [[ buffer(0) ]]) {
-//    return float4(1.0, 1.0, 1.0, 1.0);
     return (uniforms.Color1 + uniforms.Color2) * 0.5;
 }

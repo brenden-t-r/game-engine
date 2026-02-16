@@ -56,6 +56,9 @@ public:
             delete component;
         }
     };
+    virtual void SetMaterial(Material* mat) {
+        material = mat;
+    }
     virtual void Update(){
         for (auto & component : components) {
             component->Update();
@@ -82,10 +85,6 @@ public:
     void Update() override {
         SetPosition(transform.pos);
         GameObject::Update();
-    }
-
-    virtual void SetMaterial(Material* mat) {
-        material = mat;
     }
 
     void SetPosition(vec3 position) {
