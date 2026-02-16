@@ -260,11 +260,9 @@ public:
 
             // Bind shaders and uniforms
             auto shader = (ShaderGL*)material->shader;
-            GLint loc = glGetUniformLocation(shader->shaderProgram, "Color");
             glUseProgram(shader->shaderProgram);
-            auto mat = (MaterialColor*)material;
-            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
-            glUniform4f(loc, buf->color[0], buf->color[1], buf->color[2], buf->color[3]);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(shader->shaderProgram);
 
             // Bind VAO, VBO
             glBindVertexArray(vertexArrayObject);
@@ -328,31 +326,21 @@ public:
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            // Bind shader resources
-            /*
-             *     auto shader = (ShaderD3D*)material->shader;
-            auto tex = (TextureD3D*)((MaterialSprite*)material)->texture;
-            d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
-            d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
-            d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
-            d3dContext->IASetInputLayout(shader->inputLayout);
-             */
-
             auto shader = (ShaderGL*)material->shader;
-            glUseProgram(shader->shaderProgram);
-//            auto mat = (MaterialSprite*)material;
-//            mat->GetTextures();
+            auto tex = (TextureGL*)((MaterialSprite*)material)->texture;
 
+            glUseProgram(shader->shaderProgram);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(shader->shaderProgram);
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-            glBindTexture(GL_TEXTURE_2D, texture->textureID);
+            glBindTexture(GL_TEXTURE_2D, tex->textureID);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         }
         Texture* GetTexture() override {
-            return texture;
+            return (TextureGL*)((MaterialSprite*)material)->texture;
         }
-        TextureGL* texture = nullptr;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
@@ -362,7 +350,6 @@ public:
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteGL();
-        gameObject->texture = (TextureGL*)texture;
         gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
@@ -422,6 +409,9 @@ public:
                 "assets/shaders/texture.glsl.vert",
                 "assets/shaders/texture.glsl.frag"
         );
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return LoadShader(shaderDef.vertexPath, shaderDef.fragmentPath);
     }
     static ShaderGL* LoadShader(const char* vertexPath, const char* fragmentPath) {
         auto vertexSource = getFileContent(vertexPath);

@@ -10,6 +10,7 @@
 
 #include <Windows.h>
 #include <d3d11.h>
+#include <d3d11shader.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <iostream>
@@ -23,6 +24,7 @@ static ma_engine g_engine;
 // Link necessary d3d11 libraries
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
+#pragma comment(lib, "dxguid.lib")
 //endregion
 
 //region: Input helpers/declarations
@@ -290,13 +292,13 @@ public:
             d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
             d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
             d3dContext->PSSetShaderResources(0, 1, nullSRV);
+
             // Bind constant buffer
-            auto mat = (MaterialColor*)material;
-            auto buf = (MaterialColor::ConstantBufferData*)mat->GetConstantBuffer();
-            D3D11_MAPPED_SUBRESOURCE constBufferMappedResource;
-            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constBufferMappedResource);
-            auto* dataPtr = (MaterialColor::ConstantBufferData*)constBufferMappedResource.pData;
-            dataPtr->Color = buf->Color;
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
@@ -338,8 +340,8 @@ public:
 
             // Constant buffer
             D3D11_BUFFER_DESC cbd = {};
+            cbd.ByteWidth = 32;
             cbd.Usage = D3D11_USAGE_DYNAMIC;
-            cbd.ByteWidth = sizeof(MaterialColor::ConstantBufferData);
             cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
             cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
             d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
@@ -372,8 +374,8 @@ public:
     //region Sprite
     class SpriteD3D : public Sprite {
     public:
-        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState, TextureD3D* texture) :
-                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState), texture(texture) {}
+        SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState) :
+                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {}
 
         ~SpriteD3D() override = default;
 
@@ -387,6 +389,14 @@ public:
 
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = d3d_vertices;
+
+            // Constant buffer
+            D3D11_BUFFER_DESC cbd = {};
+            cbd.ByteWidth = 32;
+            cbd.Usage = D3D11_USAGE_DYNAMIC;
+            cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+            cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
 
             d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
         }
@@ -440,19 +450,28 @@ public:
             d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
             d3dContext->IASetInputLayout(shader->inputLayout);
 
+            // Bind constant buffer
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+            auto mat = (Material*)material;
+            mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
+            d3dContext->Unmap(constantBuffer, 0);
+            d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+
             // Draw
             d3dContext->Draw(4, 0);
         }
 
         Texture* GetTexture() override {
-            return texture;
+            return (TextureD3D*)((MaterialSprite*)material)->texture;
         }
 
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
-        TextureD3D* texture;
+        ID3D11Buffer* constantBuffer = nullptr;
 
         Vertex d3d_vertices[4] {
                 // Order matters
@@ -467,7 +486,7 @@ public:
         return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
-        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState, (TextureD3D*)texture);
+        auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState);
         gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->CreateBuffer();
         return gameObject;
@@ -523,13 +542,17 @@ public:
     public:
         ID3D11VertexShader* vertexShader;
         ID3D11PixelShader* pixelShader;
+        ID3D11ShaderReflectionConstantBuffer* cb;
         ID3D11InputLayout* inputLayout;
     };
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
     void LoadShaders() override {
-        colorShader = LoadShader("assets/shaders/SimpleShader.hlsl", InputLayoutType::POSITION);
-        textureShader = LoadShader("assets/shaders/TextureShader.hlsl", InputLayoutType::POSITION_TEXCOORD);
+        colorShader = LoadShader("assets/shaders/color.hlsl", InputLayoutType::POSITION);
+        textureShader = LoadShader("assets/shaders/texture.hlsl", InputLayoutType::POSITION_TEXCOORD);
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return LoadShader(shaderDef.path, shaderDef.inputLayoutType);
     }
     Shader* LoadShader(const char* path, InputLayoutType inputLayoutType) {
         D3D11_INPUT_ELEMENT_DESC* layout;
@@ -553,14 +576,29 @@ public:
         ID3D11InputLayout* inputLayout;
         d3dDevice->CreateInputLayout(layout, numElements, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
         d3dContext->IASetInputLayout(inputLayout);
-        // Clean up shader blobs
-        vsBlob->Release();
-        psBlob->Release();
+
         auto* shader = new ShaderD3D();
-        shader->inputLayoutType = inputLayoutType;
         shader->vertexShader = vertexShader;
         shader->pixelShader = pixelShader;
         shader->inputLayout = inputLayout;
+
+        ID3D11ShaderReflection* reflection = nullptr;
+        D3DReflect(
+                psBlob->GetBufferPointer(),
+                psBlob->GetBufferSize(),
+                IID_ID3D11ShaderReflection,
+                (void**)&reflection
+                );
+        D3D11_SHADER_DESC shaderDesc;
+        reflection->GetDesc(&shaderDesc);
+        if (shaderDesc.ConstantBuffers > 0) {
+            shader->cb = reflection->GetConstantBufferByIndex(0);
+        }
+
+        // Clean up shader blobs
+        vsBlob->Release();
+        psBlob->Release();
+
         return shader;
     }
     //endregion
