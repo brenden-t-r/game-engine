@@ -8,6 +8,8 @@
 #include <GameController/GameController.h>
 
 #include "../platform.h"
+
+#include "unordered_map"
 //endregion
 
 // region Input Helpers / Callbacks
@@ -113,6 +115,47 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
 
     return nil;
 }
+static NSString* loadTextFileFromBundleAsString(NSString *fileName)
+{
+    NSString *filePath = [[NSBundle mainBundle] pathForResource:fileName ofType:nil];
+    if (!filePath)
+    {
+        NSLog(@"Text file not found in bundle: %@", fileName);
+        return {};
+    }
+    NSError *error = nil;
+    NSString *fileContents = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&error];
+    if (!fileContents)
+    {
+        NSLog(@"Failed to read text file: %@ (%@)", fileName, error.localizedDescription);
+        return {};
+    }
+    return fileContents;
+}
+static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Material::UniformFieldOffset> uniformFieldMap, uint8_t* dst)
+{
+    mat->PreBind();
+    auto uniformFields = mat->uniformFields;
+    for (auto& f : uniformFields)
+    {
+        auto it = uniformFieldMap.find(f.name);
+        if (it == uniformFieldMap.end()) {
+            printf("Cannot find shader variable with name %s", f.name);
+            continue;
+        }
+        uint32_t offset = it->second.offset;
+        switch (f.type)
+        {
+            case Material::FLOAT:
+                memcpy(dst + offset, &f.f, sizeof(float));
+                break;
+
+            case Material::FLOAT4:
+                memcpy(dst + offset, f.f4, sizeof(float) * 4);
+                break;
+        }
+    }
+}
 //endregion
 
 //region Shader Source
@@ -179,16 +222,25 @@ using namespace metal;
 #include <simd/simd.h>
 using namespace simd;
 
+struct ConstantBufferData {
+    float4 Color;
+};
+
 fragment float4 fragment_main(VertexOut in [[stage_in]],
-                               texture2d<float> colorTexture [[texture(0)]]) {
+                               texture2d<float> colorTexture [[texture(0)]],
+                                constant ConstantBufferData& uniforms [[buffer(0)]]
+) {
     constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
-    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    colorSample *= uniforms.Color;
     return colorSample;
 }
 )";
 class ShaderMTL : public Shader {
 public:
     id<MTLRenderPipelineState> renderPipelineState;
+    std::unordered_map<std::string, Material::UniformFieldOffset> uniformFieldMap;
+    int bufferDataSize;
 };
 //endregion
 
@@ -203,6 +255,7 @@ public:
 @property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
 @property (nonatomic, strong) GCVirtualController *virtualController;
 - (void) LoadShaders;
+- (Shader*) LoadShader:(ShaderDef)shaderDef;
 - (BOOL) IsGamePadPressed:(GamepadButton)button;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
@@ -210,8 +263,6 @@ public:
 @property (strong, nonatomic) MetalViewController *viewController;
 @end
 //endregion
-
-AVAudioEngine *engine = nullptr;
 
 //region Game Objects
 //region Triangle
@@ -230,12 +281,13 @@ public:
                 vertices[2].x, vertices[2].y, 0.0f, 1.0f   // Bottom right vertex
         };
         vertexBuffer = [metalDevice newBufferWithBytes:&metal_vertices length:sizeof(metal_vertices) options:MTLResourceStorageModeShared];
+    }
 
-        // Create uniform buffer
-        MaterialColor::ConstantBufferData constantBufferData = { .Color = {0.0, 0.0, 0.0, 1.0} };
-        constantBuffer = [metalDevice newBufferWithBytes:&constantBufferData
-                                                  length:sizeof(constantBufferData)
-                                                 options:MTLResourceStorageModeShared];
+    void SetMaterial(Material* mat) override {
+        [constantBuffer release];
+        material = mat;
+        auto shader = (ShaderMTL*)material->shader;
+        constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
@@ -247,8 +299,11 @@ public:
         };
         memcpy([vertexBuffer contents], metal_vertices, sizeof(metal_vertices));
 
+        // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
-        memcpy([constantBuffer contents], material->GetConstantBuffer(), sizeof(MaterialColor::ConstantBufferData));
+        uint8_t* dst = (uint8_t*)constantBuffer.contents;
+        BindConstantBuffer(material, shader->uniformFieldMap, dst);
+
 
         [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
@@ -291,6 +346,13 @@ public:
         this->texture = texture;
     }
 
+    void SetMaterial(Material* mat) override {
+        [constantBuffer release];
+        material = mat;
+        auto shader = (ShaderMTL*)material->shader;
+        constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
+    }
+
     void Update() override {
         Sprite::Update();
         VertexData newVertices[]{
@@ -322,11 +384,18 @@ public:
                                                 length:sizeof(newVertices)
                                                options:MTLResourceStorageModeShared];
 
+        // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
+        uint8_t* dst = (uint8_t*)constantBuffer.contents;
+        BindConstantBuffer(material, shader->uniformFieldMap, dst);
+
+        // Bind texture
+        auto tex = (TextureMTL*)((MaterialSprite*)material)->texture;
 
         [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
-        [renderCommandEncoder setFragmentTexture:texture->texture atIndex:0];
+        [renderCommandEncoder setFragmentTexture:tex->texture atIndex:0];
+        [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
@@ -343,9 +412,11 @@ private:
     id<MTLBuffer> vertexBuffer;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
     TextureMTL* texture = nullptr;
+    id<MTLBuffer> constantBuffer;
 };
 //endregion
 //region Sound
+AVAudioEngine *engine = nullptr;
 class SoundMetalAVAudioPlayer : public Sound {
 public:
     ~SoundMetalAVAudioPlayer() {
@@ -469,10 +540,14 @@ public:
     void LoadShaders() override {
         [metalAppDelegate.viewController LoadShaders];
     }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return [metalAppDelegate.viewController LoadShader:shaderDef];
+    }
     GameObject* CreateGameObject() override { return new GameObject(); };
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleMetal(metalAppDelegate.viewController.device);
         gameObject->material = new MaterialColor([metalAppDelegate.viewController colorShader]);
+        gameObject->SetMaterial(gameObject->material);
         triangles.push_back(gameObject);
         return gameObject;
     }
@@ -487,6 +562,7 @@ public:
                 metalAppDelegate.viewController.device, (TextureMTL*)texture
         );
         gameObject->material = new MaterialSprite([metalAppDelegate.viewController textureShader], texture);
+        gameObject->SetMaterial(gameObject->material);
         sprites.push_back(gameObject);
         return gameObject;
     }
@@ -624,6 +700,13 @@ static void RealMainMetal(MetalAppDelegate* app) {
     self.colorShader = [self LoadShader:InputLayoutType::POSITION vertexSrc:vertexShaderSrc fragmentSrc:fragmentShaderSrc];
     self.textureShader = [self LoadShader:InputLayoutType::POSITION_TEXCOORD vertexSrc:textureVertexShaderSrc fragmentSrc:textureFragmentShaderSrc];
 }
+-(Shader*)LoadShader:(ShaderDef)shaderDef {
+    NSString* vertPath = [NSString stringWithUTF8String:shaderDef.vertexPath];
+    NSString* fragPath = [NSString stringWithUTF8String:shaderDef.fragmentPath];
+    NSString* vert = loadTextFileFromBundleAsString(vertPath);
+    NSString* frag = loadTextFileFromBundleAsString(fragPath);
+    return [self LoadShader:shaderDef.inputLayoutType vertexSrc:[vert cString] fragmentSrc:[frag cString]];
+}
 -(ShaderMTL*)LoadShader:(InputLayoutType)inputLayoutType vertexSrc:(const char*)vertexSrc fragmentSrc:(const char*)fragmentSrc {
     MTLRenderPipelineDescriptor *desc = [self loadShaderLibrary:vertexSrc frag:fragmentSrc];
 
@@ -643,17 +726,45 @@ static void RealMainMetal(MetalAppDelegate* app) {
             break;
     }
 
+    MTLRenderPipelineReflection* reflection = nil;
     NSError *error = nil;
-    id <MTLRenderPipelineState> pipelineState = [self.device newRenderPipelineStateWithDescriptor:desc error:&error];
+    id<MTLRenderPipelineState> pipelineState =
+            [self.device newRenderPipelineStateWithDescriptor:desc
+                                                      options:MTLPipelineOptionArgumentInfo |
+                                                              MTLPipelineOptionBufferTypeInfo |
+                                                              MTLPipelineOptionBindingInfo
+                                                   reflection:&reflection
+                                                        error:&error];
     if (!pipelineState) {
         NSLog(@"Pipeline creation error: %@", error.localizedDescription);
         assert(false);
     }
     [desc release];
 
-    ShaderMTL *shader = new ShaderMTL();
-    shader->inputLayoutType = inputLayoutType;
+    ShaderMTL* shader = new ShaderMTL();
     shader->renderPipelineState = pipelineState;
+
+    // Find uniform buffer at index 0
+    MTLArgument *buffer0 = nil;
+    for (MTLArgument *arg in reflection.fragmentArguments)
+    {
+        if (arg.type == MTLArgumentTypeBuffer && arg.index == 0)
+        {
+            buffer0 = arg;
+            break;
+        }
+    }
+    // Set the buffer data size
+    shader->bufferDataSize = buffer0.bufferDataSize;
+    // Enumerate constant buffer properties and offsets
+    for (MTLStructMember *member in buffer0.bufferStructType.members)
+    {
+        shader->uniformFieldMap[member.name.UTF8String] = {
+                member.name.UTF8String,
+                (uint32_t)member.offset
+        };
+    }
+
     return shader;
 }
 - (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {

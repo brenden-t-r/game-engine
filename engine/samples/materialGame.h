@@ -55,7 +55,6 @@ public:
     //  - move base shaders to files?
     //  - hide gameobject->material in place of getter/setter.. How to make getter immutable?
     //          - alternatively, could do a uuid on the material and then at runtime do constabt buffer re-alloc if needed
-    //  - ios
 
 
     void Start() override {
