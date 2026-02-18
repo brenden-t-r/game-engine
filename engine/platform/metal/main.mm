@@ -169,6 +169,30 @@ static NSString* loadTextFileFromBundleAsString(NSString *fileName)
     }
     return fileContents;
 }
+static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Material::UniformFieldOffset> uniformFieldMap, uint8_t* dst)
+{
+    mat->PreBind();
+    auto uniformFields = mat->uniformFields;
+    for (auto& f : uniformFields)
+    {
+        auto it = uniformFieldMap.find(f.name);
+        if (it == uniformFieldMap.end()) {
+            printf("Cannot find shader variable with name %s", f.name);
+            continue;
+        }
+        uint32_t offset = it->second.offset;
+        switch (f.type)
+        {
+            case Material::FLOAT:
+                memcpy(dst + offset, &f.f, sizeof(float));
+                break;
+
+            case Material::FLOAT4:
+                memcpy(dst + offset, f.f4, sizeof(float) * 4);
+                break;
+        }
+    }
+}
 //endregion
 
 //region Shader Source
@@ -313,9 +337,8 @@ public:
 
         // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
-        auto mat = (Material*)material;
         uint8_t* dst = (uint8_t*)constantBuffer.contents;
-        mat->BindConstantBuffer(shader->uniformFieldMap, dst);
+        BindConstantBuffer(material, shader->uniformFieldMap, dst);
 
         [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
@@ -398,9 +421,8 @@ public:
 
         // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
-        auto mat = (Material*)material;
         uint8_t* dst = (uint8_t*)constantBuffer.contents;
-        mat->BindConstantBuffer(shader->uniformFieldMap, dst);
+        BindConstantBuffer(material, shader->uniformFieldMap, dst);
 
         // Bind texture
         auto tex = (TextureMTL*)((MaterialSprite*)material)->texture;
@@ -600,7 +622,6 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     }
     return self;
 }
-
 -(void)LoadShaders {
     self.colorShader = [self LoadShader:InputLayoutType::POSITION vertexSrc:vertexShaderSrc fragmentSrc:fragmentShaderSrc];
     self.textureShader = [self LoadShader:InputLayoutType::POSITION_TEXCOORD vertexSrc:textureVertexShaderSrc fragmentSrc:textureFragmentShaderSrc];
@@ -612,7 +633,6 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     NSString* frag = loadTextFileFromBundleAsString(fragPath);
     return [self LoadShader:shaderDef.inputLayoutType vertexSrc:[vert cString] fragmentSrc:[frag cString]];
 }
-
 -(ShaderMTL*)LoadShader:(InputLayoutType)inputLayoutType vertexSrc:(const char*)vertexSrc fragmentSrc:(const char*)fragmentSrc {
     MTLRenderPipelineDescriptor* desc = [self loadShaderLibrary:vertexSrc frag:fragmentSrc];
 
