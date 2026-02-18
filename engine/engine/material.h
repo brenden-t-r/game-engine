@@ -55,42 +55,12 @@ public:
         const char* name;
         uint32_t offset;
     };
+    // Called each frame just prior to submitting constant buffer data to GPU.
+    // Useful for utility materials like MaterialColor, where internal properties
+    // can overwrite the hidden uniformFields prior to GPU submission.
+    virtual void PreBind() {};
 
-#ifdef BACKEND_DIRECTX
-    virtual void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
-        for (auto f : uniformFields) {
-            auto var = cb->GetVariableByName(f.name);
-            if (!var) {
-                printf("Cannot find shader variable with name %s", f.name);
-                continue;
-            }
-            D3D11_SHADER_VARIABLE_DESC varDesc;
-            var->GetDesc(&varDesc);
-            switch(f.type) {
-                case FLOAT:
-                    memcpy(dst + varDesc.StartOffset, &f.f, sizeof(float));
-                    break;
-                case FLOAT4:
-                    memcpy(dst + varDesc.StartOffset, f.f4, sizeof(float) * 4);
-                    break;
-            }
-        }
-    }
-#elif BACKEND_OPENGL
-    virtual void BindConstantBuffer(GLuint shaderProgram) {
-        for (auto f : uniformFields) {
-            GLint loc = glGetUniformLocation(shaderProgram, f.name);
-            switch(f.type) {
-                case FLOAT:
-                    glUniform1f(loc, f.f);
-                    break;
-                case FLOAT4:
-                    glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
-                    break;
-            }
-        }
-    }
-#elif BACKEND_METAL
+#if BACKEND_METAL
     virtual void BindConstantBuffer(std::unordered_map<std::string, UniformFieldOffset> uniformFieldMap, uint8_t* dst)
     {
         for (auto& f : uniformFields)
@@ -131,18 +101,11 @@ public:
     }
     ~MaterialColor() override = default;
     float color[4]{1.0,1.0,1.0,1.0};
+    void PreBind() override {
+        UpdateColor();
+    }
 
-#ifdef BACKEND_DIRECTX
-    void BindConstantBuffer(ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) override {
-        UpdateColor();
-        Material::BindConstantBuffer(cb, dst);
-    }
-#elif BACKEND_OPENGL
-    void BindConstantBuffer(GLuint shaderProgram) override {
-        UpdateColor();
-        Material::BindConstantBuffer(shaderProgram);
-    }
-#elif BACKEND_METAL
+#if BACKEND_METAL
     void BindConstantBuffer(std::unordered_map<std::string, UniformFieldOffset> uniformFieldMap, uint8_t* dst) override {
         UpdateColor();
         Material::BindConstantBuffer(uniformFieldMap, dst);

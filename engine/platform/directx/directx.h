@@ -297,8 +297,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
-            auto mat = (Material*)material;
-            mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
+            BindConstantBuffer(material, shader->cb, dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
@@ -454,8 +453,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
-            auto mat = (Material*)material;
-            mat->BindConstantBuffer(((ShaderD3D*)mat->shader)->cb, dst);
+            BindConstantBuffer(material, shader->cb, dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
@@ -545,6 +543,27 @@ public:
         ID3D11ShaderReflectionConstantBuffer* cb;
         ID3D11InputLayout* inputLayout;
     };
+    static void BindConstantBuffer(Material* mat, ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
+        mat->PreBind();
+        auto uniformFields = mat->uniformFields;
+        for (auto f : uniformFields) {
+            auto var = cb->GetVariableByName(f.name);
+            if (!var) {
+                printf("Cannot find shader variable with name %s", f.name);
+                continue;
+            }
+            D3D11_SHADER_VARIABLE_DESC varDesc;
+            var->GetDesc(&varDesc);
+            switch(f.type) {
+                case Material::FLOAT:
+                    memcpy(dst + varDesc.StartOffset, &f.f, sizeof(float));
+                    break;
+                case Material::FLOAT4:
+                    memcpy(dst + varDesc.StartOffset, f.f4, sizeof(float) * 4);
+                    break;
+            }
+        }
+    }
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
     void LoadShaders() override {

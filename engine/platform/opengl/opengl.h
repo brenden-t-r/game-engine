@@ -261,8 +261,7 @@ public:
             // Bind shaders and uniforms
             auto shader = (ShaderGL*)material->shader;
             glUseProgram(shader->shaderProgram);
-            auto mat = (Material*)material;
-            mat->BindConstantBuffer(shader->shaderProgram);
+            BindConstantBuffer(material, shader->shaderProgram);
 
             // Bind VAO, VBO
             glBindVertexArray(vertexArrayObject);
@@ -330,8 +329,7 @@ public:
             auto tex = (TextureGL*)((MaterialSprite*)material)->texture;
 
             glUseProgram(shader->shaderProgram);
-            auto mat = (Material*)material;
-            mat->BindConstantBuffer(shader->shaderProgram);
+            BindConstantBuffer(material, shader->shaderProgram);
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBindTexture(GL_TEXTURE_2D, tex->textureID);
@@ -398,6 +396,21 @@ public:
     public:
         GLuint shaderProgram;
     };
+    static void BindConstantBuffer(Material* mat, GLuint shaderProgram) {
+        mat->PreBind();
+        auto uniformFields = mat->uniformFields;
+        for (auto f : uniformFields) {
+            GLint loc = glGetUniformLocation(shaderProgram, f.name);
+            switch(f.type) {
+                case Material::FLOAT:
+                    glUniform1f(loc, f.f);
+                    break;
+                case Material::FLOAT4:
+                    glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
+                    break;
+            }
+        }
+    }
     ShaderGL* colorShader = nullptr;
     ShaderGL* textureShader = nullptr;
     void LoadShaders() override {

@@ -49,7 +49,6 @@ public:
     }
 
     // todo: clean up:
-    //  - move bind to platform layer
     //  - hide uniformFields on base material/color material? How to support this in a non-confusing way for colormaterial?
     //  - ^ probably instead just make uniformsFields hidden and add a relevnat method to Add and Get the parameters
     //          in a more Godot style api
