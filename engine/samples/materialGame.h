@@ -48,15 +48,6 @@ public:
         return m;
     }
 
-    // todo: clean up:
-    //  - hide uniformFields on base material/color material? How to support this in a non-confusing way for colormaterial?
-    //  - ^ probably instead just make uniformsFields hidden and add a relevnat method to Add and Get the parameters
-    //          in a more Godot style api
-    //  - move base shaders to files?
-    //  - hide gameobject->material in place of getter/setter.. How to make getter immutable?
-    //          - alternatively, could do a uuid on the material and then at runtime do constabt buffer re-alloc if needed
-
-
     void Start() override {
         platform->LoadShaders();
         sprite = platform->CreateSprite("assets/sprites/background.png");
