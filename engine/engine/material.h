@@ -7,7 +7,7 @@
 #include <vector>
 
 enum class InputLayoutType {
-    POSITION, POSITION_TEXCOORDk
+    POSITION, POSITION_TEXCOORD
 };
 struct ShaderDef {
     // Path to a consolidated vertex + fragment shader
