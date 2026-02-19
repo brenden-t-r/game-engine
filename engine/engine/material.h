@@ -18,18 +18,8 @@ struct ShaderDef {
     const char* fragmentPath;
     InputLayoutType inputLayoutType;
 };
-class Shader {};
-class TextureBuffer {
+class Shader {
 public:
-    Texture* texture;
-    int index;
-};
-
-class Material {
-public:
-    explicit Material(Shader* shader): shader(shader){}
-    virtual ~Material() = default;
-    Shader* shader;
     enum UniformFieldType {
         FLOAT, FLOAT4
     };
@@ -45,12 +35,53 @@ public:
         const char* name;
         uint32_t offset;
     };
+    std::vector<UniformFieldOffset> uniformFieldOffsets;
+};
+class TextureBuffer {
+public:
+    Texture* texture;
+    int index;
+};
+
+class Material {
+public:
+    explicit Material(Shader* shader): shader(shader){}
+    virtual ~Material() = default;
+    Shader* shader;
     // Called each frame just prior to submitting constant buffer data to GPU.
     // Useful for utility materials like MaterialColor, where internal properties
     // can overwrite the hidden uniformFields prior to GPU submission.
     virtual void PreBind() {};
+    void BindConstantBuffer(uint8_t* dst) {
+        PreBind();
+        for (auto f : uniformFields) {
+            uint32_t offset = 0;
+            bool found = false;
+            for (auto& s : shader->uniformFieldOffsets)
+            {
+                if (strcmp(s.name, f.name) == 0)
+                {
+                    offset = s.offset;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                printf("Cannot find shader variable with name %s", f.name);
+                continue;
+            }
+            switch(f.type) {
+                case Shader::FLOAT:
+                    memcpy(dst + offset, &f.f, sizeof(float));
+                    break;
+                case Shader::FLOAT4:
+                    memcpy(dst + offset, f.f4, sizeof(float) * 4);
+                    break;
+            }
+        }
+    }
 
-    std::vector<UniformField> uniformFields;
+    std::vector<Shader::UniformField> uniformFields;
 protected:
     std::vector<TextureBuffer> textures;
 };
@@ -58,9 +89,9 @@ protected:
 class MaterialColor : public Material {
 public:
     explicit MaterialColor(Shader* shader): Material(shader){
-        UniformField field{};
+        Shader::UniformField field{};
         field.name = "Color";
-        field.type = UniformFieldType::FLOAT4;
+        field.type = Shader::UniformFieldType::FLOAT4;
         uniformFields.push_back(field);
     }
     ~MaterialColor() override = default;

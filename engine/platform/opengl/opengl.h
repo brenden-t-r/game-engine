@@ -402,10 +402,10 @@ public:
         for (auto f : uniformFields) {
             GLint loc = glGetUniformLocation(shaderProgram, f.name);
             switch(f.type) {
-                case Material::FLOAT:
+                case Shader::FLOAT:
                     glUniform1f(loc, f.f);
                     break;
-                case Material::FLOAT4:
+                case Shader::FLOAT4:
                     glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
                     break;
             }

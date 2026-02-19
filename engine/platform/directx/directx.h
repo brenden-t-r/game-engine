@@ -297,7 +297,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
-            BindConstantBuffer(material, shader->cb, dst);
+            material->BindConstantBuffer(dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
@@ -453,7 +453,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
-            BindConstantBuffer(material, shader->cb, dst);
+            material->BindConstantBuffer(dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
@@ -540,30 +540,8 @@ public:
     public:
         ID3D11VertexShader* vertexShader;
         ID3D11PixelShader* pixelShader;
-        ID3D11ShaderReflectionConstantBuffer* cb;
         ID3D11InputLayout* inputLayout;
     };
-    static void BindConstantBuffer(Material* mat, ID3D11ShaderReflectionConstantBuffer* cb, uint8_t* dst) {
-        mat->PreBind();
-        auto uniformFields = mat->uniformFields;
-        for (auto f : uniformFields) {
-            auto var = cb->GetVariableByName(f.name);
-            if (!var) {
-                printf("Cannot find shader variable with name %s", f.name);
-                continue;
-            }
-            D3D11_SHADER_VARIABLE_DESC varDesc;
-            var->GetDesc(&varDesc);
-            switch(f.type) {
-                case Material::FLOAT:
-                    memcpy(dst + varDesc.StartOffset, &f.f, sizeof(float));
-                    break;
-                case Material::FLOAT4:
-                    memcpy(dst + varDesc.StartOffset, f.f4, sizeof(float) * 4);
-                    break;
-            }
-        }
-    }
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
     void LoadShaders() override {
@@ -610,8 +588,20 @@ public:
                 );
         D3D11_SHADER_DESC shaderDesc;
         reflection->GetDesc(&shaderDesc);
+        ID3D11ShaderReflectionConstantBuffer* cb;
         if (shaderDesc.ConstantBuffers > 0) {
-            shader->cb = reflection->GetConstantBufferByIndex(0);
+            cb = reflection->GetConstantBufferByIndex(0);
+            D3D11_SHADER_BUFFER_DESC bufferDesc;
+            cb->GetDesc(&bufferDesc);
+            for (int i = 0; i < bufferDesc.Variables; i++) {
+                auto shaderVar = cb->GetVariableByIndex(i);
+                D3D11_SHADER_VARIABLE_DESC varDesc;
+                shaderVar->GetDesc(&varDesc);
+                Shader::UniformFieldOffset field;
+                field.name = varDesc.Name;
+                field.offset = varDesc.StartOffset;
+                shader->uniformFieldOffsets.push_back(field);
+            }
         }
 
         // Clean up shader blobs

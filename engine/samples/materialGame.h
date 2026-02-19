@@ -29,17 +29,17 @@ public:
 
     Material* Get2ColorMaterial(Shader* shader) {
         auto m = new Material(shader);
-        Material::UniformField field{};
+        Shader::UniformField field{};
         field.name = "Color1";
-        field.type = Material::UniformFieldType::FLOAT4;
+        field.type = Shader::UniformFieldType::FLOAT4;
         field.f4[0] = 1.0f;
         field.f4[1] = 1.0f;
         field.f4[2] = 1.0f;
         field.f4[3] = 1.0f;
         m->uniformFields.push_back(field);
-        Material::UniformField field2{};
+        Shader::UniformField field2{};
         field2.name = "Color2";
-        field2.type = Material::UniformFieldType::FLOAT4;
+        field2.type = Shader::UniformFieldType::FLOAT4;
         field2.f4[0] = 1.0f;
         field2.f4[1] = 1.0f;
         field2.f4[2] = 1.0f;

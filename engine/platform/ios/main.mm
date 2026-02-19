@@ -146,11 +146,11 @@ static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Ma
         uint32_t offset = it->second.offset;
         switch (f.type)
         {
-            case Material::FLOAT:
+            case Shader::FLOAT:
                 memcpy(dst + offset, &f.f, sizeof(float));
                 break;
 
-            case Material::FLOAT4:
+            case Shader::FLOAT4:
                 memcpy(dst + offset, f.f4, sizeof(float) * 4);
                 break;
         }
