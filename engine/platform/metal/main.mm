@@ -655,14 +655,15 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 }
 - (BOOL)IsMousePressed:(MouseButton)button {
     NSUInteger pressed = [NSEvent pressedMouseButtons];
+    printf("%lu\n",static_cast<unsigned long>(pressed));
     switch (button) {
         case MouseButton::Unknown:
             return false;
         case MouseButton::Left:
             return pressed & (1 << 0);
-        case MouseButton::Middle:
-            return pressed & (1 << 1);
         case MouseButton::Right:
+            return pressed & (1 << 1);
+        case MouseButton::Middle:
             return pressed & (1 << 2);
     }
 }
