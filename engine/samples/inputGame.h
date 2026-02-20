@@ -48,7 +48,7 @@ public:
 //        platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
 
     }
-    void MouseReleasedCallback(MouseButton button) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         triangleKeyUp->transform.pos.y -= 0.02;
         shouldShowCallbackTriangle = true;
     }

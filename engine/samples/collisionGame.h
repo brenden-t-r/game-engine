@@ -86,7 +86,7 @@ public:
         }
     }
 
-    void MouseReleasedCallback(MouseButton btn) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         mousePos = platform->GetMousePos();
     }
 

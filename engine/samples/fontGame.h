@@ -35,7 +35,7 @@ public:
         EnableCallback(MOUSE_RELEASED);
     }
 
-    void MouseReleasedCallback(MouseButton key) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         if (key == MouseButton::Left) {
             tracking += 0.1;
         } else if (key == MouseButton::Right) {
@@ -43,8 +43,6 @@ public:
 
         }
     }
-
-
 
     void Update() override {
         ShowText("right", sprites[2], {{ 0.9, 0.8 }, ParagraphAlignment::RIGHT, size/3, tracking});

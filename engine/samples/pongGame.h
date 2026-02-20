@@ -255,10 +255,10 @@ private:
     static constexpr float PaddlePixelWidth = 32.0 * 2;
     static constexpr float PaddlePixelHeight = 128.0 * 2;
     static constexpr float BallPixelDiameter = 32.0 * 2;
-    static constexpr float BallWidth = BallPixelDiameter/WINDOW_WIDTH;
-    static constexpr float BallHeight = BallPixelDiameter/WINDOW_HEIGHT;
-    static constexpr float PaddleWidth = PaddlePixelWidth/WINDOW_WIDTH;
-    static constexpr float PaddleHeight = PaddlePixelHeight/WINDOW_HEIGHT;
+    float BallWidth = BallPixelDiameter/(float)WINDOW_WIDTH;
+    float BallHeight = BallPixelDiameter/(float)WINDOW_HEIGHT;
+    float PaddleWidth = PaddlePixelWidth/(float)WINDOW_WIDTH;
+    float PaddleHeight = PaddlePixelHeight/(float)WINDOW_HEIGHT;
     // endregion
 };
 
