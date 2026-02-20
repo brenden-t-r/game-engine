@@ -7,7 +7,12 @@ class RotationGame : public Game {
 public:
     using Game::Game;
 
-    ~RotationGame() override = default;
+    ~RotationGame() override {
+        platform->Delete(spriteBg);
+        platform->Delete(sprite);
+        platform->Delete(spriteChild);
+        platform->Delete(triangle);
+    };
 
     void Start() override {
         platform->LoadShaders();

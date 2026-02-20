@@ -506,6 +506,11 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
+    void RemoveAllCallbacks() override {
+        gamepadUpCallback = nullptr;
+        mouseUpCallback = nullptr;
+        keyUpCallback = nullptr;
+    }
     virtual vec3 GetMousePos() override {
         NSPoint mouseLocationScreen = [NSEvent mouseLocation];
         NSPoint mouseLocationWindow = [metalAppDelegate.window convertPointFromScreen:mouseLocationScreen];
@@ -655,7 +660,7 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
 }
 - (BOOL)IsMousePressed:(MouseButton)button {
     NSUInteger pressed = [NSEvent pressedMouseButtons];
-    printf("%lu\n",static_cast<unsigned long>(pressed));
+//    printf("%lu\n",static_cast<unsigned long>(pressed));
     switch (button) {
         case MouseButton::Unknown:
             return false;

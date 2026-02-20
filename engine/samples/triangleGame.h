@@ -8,7 +8,7 @@ public:
     using Game::Game;
 
     ~TriangleGame() override {
-        delete triangle;
+        platform->Delete(triangle);
     };
 
     void Start() override {

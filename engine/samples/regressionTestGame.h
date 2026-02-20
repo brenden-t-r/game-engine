@@ -13,6 +13,25 @@
 #include "spriteGame.h"
 #include "triangleGame.h"
 
+enum GAME_TYPES{
+    AUDIO_GAME, COLLISION_GAME, FONT_GAME,
+    INTPUT_GAME, LOCAL_MOVEMENT_GAME, PONG_GAME,
+    ROTATION_GAME, SPRITE_GAME, TRIANGLE_GAME
+};
+Game* LoadGame(GAME_TYPES type, Platform* platform) {
+    switch (type) {
+        case AUDIO_GAME: return new AudioGame(platform);
+        case COLLISION_GAME: return new CollisionGame(platform);
+        case FONT_GAME: return new FontGame(platform);
+        case INTPUT_GAME: return new InputGame(platform);
+        case LOCAL_MOVEMENT_GAME: return new LocalMovementGame(platform);
+        case PONG_GAME: return new PongGame(platform);
+        case ROTATION_GAME: return new RotationGame(platform);
+        case SPRITE_GAME: return new SpriteGame(platform);
+        case TRIANGLE_GAME: return new TriangleGame(platform);
+    }
+}
+
 class RegressionTestGame : public Game {
 public:
     using Game::Game;
@@ -38,7 +57,12 @@ public:
         if (gameIndex >= TOTAL_GAMES - 1) {
             gameIndex = 0;
         } else gameIndex += 1;
-        currentGame = games[gameIndex];
+        Game* gameTemp = currentGame;
+        platform->RemoveAllCallbacks();
+        currentGame = nullptr;
+        delete gameTemp;
+        GAME_TYPES gameType = static_cast<GAME_TYPES>(gameIndex);
+        currentGame = LoadGame(gameType, platform);
         currentGame->Start();
     }
 
@@ -47,17 +71,6 @@ private:
 
     int gameIndex = -1;
     static const int TOTAL_GAMES = 9;
-    Game* games[TOTAL_GAMES] = {
-        new AudioGame(platform),
-        new CollisionGame(platform),
-        new FontGame(platform),
-        new InputGame(platform),
-        new LocalMovementGame(platform),
-        new PongGame(platform),
-        new RotationGame(platform),
-        new SpriteGame(platform),
-        new TriangleGame(platform)
-    };
 };
 
 #endif // GAMEENGINE_REGRESSIONTESTGAME_H
