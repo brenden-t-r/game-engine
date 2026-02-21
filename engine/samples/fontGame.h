@@ -10,19 +10,17 @@ public:
     using Game::Game;
 
     ~FontGame() override {
-        delete burbank;
-        delete font;
+        for (auto spr : sprites) {
+            platform->Delete(spr);
+        }
     };
 
     void Start() override {
         platform->LoadShaders();
 
-        burbank = platform->CreateSpriteAtlas("assets/sprites/burbank2048.png", 0, 0, size, size, atlasNumRows, atlasCellSize);
-        font = platform->CreateSpriteAtlas("assets/sprites/font2048.png", 0, 0, size, size, atlasNumRows, atlasCellSize);
-
         const char* texture = "assets/sprites/burbank2048.png";
-        sprites[0] = burbank;
-        sprites[1] = font;
+        sprites[0] = platform->CreateSpriteAtlas("assets/sprites/burbank2048.png", 0, 0, size, size, atlasNumRows, atlasCellSize);
+        sprites[1] =  platform->CreateSpriteAtlas("assets/sprites/font2048.png", 0, 0, size, size, atlasNumRows, atlasCellSize);
         sprites[2] = platform->CreateSpriteAtlas(texture, 0, 0, size/3, size/3, atlasNumRows, atlasCellSize);
         sprites[3] = platform->CreateSpriteAtlas(texture, 0, 0, size/2, size/2, atlasNumRows, atlasCellSize);
         sprites[4] = platform->CreateSpriteAtlas(texture, 0, 0, size/1.5, size/1.5, atlasNumRows, atlasCellSize);
@@ -35,16 +33,13 @@ public:
         EnableCallback(MOUSE_RELEASED);
     }
 
-    void MouseReleasedCallback(MouseButton key) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         if (key == MouseButton::Left) {
             tracking += 0.1;
         } else if (key == MouseButton::Right) {
             tracking -= 0.1;
-
         }
     }
-
-
 
     void Update() override {
         ShowText("right", sprites[2], {{ 0.9, 0.8 }, ParagraphAlignment::RIGHT, size/3, tracking});
@@ -67,8 +62,6 @@ public:
     }
 
 private:
-    Sprite* burbank;
-    Sprite* font;
     Sprite* sprites[10]{};
 
     float size = 0.4f;

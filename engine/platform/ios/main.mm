@@ -210,7 +210,7 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
-@property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
+@property (nonatomic, strong) NSMutableSet<UITouch *> *activeTouches;
 @property (nonatomic, strong) GCVirtualController *virtualController;
 - (BOOL)IsGamePadPressed:(GamepadButton)button;
 @end
@@ -278,7 +278,6 @@ class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
         [vertexBuffer release];
-        [texture release];
     }
     SpriteMetal(
             id <MTLDevice> metalDevice,
@@ -525,8 +524,13 @@ public:
 
     bool IsKeyPressed(KeyCode key) override { return false; }
     bool IsMousePressed(MouseButton button) override {
+        if (metalAppDelegate.viewController.activeTouches.count > 0) {
+            //NSLog(@"activeTouches:%lu", static_cast<unsigned long>(metalAppDelegate.viewController.activeTouches.count));
+        }
         if (button == MouseButton::Left) {
-            return metalAppDelegate.viewController.activeTouches.count > 0;
+            return metalAppDelegate.viewController.activeTouches.count == 1;
+        } else if (button == MouseButton::Right) {
+            return metalAppDelegate.viewController.activeTouches.count == 2;
         } else return false;
     }
     bool IsGamepadButtonPressed(GamepadButton button) override { return [metalAppDelegate.viewController IsGamePadPressed: button]; }
@@ -538,6 +542,10 @@ public:
     void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
+    }
+    void RemoveAllCallbacks() override {
+        gamepadUpCallback = nullptr;
+        mouseUpCallback = nullptr;
     }
     vec3 GetMousePos() override { return {}; }
 
@@ -585,6 +593,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     // Input gesture setup
     self.activeTouches = [NSMutableSet set];
+    self.view.multipleTouchEnabled = YES;
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     [tap setCancelsTouchesInView:false];
     [self.view addGestureRecognizer:tap];
@@ -741,23 +750,27 @@ static void RealMainMetal(MetalAppDelegate* app) {
     }
 }
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        [self.activeTouches addObject:touch];
-//        NSLog(@"Touch began at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
-    }
-}
-- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        if ([self.activeTouches containsObject:touch]) {
-//            NSLog(@"Touch moved at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
-        }
-    }
+    [self updateTouchesFromEvent:event];
 }
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        [self.activeTouches removeObject:touch];
-//        NSLog(@"Touch ended at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    [self updateTouchesFromEvent:event];
+}
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [self updateTouchesFromEvent:event];
+}
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [self updateTouchesFromEvent:event];
+}
+- (void)updateTouchesFromEvent:(UIEvent *)event {
+    [self.activeTouches removeAllObjects];
+    for (UITouch *touch in event.allTouches) {
+        if (touch.phase == UITouchPhaseBegan ||
+            touch.phase == UITouchPhaseMoved ||
+            touch.phase == UITouchPhaseStationary) {
+            [self.activeTouches addObject:touch];
+        }
     }
+//    NSLog(@"Active touches: %lu", (unsigned long)self.activeTouches.count);
 }
 - (void)controllerConnected:(NSNotification *)notification {
     GCController *controller = notification.object;
@@ -810,7 +823,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
         }
     }
 }
-
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);
