@@ -164,12 +164,12 @@ class AudioGame : public Game {
 public:
     using Game::Game;
     ~AudioGame() override {
-        delete kick;
-        delete snare;
-        delete hat;
-        delete triangle;
-        delete ride;
-        delete crash;
+        platform->Delete(kick);
+        platform->Delete(snare);
+        platform->Delete(hat);
+        platform->Delete(triangle);
+        platform->Delete(ride);
+        platform->Delete(crash);
     };
 
     void Start() override {

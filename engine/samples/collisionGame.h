@@ -11,9 +11,9 @@ public:
     using Game::Game;
 
     ~CollisionGame() override {
-        delete objects[0];
-        delete objects[1];
-        delete objects[2];
+        platform->Delete(objects[0]);
+        platform->Delete(objects[1]);
+        platform->Delete(objects[2]);
     }
 
     void Start() override {
@@ -86,7 +86,7 @@ public:
         }
     }
 
-    void MouseReleasedCallback(MouseButton btn) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         mousePos = platform->GetMousePos();
     }
 

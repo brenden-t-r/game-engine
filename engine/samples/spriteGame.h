@@ -9,10 +9,10 @@ public:
     using Game::Game;
 
     ~SpriteGame() override {
-        delete triangle;
-        delete sprite;
-        delete triangle2;
-        delete sprite2;
+        platform->Delete(triangle);
+        platform->Delete(sprite);
+        platform->Delete(triangle2);
+        platform->Delete(sprite2);
     };
 
     void Start() override {
