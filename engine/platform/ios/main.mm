@@ -211,7 +211,6 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
 @property (nonatomic, strong) NSMutableSet<UITouch *> *activeTouches;
-@property (nonatomic) int activeTouchCount;
 @property (nonatomic, strong) GCVirtualController *virtualController;
 - (BOOL)IsGamePadPressed:(GamepadButton)button;
 @end
@@ -279,7 +278,6 @@ class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
         [vertexBuffer release];
-        [texture release];
     }
     SpriteMetal(
             id <MTLDevice> metalDevice,
@@ -544,6 +542,10 @@ public:
     void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
+    }
+    void RemoveAllCallbacks() override {
+        gamepadUpCallback = nullptr;
+        mouseUpCallback = nullptr;
     }
     vec3 GetMousePos() override { return {}; }
 
