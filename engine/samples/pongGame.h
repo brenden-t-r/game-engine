@@ -273,6 +273,11 @@ class PongTitleScene : public Scene {
     void Start() override {
         counter = 0;
         gameObject = platform->CreateTriangle();
+        auto mat = (MaterialColor*)gameObject->material;
+        mat->color[0] = 1.0;
+        mat->color[1] = 0.2;
+        mat->color[2] = 0.2;
+        mat->color[3] = 1.0;
 
         burbank = platform->CreateSprite("assets/sprites/burbank2048.png");
         burbank->transform.width = 0.5f;

@@ -12,23 +12,26 @@
 #include "rotationGame.h"
 #include "spriteGame.h"
 #include "triangleGame.h"
+#include "materialGame.h"
 
 enum GAME_TYPES{
     AUDIO_GAME, COLLISION_GAME, FONT_GAME,
-    INTPUT_GAME, LOCAL_MOVEMENT_GAME, PONG_GAME,
-    ROTATION_GAME, SPRITE_GAME, TRIANGLE_GAME
+    INPUT_GAME, LOCAL_MOVEMENT_GAME, PONG_GAME,
+    ROTATION_GAME, SPRITE_GAME, TRIANGLE_GAME,
+    MATERIAL_GAME
 };
 Game* LoadGame(GAME_TYPES type, Platform* platform) {
     switch (type) {
         case AUDIO_GAME: return new AudioGame(platform);
         case COLLISION_GAME: return new CollisionGame(platform);
         case FONT_GAME: return new FontGame(platform);
-        case INTPUT_GAME: return new InputGame(platform);
+        case INPUT_GAME: return new InputGame(platform);
         case LOCAL_MOVEMENT_GAME: return new LocalMovementGame(platform);
         case PONG_GAME: return new PongGame(platform);
         case ROTATION_GAME: return new RotationGame(platform);
         case SPRITE_GAME: return new SpriteGame(platform);
         case TRIANGLE_GAME: return new TriangleGame(platform);
+        case MATERIAL_GAME: return new MaterialGame(platform);
     }
 }
 
