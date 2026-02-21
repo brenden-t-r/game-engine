@@ -4,6 +4,8 @@
 #include "texture.h"
 
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <vector>
 
 enum class InputLayoutType {

@@ -169,7 +169,7 @@ static NSString* loadTextFileFromBundleAsString(NSString *fileName)
     }
     return fileContents;
 }
-static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Material::UniformFieldOffset> uniformFieldMap, uint8_t* dst)
+static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Shader::UniformFieldOffset> uniformFieldMap, uint8_t* dst)
 {
     mat->PreBind();
     auto uniformFields = mat->uniformFields;
@@ -183,11 +183,11 @@ static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Ma
         uint32_t offset = it->second.offset;
         switch (f.type)
         {
-            case Material::FLOAT:
+            case Shader::FLOAT:
                 memcpy(dst + offset, &f.f, sizeof(float));
                 break;
 
-            case Material::FLOAT4:
+            case Shader::FLOAT4:
                 memcpy(dst + offset, f.f4, sizeof(float) * 4);
                 break;
         }
@@ -276,7 +276,6 @@ fragment float4 fragment_main(VertexOut in [[stage_in]],
 class ShaderMTL : public Shader {
 public:
     id<MTLRenderPipelineState> renderPipelineState;
-    std::unordered_map<std::string, Material::UniformFieldOffset> uniformFieldMap;
     int bufferDataSize;
 };
 //endregion
@@ -338,7 +337,7 @@ public:
         // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
         uint8_t* dst = (uint8_t*)constantBuffer.contents;
-        BindConstantBuffer(material, shader->uniformFieldMap, dst);
+        material->BindConstantBuffer(dst);
 
         [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
@@ -422,7 +421,7 @@ public:
         // Bind constant buffer
         auto shader = (ShaderMTL*)material->shader;
         uint8_t* dst = (uint8_t*)constantBuffer.contents;
-        BindConstantBuffer(material, shader->uniformFieldMap, dst);
+        material->BindConstantBuffer(dst);
 
         // Bind texture
         auto tex = (TextureMTL*)((MaterialSprite*)material)->texture;
@@ -690,10 +689,10 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     // Enumerate constant buffer properties and offsets
     for (MTLStructMember *member in buffer0.bufferStructType.members)
     {
-        shader->uniformFieldMap[member.name.UTF8String] = {
-                member.name.UTF8String,
-                (uint32_t)member.offset
-        };
+        Shader::UniformFieldOffset field;
+        field.name = member.name.UTF8String;
+        field.offset = (uint32_t)member.offset;
+        shader->uniformFieldOffsets.push_back(field);
     }
 
     return shader;
