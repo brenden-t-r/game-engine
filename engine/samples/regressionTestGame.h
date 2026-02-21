@@ -61,7 +61,7 @@ public:
         platform->RemoveAllCallbacks();
         currentGame = nullptr;
         delete gameTemp;
-        GAME_TYPES gameType = static_cast<GAME_TYPES>(gameIndex);
+        auto gameType = static_cast<GAME_TYPES>(gameIndex);
         currentGame = LoadGame(gameType, platform);
         currentGame->Start();
     }

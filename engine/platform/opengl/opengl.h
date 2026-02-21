@@ -248,6 +248,11 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
+    void RemoveAllCallbacks() override {
+        keyUpCallback = nullptr;
+        mouseUpCallback = nullptr;
+        gamepadUpCallback = nullptr;
+    }
     vec3 GetMousePos() override {
         return get_mouse_pos(window);
     }
