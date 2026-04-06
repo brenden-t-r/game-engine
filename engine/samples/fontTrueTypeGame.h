@@ -27,44 +27,49 @@ class FontTrueTypeGame : public Game {
 public:
     using Game::Game;
 
-    ~FontTrueTypeGame() override {};
+    ~FontTrueTypeGame() override = default;
 
-    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas) {
-        auto texture = platform->CreateTexture(pngPath, TextureSettings{TextureFilter::LINEAR});
-        auto sprite = platform->CreateSprite(texture);
-        std::string data = LoadFileData(jsonPath);
-        _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
-        sprite->useAtlas = true;
-        sprite->useGlyph = true;
-        sprite->atlasWidth = _atlas.atlas.width;
-        sprite->atlasHeight = _atlas.atlas.height;
-        sprite->transform.width = atlas.atlas.width * 2.0 / (WINDOW_WIDTH*1.0);
-        sprite->transform.height = atlas.atlas.height * 2.0 / (WINDOW_HEIGHT*1.0);
-        sprite->transform.scale = {1, 1, 1};
-        sprite->transform.pos = {0,0,0};
-        return sprite;
+    Shader* LoadFontShader() {
+        ShaderDef shaderDef{};
+#if BACKEND_DIRECTX
+        shaderDef.path = "assets/shaders/font.hlsl";
+        shaderDef.inputLayoutType = InputLayoutType::POSITION_TEXCOORD;
+#elif BACKEND_OPENGL
+#elif BACKEND_METAL
+#endif
+        return platform->LoadShader(shaderDef);
     }
     Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas) {
         std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
         std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
         return LoadFont(png.c_str(), json.c_str(), _atlas);
     }
-
-    TEXT_MSDF::FontAtlas atlas;
-    TEXT_MSDF::FontAtlas atlas50;
-    TEXT_MSDF::FontAtlas atlas25;
-    TEXT_MSDF::FontAtlas atlas10;
-    TEXT_MSDF::FontAtlas atlas15;
-    TEXT_MSDF::FontAtlas atlas8;
-    Sprite* font15;
-    Sprite* font8;
-
+    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas) {
+        auto texture = platform->CreateTexture(pngPath, TextureSettings{TextureFilter::LINEAR});
+        auto sprite = platform->CreateSprite(texture);
+        auto mat = (MaterialSprite*)sprite->material;
+        mat->shader = LoadFontShader();
+        std::string data = LoadFileData(jsonPath);
+        _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
+        sprite->useAtlas = true;
+        sprite->useGlyph = true;
+        sprite->atlasWidth = (float)_atlas.atlas.width;
+        sprite->atlasHeight = (float)_atlas.atlas.height;
+        sprite->transform.width = (float)atlas.atlas.width * 2.0f / ((float)WINDOW_WIDTH*1.0f);
+        sprite->transform.height = (float)atlas.atlas.height * 2.0f / ((float)WINDOW_HEIGHT*1.0f);
+        sprite->transform.scale = {1, 1, 1};
+        sprite->transform.pos = {0,0,0};
+        return sprite;
+    }
 
     void Start() override {
         platform->LoadShaders();
-
-        const char* png = "assets/sprites/fonts/arial.png";
         font = LoadFont("arial", atlas);
+        font->transform.pos = {-0.5, 0.7, 1};
+        font->transform.scale = {1, 1, 1};
+        auto colorMaterial = (MaterialColor*)font->material;
+        colorMaterial->color[0] = 0.0;
+        colorMaterial->color[3] = 0.5;
         font50 = LoadFont("arial_512", atlas50);
         font25 = LoadFont("arial_25", atlas25);
         font10 = LoadFont("arial_10", atlas10);
@@ -72,31 +77,18 @@ public:
         font15 = LoadFont("arial_15", atlas15);
         font15->transform.width = 2;
         font15->transform.height = 2;
-
-        sprites[0] = platform->CreateSprite(png);
-        sprites[0]->transform.width = (float)atlas.atlas.width / (float)WINDOW_WIDTH;
-        sprites[0]->transform.height = (float)atlas.atlas.height / (float)WINDOW_HEIGHT;
-        sprites[0]->transform.scale = {1,1,1};
-        sprites[0]->transform.pos = {0,0,0};
-
-        auto gameObject = platform->CreateGameObject();
-        gameObject->transform.rot.z = 45;
-//        font->transform.parent = &gameObject->transform;
-//        font50->transform.parent = &gameObject->transform;
-//        font25->transform.parent = &gameObject->transform;
-//        font10->transform.parent = &gameObject->transform;
-
-        font->transform.pos = {-0.5, 0.7, 1};
-        font->transform.scale = {1, 1, 1}; //100
     }
 
     void Update() override {
-//        sprites[0]->Update();
-        //font->Update();
+        auto colorMaterial = (MaterialColor*)font50->material;
+        if (colorMaterial->color[ind] > 0.9) {
+            dir = -1;
+        } else if (colorMaterial->color[ind] < 0.1) {
+            dir = 1;
+            ind = ind == 2 ? 1 : 2;
+        }
+        colorMaterial->color[ind] += 0.05f * dir;
 
-        // Scale == 1, atlas is 1024, font is 100.
-//        font->transform.pos = {-0.5, 0.7, 1};
-//        font->transform.scale = {1, 1, 1}; //100
         RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, 0.7, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
         font50->transform.scale = {1, 1, 1}; // 40
@@ -113,7 +105,7 @@ public:
         font8->transform.pos = {-0.5, -0.85, 1};
         font8->transform.scale = {1.0, 1.0, 1}; // 5
         RenderTextMSDF(font8, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", 0.1, -0.85,atlas8);
-        //font->Update();
+
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
             font->transform.scale.y += 0.01f;
@@ -130,13 +122,13 @@ public:
         }
     }
 
-    void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, float startY, TEXT_MSDF::FontAtlas _atlas) {
+    static void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, float startY, const TEXT_MSDF::FontAtlas& _atlas) {
         float x = startX;
         float y = startY;
         //float y = startY + baseline * scale;  // align baseline
 
         for (char ch : text) {
-            TEXT_MSDF::Glyph g;
+            TEXT_MSDF::Glyph g{};
             if (ch == '\n') {
                 x = startX;
                 y -= round(_atlas.atlas.size*_atlas.metrics.lineHeight*_font->transform.scale.y) / WINDOW_HEIGHT*2.0f;
@@ -152,37 +144,39 @@ public:
             }
             if (!found) {
                 continue;
-//                return;
             }
 
-            _font->glyphX = g.atlasBounds.left;
-            _font->glyphY = _atlas.atlas.height - g.atlasBounds.top;
-            _font->glyphW = (g.atlasBounds.right - g.atlasBounds.left);
-            _font->glyphH = (_atlas.atlas.height - g.atlasBounds.bottom) - (_atlas.atlas.height - g.atlasBounds.top);
-            _font->glyphxoff = (g.planeBounds.left * _atlas.atlas.size) / WINDOW_WIDTH * 2.0f;
-            _font->glyphyoff = (g.planeBounds.top * _atlas.atlas.size) / WINDOW_HEIGHT *2.0f;
-            _font->glyphMsdf = g;
+            _font->glyphX = (float)g.atlasBounds.left;
+            _font->glyphY = (float)_atlas.atlas.height - (float)g.atlasBounds.top;
+            _font->glyphW = (float)(g.atlasBounds.right - g.atlasBounds.left);
+            _font->glyphH = (float)(_atlas.atlas.height - g.atlasBounds.bottom) - (float)(_atlas.atlas.height - g.atlasBounds.top);
+            _font->glyphxoff = (float)(g.planeBounds.left * _atlas.atlas.size) / (float)WINDOW_WIDTH * 2.0f;
+            _font->glyphyoff = (float)(g.planeBounds.top * _atlas.atlas.size) / (float)WINDOW_HEIGHT *2.0f;
             _font->transform.pos.x = x;
             _font->transform.pos.y = y;
             _font->Update();
-            float pixelAdvance = g.advance * _atlas.atlas.size * 2.0f;
-            x += (pixelAdvance/WINDOW_WIDTH*_font->transform.scale.x*1.0);
+            auto pixelAdvance = (float)(g.advance * _atlas.atlas.size * 2.0f);
+            x += (float)(pixelAdvance/(float)WINDOW_WIDTH*_font->transform.scale.x*1.0);
         }
     }
 
 private:
-    Sprite* burbank;
     Sprite* font;
     Sprite* font50;
     Sprite* font25;
+    Sprite* font15;
     Sprite* font10;
-    Sprite* sprites[10]{};
-
-    float size = 0.4f;
-    int atlasNumRows = 8;
-    float atlasCellSize = 0.125f;
+    Sprite* font8;
+    TEXT_MSDF::FontAtlas atlas;
+    TEXT_MSDF::FontAtlas atlas50;
+    TEXT_MSDF::FontAtlas atlas25;
+    TEXT_MSDF::FontAtlas atlas10;
+    TEXT_MSDF::FontAtlas atlas15;
+    TEXT_MSDF::FontAtlas atlas8;
     char buffer[100];
-    float tracking = 1;
+    float size = 0.4f;
+    float dir = 1;
+    int ind = 2;
 };
 
 

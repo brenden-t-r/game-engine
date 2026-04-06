@@ -113,7 +113,7 @@ private:
 
 class MaterialSprite : public MaterialColor {
 public:
-    MaterialSprite(Shader *shader, Texture* texture) : MaterialColor(shader), texture(texture) {
+    MaterialSprite(Shader* shader, Texture* texture) : MaterialColor(shader), texture(texture) {
         textures = std::vector<TextureBuffer>{};
         textures.push_back(TextureBuffer{texture, 0});
     }

@@ -133,18 +133,6 @@ struct Glyph {
     float advance;
 };
 #include "text_msdf.h"
-//struct Bounds {
-//    double left;
-//    double bottom;
-//    double right;
-//    double top;
-//};
-//struct GlyphMSDF {
-//    int unicode;
-//    double advance;
-//    Bounds planeBounds;
-//    Bounds atlasBounds;
-//};
 class Sprite : public GameObject {
 public:
     vec3 vertices[4] {
@@ -160,17 +148,15 @@ public:
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
 
-    bool useGlyph;
-    float glyphX;
-    float glyphY;
-    float glyphW;
-    float glyphH;
-    float glyphxoff;
-    float glyphyoff;
-    float atlasWidth;
-    float atlasHeight;
-    Glyph glyph;
-    TEXT_MSDF::Glyph glyphMsdf;
+    bool useGlyph = false;
+    float glyphX = 0;
+    float glyphY = 0;
+    float glyphW = 0;
+    float glyphH = 0;
+    float glyphxoff = 0;
+    float glyphyoff = 0;
+    float atlasWidth = 0;
+    float atlasHeight = 0;
 
     Sprite() {
         SetPosition({0,0,0});
@@ -188,33 +174,18 @@ public:
 
         // Start the object with the appropriate width and height at the origin in normalized coordinates
         if (useAtlas && useGlyph) {
-//            float ndcXoff =  (glyphxoff / (float)WINDOW_WIDTH);  // scale to NDC
-//            float ndcYoff = -(glyphyoff / (float)WINDOW_HEIGHT);
-//            float width = glyphW/WINDOW_WIDTH;// + ndcXoff;
-//            float height = glyphH/WINDOW_HEIGHT;// + ndcYoff;
-//            vertices[0] = {-width/2, +height/2, 1};
-//            vertices[1] = {+width/2, +height/2, 1};
-//            vertices[2] = {+width/2, -height/2, 1};
-//            vertices[3] = {-width/2, -height/2, 1};
-
-//            float ndcXoff = (glyph.xoff / (float)WINDOW_WIDTH)  ;  // scale to NDC
-//            float ndcYoff = -(glyph.yoff / (float)WINDOW_HEIGHT) ;  // minus because screen Y vs baseline
             float ndcXoff = glyphxoff;
             float ndcYoff = glyphyoff;
-
             float w = (glyphW*2.0f/ (float)WINDOW_WIDTH)  ;
             float h = (glyphH*2.0f / (float)WINDOW_HEIGHT) ;
-
             float x0 = ndcXoff;
             float y0 = ndcYoff;
             float x1 = x0 + w;
             float y1 = y0 - h;   // minus because top-left to bottom-left in NDC
-
             vertices[0] = {x0, y0, 1};  // top-left
             vertices[1] = {x1, y0, 1};  // top-right
             vertices[2] = {x1, y1, 1};  // bottom-right
             vertices[3] = {x0, y1, 1};  // bottom-left
-
         } else {
             vertices[0] = {-transform.width/2, +transform.height/2, 1};
             vertices[1] = {+transform.width/2, +transform.height/2, 1};

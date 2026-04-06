@@ -33,5 +33,7 @@ float4 PSMain(VS_OUTPUT input) : SV_TARGET
     // Sample the texture using texture coordinates
     float4 texColor = texture0.Sample(sampler0, input.texCoord);
     float4 color = texColor * Color;
+    // if r-alpha
+    color.a = texColor.r * Color.a;
     return color;
 }
