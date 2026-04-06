@@ -1,6 +1,7 @@
 #ifndef GAMEENGINE_OPENGL_H
 #define GAMEENGINE_OPENGL_H
 
+//region Imports
 #include "../../constants.h"
 #include "../platform.h"
 
@@ -17,6 +18,7 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "../../dependencies/miniaudio.h"
 static ma_engine g_engine;
+//endregion
 
 //region Input Helpers / Callbacks
 static int GetGLFWKey(KeyCode keyCode) {
@@ -158,7 +160,7 @@ public:
         // Ensure we can capture the escape key being pressed below
         glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-        glClearColor(1.0,1.0,1.0, 1.0);
+        glClearColor(0.2, 0.4, 0.6, 1.0);
 
         // Setup VAOs
         setupVAOs();
@@ -170,17 +172,6 @@ public:
             printf("Failed to initialize audio engine.");
         }
         assert(result == MA_SUCCESS);
-    }
-
-    void LoadShaders() override {
-        triangleShader = loadShaderProgram(
-                "assets/shaders/SimpleVertexShader.vertexshader",
-                "assets/shaders/SimpleFragmentShader.fragmentshader"
-        );
-        textureShader = loadShaderProgram(
-                "assets/shaders/TextureShader.vertexshader",
-                "assets/shaders/TextureShader.fragmentshader"
-        );
     }
 
     void Run(void (*func)(void*), void* ctx) override{
@@ -248,14 +239,19 @@ public:
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
     }
+    void RemoveAllCallbacks() override {
+        keyUpCallback = nullptr;
+        mouseUpCallback = nullptr;
+        gamepadUpCallback = nullptr;
+    }
     vec3 GetMousePos() override {
         return get_mouse_pos(window);
     }
     //endregion
 
     //region GameObjects
+    //region Triangle
     class TriangleGL : public Triangle{
-
     public:
         void Update() override {
             Triangle::Update();
@@ -264,31 +260,37 @@ public:
                     vertices[1].x, vertices[1].y, 0.0f,
                     vertices[2].x, vertices[2].y, 0.0f,
             };
-            glDisable(GL_BLEND);
-            glUseProgram(shaderProgram);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            // Bind shaders and uniforms
+            auto shader = (ShaderGL*)material->shader;
+            glUseProgram(shader->shaderProgram);
+            BindConstantBuffer(material, shader->shaderProgram);
+
+            // Bind VAO, VBO
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
+
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
-        GLuint shaderProgram = 0;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
-
     GameObject* CreateTriangle() override {
         auto gameObject = new TriangleGL();
-        gameObject->shaderProgram = triangleShader;
+        gameObject->material = new MaterialColor(colorShader);
         gameObject->vertexArrayObject = triangleVAO;
         gameObject->vertexBufferObject = triangleVBO;
         return gameObject;
     }
-
+    //endregion
+    //region Texture
     class TextureGL : public Texture {
     public:
-        explicit TextureGL(GLuint textureID): textureID(textureID), Texture(TextureSettings()),
-                                              Texture(TextureSettings()) {}
+        TextureGL(const char *path, GLuint textureID) : Texture(path), textureID(textureID) {}
         ~TextureGL() override {
             glDeleteTextures(1, &textureID);
         }
@@ -297,8 +299,10 @@ public:
     TextureGL* CreateTexture(const char* path) override {
         GLuint texture = loadTexture(path);
         assert(texture != 0);
-        return new TextureGL(texture);
+        return new TextureGL(nullptr, texture);
     }
+    //endregion
+    //region Sprite
     class SpriteGL : public Sprite {
     public:
         void Update() override {
@@ -312,7 +316,7 @@ public:
             };
 
             int row = atlasNumRows - atlasRow - 1;
-            if (useAtlas && !useGlyph) {
+            if (useAtlas) {
                 newVertices[3] = atlasCellSize * (float)atlasColumn; // Top-left
                 newVertices[4] = atlasCellSize * (float)row + atlasCellSize;
                 newVertices[8] = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top-right
@@ -322,65 +326,40 @@ public:
                 newVertices[18] = atlasCellSize * (float)atlasColumn;  // Bottom-left
                 newVertices[19] = atlasCellSize * (float)row;
             }
-            if (useAtlas && useGlyph) {
-                float modifier = 0.0f;
-                float u0 = (glyphX + modifier) / (float)atlasWidth;
-                float v0 = (glyphY + modifier) / (float)atlasHeight; //to get rid of trace lines.. maybe point filtering would fix?
-                float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
-                float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
-//                float u0 = glyphX / (float)atlasWidth;
-//                float v0 = glyphY / (float)atlasHeight;
-//                float u1 = (glyphX + glyphW) / (float)atlasWidth;
-//                float v1 = (glyphY + glyphH) / (float)atlasHeight;
-
-
-                v0 = 1.0 - v0;
-                v1 = 1.0 - v1;
-
-                newVertices[3] = u0; // Top-left
-                newVertices[4] = v0;
-                newVertices[8] = u1; // Top-right
-                newVertices[9] = v0;
-                newVertices[13] = u1; // Bottom-right
-                newVertices[14] = v1;
-                newVertices[18] = u0;  // Bottom-left
-                newVertices[19] = v1;
-            }
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glUseProgram(shaderProgram);
+
+            auto shader = (ShaderGL*)material->shader;
+            auto tex = (TextureGL*)((MaterialSprite*)material)->texture;
+
+            glUseProgram(shader->shaderProgram);
+            BindConstantBuffer(material, shader->shaderProgram);
             glBindVertexArray(vertexArrayObject);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-            glBindTexture(GL_TEXTURE_2D, texture->textureID);
+            glBindTexture(GL_TEXTURE_2D, tex->textureID);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(newVertices), newVertices);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         }
         Texture* GetTexture() override {
-            return texture;
+            return (TextureGL*)((MaterialSprite*)material)->texture;
         }
-        TextureGL* texture = nullptr;
-        GLuint shaderProgram = 0;
         GLuint vertexArrayObject = 0;
         GLuint vertexBufferObject = 0;
     };
     Sprite* CreateSprite(const char* path) override {
-        auto gameObject = new SpriteGL();
-        gameObject->texture = CreateTexture(path);
-        gameObject->shaderProgram = textureShader;
-        gameObject->vertexArrayObject = quadVAO;
-        gameObject->vertexBufferObject = quadVBO;
-        return gameObject;
+        auto texture = CreateTexture(path);
+        return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteGL();
-        gameObject->texture = (TextureGL*)texture;
-        gameObject->shaderProgram = textureShader;
+        gameObject->material = new MaterialSprite(textureShader, texture);
         gameObject->vertexArrayObject = quadVAO;
         gameObject->vertexBufferObject = quadVBO;
         return gameObject;
     }
-
+    //endregion
+    //region Audio
     class MiniAudioSound : public Sound {
     public:
         ~MiniAudioSound() override{
@@ -415,24 +394,112 @@ public:
         return sound;
     }
     //endregion
+    //endregion
 
-    void Shutdown() override{
+    // region: Shaders
+    class ShaderGL: public Shader{
+    public:
+        GLuint shaderProgram;
+    };
+    static void BindConstantBuffer(Material* mat, GLuint shaderProgram) {
+        mat->PreBind();
+        auto uniformFields = mat->uniformFields;
+        for (auto f : uniformFields) {
+            GLint loc = glGetUniformLocation(shaderProgram, f.name);
+            switch(f.type) {
+                case Shader::FLOAT:
+                    glUniform1f(loc, f.f);
+                    break;
+                case Shader::FLOAT4:
+                    glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
+                    break;
+            }
+        }
+    }
+    ShaderGL* colorShader = nullptr;
+    ShaderGL* textureShader = nullptr;
+    void LoadShaders() override {
+        colorShader = LoadShader(
+                "assets/shaders/color.glsl.vert",
+                "assets/shaders/color.glsl.frag"
+        );
+        textureShader = LoadShader(
+                "assets/shaders/texture.glsl.vert",
+                "assets/shaders/texture.glsl.frag"
+        );
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return LoadShader(shaderDef.vertexPath, shaderDef.fragmentPath);
+    }
+    static ShaderGL* LoadShader(const char* vertexPath, const char* fragmentPath) {
+        auto vertexSource = getFileContent(vertexPath);
+        auto fragmentSource = getFileContent(fragmentPath);
+
+        // Compile shaders
+        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
+        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
+
+        // Create program
+        GLuint program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        // Check for linking errors
+        GLint success;
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(program, 512, nullptr, infoLog);
+            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
+        }
+
+        // Cleanup
+        glDetachShader(program, vertexShader);
+        glDetachShader(program, fragmentShader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        // Create shader
+        auto* shader = new ShaderGL();
+        shader->shaderProgram = program;
+        return shader;
+    }
+    static GLuint compileShader(const char* source, GLenum type) {
+        GLuint shader = glCreateShader(type);
+        glShaderSource(shader, 1, &source, nullptr);
+        glCompileShader(shader);
+
+        // Check for compilation errors
+        GLint success;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetShaderInfoLog(shader, 512, NULL, infoLog);
+            std::cerr << "Shader compilation failed: " << infoLog << std::endl;
+        }
+
+        return shader;
+    }
+    //endregion
+
+    void Shutdown() override {
         glDisableVertexAttribArray(0);
         glDeleteVertexArrays(1, &triangleVAO);
-        glDeleteProgram(textureShader);
+        glDeleteProgram(colorShader->shaderProgram);
+        glDeleteProgram(textureShader->shaderProgram);
 
         // Close OpenGL window and terminate GLFW
         glfwTerminate();
     }
 
 private:
+
     GLFWwindow *window = nullptr;
     GLuint triangleVAO = 0;
     GLuint triangleVBO = 0;
-    GLuint triangleShader = 0;
     GLuint quadVAO = 0;
     GLuint quadVBO = 0;
-    GLuint textureShader = 0;
     GLFWgamepadstate gamepadStateA = {};
     GLFWgamepadstate gamepadStateB = {};
 
@@ -487,81 +554,7 @@ private:
         glBindVertexArray(0); // Unbind VAO
     }
 
-    //region Shaders
-    static GLuint loadShaderProgram(const char* vertex, const char* fragment) {
-        auto vertexSource = getFileContent(vertex);
-        auto fragmentSource = getFileContent(fragment);
 
-        // Compile shaders
-        GLuint vertexShader = compileShader(vertexSource, GL_VERTEX_SHADER);
-        GLuint fragmentShader = compileShader(fragmentSource, GL_FRAGMENT_SHADER);
-
-        // Create program
-        GLuint program = glCreateProgram();
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-        glLinkProgram(program);
-
-        // Check for linking errors
-        GLint success;
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            std::cerr << "Shader program linking failed: " << infoLog << std::endl;
-        }
-
-        // Cleanup
-        glDetachShader(program, vertexShader);
-        glDetachShader(program, fragmentShader);
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-
-        return program;
-    }
-
-    static char* getFileContent(const char* fileName)
-    {
-        FILE *fp;
-        long size = 0;
-        char* shaderContent;
-
-        /* Read File to get size */
-        fp = fopen(fileName, "rb");
-        if(fp == nullptr) {
-            printf("Error reading %s\n", fileName);
-            assert(false);
-        }
-        fseek(fp, 0L, SEEK_END);
-        size = ftell(fp)+1;
-        fclose(fp);
-
-        /* Read File for Content */
-        fp = fopen(fileName, "r");
-        shaderContent = static_cast<char *>(memset(malloc(size), '\0', size));
-        fread(shaderContent, 1, size-1, fp);
-        fclose(fp);
-
-        return shaderContent;
-    }
-
-    static GLuint compileShader(const char* source, GLenum type) {
-        GLuint shader = glCreateShader(type);
-        glShaderSource(shader, 1, &source, NULL);
-        glCompileShader(shader);
-
-        // Check for compilation errors
-        GLint success;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader, 512, NULL, infoLog);
-            std::cerr << "Shader compilation failed: " << infoLog << std::endl;
-        }
-
-        return shader;
-    }
-    //endregion
 
     static GLuint loadTexture(const char* path) {
         GLuint textureID;
@@ -592,15 +585,13 @@ private:
             // Bind and set texture parameters
             glBindTexture(GL_TEXTURE_2D, textureID);
             glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-//            glGenerateMipmap(GL_TEXTURE_2D);
+            glGenerateMipmap(GL_TEXTURE_2D);
 
             // Set texture parameters
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-//            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
             // Free image data
             stbi_image_free(data);
@@ -612,9 +603,30 @@ private:
 
         return textureID;
     }
+    static char* getFileContent(const char* fileName)
+    {
+        FILE *fp;
+        long size = 0;
+        char* shaderContent;
+
+        /* Read File to get size */
+        fp = fopen(fileName, "rb");
+        if(fp == nullptr) {
+            printf("Error reading %s\n", fileName);
+            assert(false);
+        }
+        fseek(fp, 0L, SEEK_END);
+        size = ftell(fp)+1;
+        fclose(fp);
+
+        /* Read File for Content */
+        fp = fopen(fileName, "r");
+        shaderContent = static_cast<char *>(memset(malloc(size), '\0', size));
+        fread(shaderContent, 1, size-1, fp);
+        fclose(fp);
+
+        return shaderContent;
+    }
 };
-
-
-
 
 #endif //GAMEENGINE_OPENGL_H

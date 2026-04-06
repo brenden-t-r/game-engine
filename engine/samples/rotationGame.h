@@ -7,7 +7,12 @@ class RotationGame : public Game {
 public:
     using Game::Game;
 
-    ~RotationGame() override = default;
+    ~RotationGame() override {
+        platform->Delete(spriteBg);
+        platform->Delete(sprite);
+        platform->Delete(spriteChild);
+        platform->Delete(triangle);
+    };
 
     void Start() override {
         platform->LoadShaders();
@@ -94,7 +99,7 @@ private:
 
     Sprite* spriteToTransform;
 
-    void MouseReleasedCallback(MouseButton btn) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         printf("0");
         if (spriteToTransform == sprite) {
             printf("1");

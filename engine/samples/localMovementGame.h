@@ -8,7 +8,11 @@ class LocalMovementGame : public Game {
 public:
     using Game::Game;
 
-    ~LocalMovementGame() override = default;
+    ~LocalMovementGame() override {
+        platform->Delete(object);
+        platform->Delete(o2);
+        platform->Delete(nested);
+    }
 
     void Start() override {
         platform->LoadShaders();

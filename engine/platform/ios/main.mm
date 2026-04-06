@@ -1,4 +1,6 @@
 #if defined(PLATFORM_IOS)
+
+//region Imports
 #include <Metal/Metal.h>
 #include <UIKit/UIKit.h>
 #include <MetalKit/MetalKit.h>
@@ -7,6 +9,10 @@
 
 #include "../platform.h"
 
+#include "unordered_map"
+//endregion
+
+// region Input Helpers / Callbacks
 static void* runFuncContext;
 static void (*runFunc)(void *);
 static GCControllerButtonInput* GetAppleGamepadButton(GCExtendedGamepad *pad, GamepadButton btn) {
@@ -45,77 +51,9 @@ void static(*mouseUpCallback)(MouseButton, void*, vec3);
 static void* mouseCallbackContext;
 void static(*gamepadUpCallback)(GamepadButton, void*);
 static void* gamepadCallbackContext;
-
-//region Shader Source
-struct VertexData {
-    simd::float4 position;
-    simd::float2 textureCoordinate;
-};
-static const char* vertexShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-struct VertexOut {
-    float4 position [[position]];
-};
-
-vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
-                             constant float4 *vertices [[buffer(0)]]) {
-    VertexOut out;
-    out.position = vertices[vertexID];
-    return out;
-}
-)";
-static const char* fragmentShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-fragment float4 fragment_main() {
-    return float4(1.0, 0, 0.0, 1.0); // Red color
-}
-)";
-static const char* textureVertexShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-#include <simd/simd.h>
-using namespace simd;
-
-struct VertexData {
-    float4 position;
-    float2 textureCoordinate;
-};
-
-struct VertexOut {
-    float4 position [[position]];
-    float2 textureCoordinate;
-};
-
-vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
-                              constant VertexData* vertexData) {
-    VertexOut out;
-    out.position = vertexData[vertexID].position;
-    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
-    return out;
-}
-)";
-static const char* textureFragmentShaderSrc = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-#include <simd/simd.h>
-using namespace simd;
-
-fragment float4 fragment_main(VertexOut in [[stage_in]],
-                               texture2d<float> colorTexture [[texture(0)]]) {
-    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
-    const float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
-    return colorSample;
-}
-)";
 //endregion
 
-//region: Static helper functions
+//region Static helper functions
 static void listFilesInDirectory(NSString *directoryPath, int indent) {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSError *error = nil;
@@ -177,42 +115,123 @@ static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDe
 
     return nil;
 }
-static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, const char *vertexSrc, const char *fragmentSrc) {
-    // Compile shader
-    NSError *error = nil;
-    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
-    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
-    id <MTLLibrary> library = [device newLibraryWithSource:shaderSource options:options error:&error];
-    if (!library) {
-        NSLog(@"Shader compilation error: %@", error.localizedDescription);
-        return nil;
-    } else {
-        NSLog(@"Compiled library");
-        NSLog(@"%@", library.functionNames[0]);
-        NSLog(@"%@", library.functionNames[1]);
+static NSString* loadTextFileFromBundleAsString(NSString *fileName)
+{
+    NSString *filePath = [[NSBundle mainBundle] pathForResource:fileName ofType:nil];
+    if (!filePath)
+    {
+        NSLog(@"Text file not found in bundle: %@", fileName);
+        return {};
     }
-    id <MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
-    id <MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
-
-    // Create pipeline state
-    MTLRenderPipelineDescriptor *pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineDesc.vertexFunction = vertexFunction;
-    pipelineDesc.fragmentFunction = fragmentFunction;
-    return pipelineDesc;
+    NSError *error = nil;
+    NSString *fileContents = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&error];
+    if (!fileContents)
+    {
+        NSLog(@"Failed to read text file: %@ (%@)", fileName, error.localizedDescription);
+        return {};
+    }
+    return fileContents;
 }
 //endregion
 
-//region: Interface declarations
+//region Shader Source
+struct VertexData {
+    simd::float4 position;
+    simd::float2 textureCoordinate;
+};
+static const char* vertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+struct VertexOut {
+    float4 position [[position]];
+};
+
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                             constant float4 *vertices [[buffer(0)]]) {
+    VertexOut out;
+    out.position = vertices[vertexID];
+    return out;
+}
+)";
+static const char* fragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+struct ConstantBufferData {
+    float4 Color;
+};
+
+fragment float4 fragment_main(constant ConstantBufferData& uniforms [[ buffer(0) ]]) {
+    return uniforms.Color;
+}
+)";
+static const char* textureVertexShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+struct VertexData {
+    float4 position;
+    float2 textureCoordinate;
+};
+
+struct VertexOut {
+    float4 position [[position]];
+    float2 textureCoordinate;
+};
+
+vertex VertexOut vertex_main(uint vertexID [[vertex_id]],
+                              constant VertexData* vertexData) {
+    VertexOut out;
+    out.position = vertexData[vertexID].position;
+    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
+    return out;
+}
+)";
+static const char* textureFragmentShaderSrc = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+#include <simd/simd.h>
+using namespace simd;
+
+struct ConstantBufferData {
+    float4 Color;
+};
+
+fragment float4 fragment_main(VertexOut in [[stage_in]],
+                               texture2d<float> colorTexture [[texture(0)]],
+                                constant ConstantBufferData& uniforms [[buffer(0)]]
+) {
+    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
+    float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    colorSample *= uniforms.Color;
+    return colorSample;
+}
+)";
+class ShaderMTL : public Shader {
+public:
+    id<MTLRenderPipelineState> renderPipelineState;
+    int bufferDataSize;
+};
+//endregion
+
+//region Interface declarations
 @interface MetalViewController : UIViewController<MTKViewDelegate>
 @property (nonatomic, strong) MTKView *metalView;
 @property (nonatomic, strong) id<MTLDevice> device;
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
-@property (nonatomic, strong) id<MTLRenderPipelineState> trianglePSO;
-@property (nonatomic, strong) id<MTLRenderPipelineState> texturePSO;
+@property (nonatomic, assign) ShaderMTL* colorShader;
+@property (nonatomic, assign) ShaderMTL* textureShader;
 @property (nonatomic, strong) id<MTLBuffer> vertexBuffer;
-@property (nonatomic, strong) NSMutableSet *activeTouches;  // To store active touches
+@property (nonatomic, strong) NSMutableSet<UITouch *> *activeTouches;
 @property (nonatomic, strong) GCVirtualController *virtualController;
-- (BOOL)IsGamePadPressed:(GamepadButton)button;
+- (void) LoadShaders;
+- (Shader*) LoadShader:(ShaderDef)shaderDef;
+- (BOOL) IsGamePadPressed:(GamepadButton)button;
 @end
 @interface MetalAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -220,26 +239,30 @@ static MTLRenderPipelineDescriptor* loadShaderLibrary(id <MTLDevice> device, con
 @end
 //endregion
 
-AVAudioEngine *engine = nullptr;
-
-//region: Game Objects
+//region Game Objects
+//region Triangle
 class TriangleMetal : public Triangle {
 public:
     ~TriangleMetal() {
         [vertexBuffer release];
     }
     TriangleMetal(
-            id <MTLDevice> metalDevice,
-            id <MTLRenderPipelineState> metalRenderPSO
+            id <MTLDevice> metalDevice
     ){
         this->metalDevice = metalDevice;
-        this->metalRenderPSO = metalRenderPSO;
         static const float metal_vertices[] = {
                 vertices[0].x, vertices[0].y, 0.0f, 1.0f,  // Top vertex
                 vertices[1].x, vertices[1].y, 0.0f, 1.0f,  // Bottom left vertex
                 vertices[2].x, vertices[2].y, 0.0f, 1.0f   // Bottom right vertex
         };
         vertexBuffer = [metalDevice newBufferWithBytes:&metal_vertices length:sizeof(metal_vertices) options:MTLResourceStorageModeShared];
+    }
+
+    void SetMaterial(Material* mat) override {
+        [constantBuffer release];
+        material = mat;
+        auto shader = (ShaderMTL*)material->shader;
+        constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
@@ -250,8 +273,15 @@ public:
                 vertices[2].x, vertices[2].y, 0.0f, 1.0f   // Bottom right vertex
         };
         memcpy([vertexBuffer contents], metal_vertices, sizeof(metal_vertices));
-        [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
+
+        // Bind constant buffer
+        auto shader = (ShaderMTL*)material->shader;
+        uint8_t* dst = (uint8_t*)constantBuffer.contents;
+        material->BindConstantBuffer(dst);
+
+        [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
+        [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
     }
 
@@ -262,43 +292,39 @@ public:
 private:
     id<MTLDevice> metalDevice;
     id<MTLBuffer> vertexBuffer;
-    id<MTLRenderPipelineState> metalRenderPSO;
+    id<MTLBuffer> constantBuffer;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
 };
-
+//endregion
+//region Texture
 class TextureMTL : public Texture{
 public:
-    explicit TextureMTL(id<MTLTexture> texture): texture(texture) {}
+    TextureMTL(const char *path, id <MTLTexture> texture) : Texture(path), texture(texture) {}
     ~TextureMTL() override {
         [texture release];
     }
     id<MTLTexture> texture;
 };
+//endregion
+//region Sprite
 class SpriteMetal : public Sprite {
 public:
     ~SpriteMetal() {
         [vertexBuffer release];
-        [texture release];
     }
     SpriteMetal(
             id <MTLDevice> metalDevice,
-            id <MTLRenderPipelineState> metalRenderPSO,
             TextureMTL* texture
     ){
         this->metalDevice = metalDevice;
-        this->metalRenderPSO = metalRenderPSO;
         this->texture = texture;
-        VertexData newVertices[]{
-                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertices[3].x, vertices[3].y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
-                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
-                {{vertices[2].x, vertices[2].y, 0, 1}, {1.0f, 1.0f}}, // Bottom right
-                {{vertices[1].x, vertices[1].y, 0, 1}, {1.0f, 0.0f}}  // Top right
-        };
-        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
-                                                length:sizeof(newVertices)
-                                               options:MTLResourceStorageModeShared];
+    }
+
+    void SetMaterial(Material* mat) override {
+        [constantBuffer release];
+        material = mat;
+        auto shader = (ShaderMTL*)material->shader;
+        constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
     }
 
     void Update() override {
@@ -312,6 +338,7 @@ public:
                 {{vertices[1].x, vertices[1].y, 0, 1}, {1.0f, 0.0f}}  // Top right
         };
 
+        int row = atlasRow;
         if (useAtlas) {
             newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
             newVertices[0].textureCoordinate.y = atlasCellSize * (float)atlasRow;
@@ -325,17 +352,24 @@ public:
             newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
             newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
-            [vertexBuffer release];
-            vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
-                                                length:sizeof(newVertices)
-                                               options:MTLResourceStorageModeShared];
-        } else {
-            memcpy([vertexBuffer contents], newVertices, sizeof(newVertices));
         }
 
-        [renderCommandEncoder setRenderPipelineState:metalRenderPSO];
+        vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
+                                                length:sizeof(newVertices)
+                                               options:MTLResourceStorageModeShared];
+
+        // Bind constant buffer
+        auto shader = (ShaderMTL*)material->shader;
+        uint8_t* dst = (uint8_t*)constantBuffer.contents;
+        material->BindConstantBuffer(dst);
+
+        // Bind texture
+        auto tex = (TextureMTL*)((MaterialSprite*)material)->texture;
+
+        [renderCommandEncoder setRenderPipelineState:shader->renderPipelineState];
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
-        [renderCommandEncoder setFragmentTexture:texture->texture atIndex:0];
+        [renderCommandEncoder setFragmentTexture:tex->texture atIndex:0];
+        [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
@@ -350,10 +384,13 @@ public:
 private:
     id<MTLDevice> metalDevice;
     id<MTLBuffer> vertexBuffer;
-    id<MTLRenderPipelineState> metalRenderPSO;
     id<MTLRenderCommandEncoder> renderCommandEncoder;
-    TextureMTL* texture;
+    TextureMTL* texture = nullptr;
+    id<MTLBuffer> constantBuffer;
 };
+//endregion
+//region Sound
+AVAudioEngine *engine = nullptr;
 class SoundMetalAVAudioPlayer : public Sound {
 public:
     ~SoundMetalAVAudioPlayer() {
@@ -455,6 +492,7 @@ public:
     AVAudioFile *audioFile;
 };
 //endregion
+//ednregion
 
 //region: PlatformIOS
 static bool Running = false;
@@ -463,7 +501,6 @@ std::vector<SpriteMetal*> sprites = std::vector<SpriteMetal*>();
 class PlatformIOS : public Platform {
 public:
     void Init() override {}
-
     void Run(void (*func)(void*), void* context) override {
         printf("Hi from Run\n");
         runFunc = func;
@@ -474,14 +511,17 @@ public:
         }
         printf("Run end");
     }
-
-    void LoadShaders() override {}
-
-    GameObject* CreateGameObject() override {
-        return new GameObject();
-    };
+    void LoadShaders() override {
+        [metalAppDelegate.viewController LoadShaders];
+    }
+    Shader* LoadShader(ShaderDef shaderDef) override {
+        return [metalAppDelegate.viewController LoadShader:shaderDef];
+    }
+    GameObject* CreateGameObject() override { return new GameObject(); };
     GameObject* CreateTriangle() override {
-        auto gameObject = new TriangleMetal(metalAppDelegate.viewController.device, metalAppDelegate.viewController.trianglePSO);
+        auto gameObject = new TriangleMetal(metalAppDelegate.viewController.device);
+        gameObject->material = new MaterialColor([metalAppDelegate.viewController colorShader]);
+        gameObject->SetMaterial(gameObject->material);
         triangles.push_back(gameObject);
         return gameObject;
     }
@@ -489,12 +529,14 @@ public:
         NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.viewController.device);
         assert(texture != nullptr);
-        return new TextureMTL(texture);
+        return new TextureMTL(path, texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteMetal(
-                metalAppDelegate.viewController.device, metalAppDelegate.viewController.texturePSO, (TextureMTL*)texture
+                metalAppDelegate.viewController.device, (TextureMTL*)texture
         );
+        gameObject->material = new MaterialSprite([metalAppDelegate.viewController textureShader], texture);
+        gameObject->SetMaterial(gameObject->material);
         sprites.push_back(gameObject);
         return gameObject;
     }
@@ -525,8 +567,13 @@ public:
 
     bool IsKeyPressed(KeyCode key) override { return false; }
     bool IsMousePressed(MouseButton button) override {
+        if (metalAppDelegate.viewController.activeTouches.count > 0) {
+            //NSLog(@"activeTouches:%lu", static_cast<unsigned long>(metalAppDelegate.viewController.activeTouches.count));
+        }
         if (button == MouseButton::Left) {
-            return metalAppDelegate.viewController.activeTouches.count > 0;
+            return metalAppDelegate.viewController.activeTouches.count == 1;
+        } else if (button == MouseButton::Right) {
+            return metalAppDelegate.viewController.activeTouches.count == 2;
         } else return false;
     }
     bool IsGamepadButtonPressed(GamepadButton button) override { return [metalAppDelegate.viewController IsGamePadPressed: button]; }
@@ -538,6 +585,10 @@ public:
     void SetGamepadReleasedCallback(void (*func)(GamepadButton, void*), void* context) override {
         gamepadUpCallback = func;
         gamepadCallbackContext = context;
+    }
+    void RemoveAllCallbacks() override {
+        gamepadUpCallback = nullptr;
+        mouseUpCallback = nullptr;
     }
     vec3 GetMousePos() override { return {}; }
 
@@ -585,6 +636,7 @@ static void RealMainMetal(MetalAppDelegate* app) {
 
     // Input gesture setup
     self.activeTouches = [NSMutableSet set];
+    self.view.multipleTouchEnabled = YES;
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     [tap setCancelsTouchesInView:false];
     [self.view addGestureRecognizer:tap];
@@ -627,37 +679,103 @@ static void RealMainMetal(MetalAppDelegate* app) {
     }
 #endif
 }
+
+-(void)LoadShaders {
+    self.colorShader = [self LoadShader:InputLayoutType::POSITION vertexSrc:vertexShaderSrc fragmentSrc:fragmentShaderSrc];
+    self.textureShader = [self LoadShader:InputLayoutType::POSITION_TEXCOORD vertexSrc:textureVertexShaderSrc fragmentSrc:textureFragmentShaderSrc];
+}
+-(Shader*)LoadShader:(ShaderDef)shaderDef {
+    NSString* vertPath = [NSString stringWithUTF8String:shaderDef.vertexPath];
+    NSString* fragPath = [NSString stringWithUTF8String:shaderDef.fragmentPath];
+    NSString* vert = loadTextFileFromBundleAsString(vertPath);
+    NSString* frag = loadTextFileFromBundleAsString(fragPath);
+    return [self LoadShader:shaderDef.inputLayoutType vertexSrc:[vert cString] fragmentSrc:[frag cString]];
+}
+-(ShaderMTL*)LoadShader:(InputLayoutType)inputLayoutType vertexSrc:(const char*)vertexSrc fragmentSrc:(const char*)fragmentSrc {
+    MTLRenderPipelineDescriptor *desc = [self loadShaderLibrary:vertexSrc frag:fragmentSrc];
+
+    switch (inputLayoutType) {
+        case InputLayoutType::POSITION:
+        case InputLayoutType::POSITION_TEXCOORD:
+            MTLRenderPipelineColorAttachmentDescriptor *attachment = desc.colorAttachments[0];
+            attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
+            attachment.blendingEnabled = YES;
+            attachment.rgbBlendOperation = MTLBlendOperationAdd;
+            attachment.alphaBlendOperation = MTLBlendOperationAdd;
+            attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
+            attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            desc.colorAttachments[0] = attachment;
+            break;
+    }
+
+    MTLRenderPipelineReflection* reflection = nil;
+    NSError *error = nil;
+    id<MTLRenderPipelineState> pipelineState =
+            [self.device newRenderPipelineStateWithDescriptor:desc
+                                                      options:MTLPipelineOptionArgumentInfo |
+                                                              MTLPipelineOptionBufferTypeInfo |
+                                                              MTLPipelineOptionBindingInfo
+                                                   reflection:&reflection
+                                                        error:&error];
+    if (!pipelineState) {
+        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
+        assert(false);
+    }
+    [desc release];
+
+    ShaderMTL* shader = new ShaderMTL();
+    shader->renderPipelineState = pipelineState;
+
+    // Find uniform buffer at index 0
+    MTLArgument *buffer0 = nil;
+    for (MTLArgument *arg in reflection.fragmentArguments)
+    {
+        if (arg.type == MTLArgumentTypeBuffer && arg.index == 0)
+        {
+            buffer0 = arg;
+            break;
+        }
+    }
+    // Set the buffer data size
+    shader->bufferDataSize = buffer0.bufferDataSize;
+    // Enumerate constant buffer properties and offsets
+    for (MTLStructMember *member in buffer0.bufferStructType.members)
+    {
+        Shader::UniformFieldOffset field;
+        field.name = member.name.UTF8String;
+        field.offset = (uint32_t)member.offset;
+        shader->uniformFieldOffsets.push_back(field);
+    }
+
+    return shader;
+}
+- (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
+    // Compile shader
+    NSError *error = nil;
+    MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
+    NSString *shaderSource = [NSString stringWithFormat:@"%s\n%s", vertexSrc, fragmentSrc];
+    id<MTLLibrary> library = [self.device newLibraryWithSource:shaderSource options:options error:&error];
+    if (!library) {
+        NSLog(@"Shader compilation error: %@", error.localizedDescription);
+        return nil;
+    } else {
+        NSLog(@"Compiled library");
+        NSLog(@"%@", library.functionNames[0]);
+        NSLog(@"%@", library.functionNames[1]);
+    }
+    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertex_main"];
+    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragment_main"];
+
+    // Create pipeline state
+    MTLRenderPipelineDescriptor* pipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineDesc.vertexFunction = vertexFunction;
+    pipelineDesc.fragmentFunction = fragmentFunction;
+    return pipelineDesc;
+}
 - (void)setupPipeline {
     self.commandQueue = [self.device newCommandQueue];
-
-    // Triangle shader
-    MTLRenderPipelineDescriptor* triangleDesc = loadShaderLibrary(self.device, vertexShaderSrc, fragmentShaderSrc);
-    triangleDesc.colorAttachments[0].pixelFormat = self.metalView.colorPixelFormat;
-    NSError *error = nil;
-    self.trianglePSO = [self.device newRenderPipelineStateWithDescriptor:triangleDesc error:&error];
-    if (!self.trianglePSO || error != nil) {
-        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
-    }
-
-    // Texture shader
-    MTLRenderPipelineDescriptor* textureDesc = loadShaderLibrary(self.device, textureVertexShaderSrc, textureFragmentShaderSrc);
-    MTLRenderPipelineColorAttachmentDescriptor *attachment = textureDesc.colorAttachments[0];
-    attachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    attachment.blendingEnabled = YES;
-    attachment.rgbBlendOperation = MTLBlendOperationAdd;
-    attachment.alphaBlendOperation = MTLBlendOperationAdd;
-    attachment.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-    attachment.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    attachment.sourceAlphaBlendFactor = MTLBlendFactorOne;
-    attachment.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    error = nil;
-    self.texturePSO = [self.device newRenderPipelineStateWithDescriptor:textureDesc error:&error];
-    if (!self.texturePSO || error != nil) {
-        NSLog(@"Pipeline creation error: %@", error.localizedDescription);
-    }
-
-    [triangleDesc release];
-    [textureDesc release];
 }
 - (void)drawInMTKView:(MTKView *)view {
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
@@ -741,23 +859,27 @@ static void RealMainMetal(MetalAppDelegate* app) {
     }
 }
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        [self.activeTouches addObject:touch];
-//        NSLog(@"Touch began at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
-    }
-}
-- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        if ([self.activeTouches containsObject:touch]) {
-//            NSLog(@"Touch moved at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
-        }
-    }
+    [self updateTouchesFromEvent:event];
 }
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    for (UITouch *touch in touches) {
-        [self.activeTouches removeObject:touch];
-//        NSLog(@"Touch ended at: %@", NSStringFromCGPoint([touch locationInView:self.view]));
+    [self updateTouchesFromEvent:event];
+}
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [self updateTouchesFromEvent:event];
+}
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [self updateTouchesFromEvent:event];
+}
+- (void)updateTouchesFromEvent:(UIEvent *)event {
+    [self.activeTouches removeAllObjects];
+    for (UITouch *touch in event.allTouches) {
+        if (touch.phase == UITouchPhaseBegan ||
+            touch.phase == UITouchPhaseMoved ||
+            touch.phase == UITouchPhaseStationary) {
+            [self.activeTouches addObject:touch];
+        }
     }
+//    NSLog(@"Active touches: %lu", (unsigned long)self.activeTouches.count);
 }
 - (void)controllerConnected:(NSNotification *)notification {
     GCController *controller = notification.object;
@@ -810,7 +932,6 @@ static void RealMainMetal(MetalAppDelegate* app) {
         }
     }
 }
-
 - (void)controllerDisconnected:(NSNotification *)notification {
     GCController *controller = notification.object;
     NSLog(@"Controller disconnected: %@", controller.vendorName);

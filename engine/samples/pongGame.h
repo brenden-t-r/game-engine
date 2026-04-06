@@ -255,10 +255,10 @@ private:
     static constexpr float PaddlePixelWidth = 32.0 * 2;
     static constexpr float PaddlePixelHeight = 128.0 * 2;
     static constexpr float BallPixelDiameter = 32.0 * 2;
-    static constexpr float BallWidth = BallPixelDiameter/WINDOW_WIDTH;
-    static constexpr float BallHeight = BallPixelDiameter/WINDOW_HEIGHT;
-    static constexpr float PaddleWidth = PaddlePixelWidth/WINDOW_WIDTH;
-    static constexpr float PaddleHeight = PaddlePixelHeight/WINDOW_HEIGHT;
+    float BallWidth = BallPixelDiameter/(float)WINDOW_WIDTH;
+    float BallHeight = BallPixelDiameter/(float)WINDOW_HEIGHT;
+    float PaddleWidth = PaddlePixelWidth/(float)WINDOW_WIDTH;
+    float PaddleHeight = PaddlePixelHeight/(float)WINDOW_HEIGHT;
     // endregion
 };
 
@@ -273,6 +273,11 @@ class PongTitleScene : public Scene {
     void Start() override {
         counter = 0;
         gameObject = platform->CreateTriangle();
+        auto mat = (MaterialColor*)gameObject->material;
+        mat->color[0] = 1.0;
+        mat->color[1] = 0.2;
+        mat->color[2] = 0.2;
+        mat->color[3] = 1.0;
 
         burbank = platform->CreateSprite("assets/sprites/burbank2048.png");
         burbank->transform.width = 0.5f;

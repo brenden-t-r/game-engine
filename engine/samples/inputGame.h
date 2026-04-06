@@ -8,7 +8,14 @@ class InputGame : public Game {
 public:
     using Game::Game;
 
-    ~InputGame() override = default;
+    ~InputGame() override {
+        platform->Delete(triangleKeyDown);
+        platform->Delete(triangleKeyUp);
+        platform->Delete(triangleCursor);
+        platform->Delete(triangleL);
+        platform->Delete(triangleM);
+        platform->Delete(triangleR);
+    }
 
     void Start() override {
         platform->LoadShaders();
@@ -48,7 +55,7 @@ public:
 //        platform->SetGamepadVibration(vibrationSpeedL, vibrationSpeedR);
 
     }
-    void MouseReleasedCallback(MouseButton button) override {
+    void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         triangleKeyUp->transform.pos.y -= 0.02;
         shouldShowCallbackTriangle = true;
     }

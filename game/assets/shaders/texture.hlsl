@@ -19,6 +19,11 @@ VS_OUTPUT VSMain(VS_INPUT input)
     return output;
 }
 
+cbuffer ConstBuffer : register(b0)
+{
+    float4 Color; // RGBA tint
+};
+
 // Texture and sampler declaration
 Texture2D texture0 : register(t0);
 SamplerState sampler0 : register(s0);
@@ -26,8 +31,6 @@ SamplerState sampler0 : register(s0);
 float4 PSMain(VS_OUTPUT input) : SV_TARGET
 {
     // Sample the texture using texture coordinates
-    float4 color =  texture0.Sample(sampler0, input.texCoord);
-float alpha = color.r;
-float3 cl = float3(0.0f,0.0f,0.0f);
-return float4(cl, alpha);
+    float4 texColor = texture0.Sample(sampler0, input.texCoord);
+    return texColor * Color;
 }
