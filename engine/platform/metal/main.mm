@@ -177,7 +177,7 @@ static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Sh
     {
         auto it = uniformFieldMap.find(f.name);
         if (it == uniformFieldMap.end()) {
-            printf("Cannot find shader variable with name %s", f.name);
+            printf("Cannot find shader variable with name %s\n", f.name);
             continue;
         }
         uint32_t offset = it->second.offset;

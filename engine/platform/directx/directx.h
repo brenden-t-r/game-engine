@@ -591,12 +591,20 @@ public:
         ID3D11VertexShader* vertexShader;
         ID3DBlob* vsBlob = nullptr;
         D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
+        HRESULT hr = d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
+        if (!SUCCEEDED(hr)) {
+            printf("Failed to compile vertex shader: %ld\n", hr);
+            exit(1);
+        }
         // Compile pixel shader
         ID3D11PixelShader* pixelShader;
         ID3DBlob* psBlob = nullptr;
         D3DCompileFromFile(shaderPath, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
+        hr = d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
+        if (!SUCCEEDED(hr)) {
+            printf("Failed to compile pixel shader: %ld\n", hr);
+            exit(1);
+        }
         // Input layout
         ID3D11InputLayout* inputLayout;
         d3dDevice->CreateInputLayout(layout, numElements, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);

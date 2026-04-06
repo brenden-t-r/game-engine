@@ -77,6 +77,11 @@ public:
         font15 = LoadFont("arial_15", atlas15);
         font15->transform.width = 2;
         font15->transform.height = 2;
+        fontMSDF = LoadFont("arial_msdf", atlasMSDF);
+        auto mat = (MaterialColor*)fontMSDF->material;
+        mat->color[0] = 0.7;
+        mat->color[1] = 0.2;
+        mat->color[2] = 0.5;
     }
 
     void Update() override {
@@ -89,40 +94,62 @@ public:
         }
         colorMaterial->color[ind] += 0.05f * dir;
 
-        RenderTextMSDF(font, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.9, 0.7, atlas);
+        RenderText(font,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+                   -0.9, 0.7, atlas);
         font50->transform.pos = {-0.5, -0.1, 1};
         font50->transform.scale = {1, 1, 1}; // 40
-        RenderTextMSDF(font50, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, -0.1, atlas50);
+        RenderText(font50,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+                   -0.1, -0.1, atlas50);
         font25->transform.pos = {-0.5, -0.7, 1};
         font25->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font25, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};", -0.1, -0.7, atlas25);
+        RenderText(font25,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+                   -0.1, -0.7, atlas25);
         font10->transform.pos = {-0.5, -0.8, 1};
         font10->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font10, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", 0.3, -0.8,atlas10);
+        RenderText(font10,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+                   0.3, -0.8, atlas10);
         font15->transform.pos = {-0.5, -0.8, 1};
         font15->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font15, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", -0.8, -0.8,atlas15);
+        RenderText(font15,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+                   -0.8, -0.8, atlas15);
         font8->transform.pos = {-0.5, -0.85, 1};
         font8->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderTextMSDF(font8, "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.", 0.1, -0.85,atlas8);
+        RenderText(font8,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+                   0.1, -0.85, atlas8);
+
+        RenderText(fontMSDF,
+                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+                   -0.9, 0.1, atlasMSDF);
 
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
             font->transform.scale.y += 0.01f;
+            fontMSDF->transform.scale.x += 0.01f;
+            fontMSDF->transform.scale.y += 0.01f;
         }
         if (platform->IsKeyPressed(KeyCode::Down)) {
             font->transform.scale.x -= 0.01f;
             font->transform.scale.y -= 0.01f;
+            fontMSDF->transform.scale.x -= 0.01f;
+            fontMSDF->transform.scale.y -= 0.01f;
         }
         if (platform->IsKeyPressed(KeyCode::Right)) {
             font->transform.rot.z += 1;
+            fontMSDF->transform.rot.z += 1;
         }
         if (platform->IsKeyPressed(KeyCode::Left)) {
             font->transform.rot.z -= 1;
+            fontMSDF->transform.rot.z -= 1;
         }
     }
 
-    static void RenderTextMSDF(Sprite* _font, const std::string &text, float startX, float startY, const TEXT_MSDF::FontAtlas& _atlas) {
+    static void RenderText(Sprite* _font, const std::string &text, float startX, float startY, const TEXT_MSDF::FontAtlas& _atlas) {
         float x = startX;
         float y = startY;
         //float y = startY + baseline * scale;  // align baseline
@@ -167,12 +194,14 @@ private:
     Sprite* font15;
     Sprite* font10;
     Sprite* font8;
+    Sprite* fontMSDF;
     TEXT_MSDF::FontAtlas atlas;
     TEXT_MSDF::FontAtlas atlas50;
     TEXT_MSDF::FontAtlas atlas25;
     TEXT_MSDF::FontAtlas atlas10;
     TEXT_MSDF::FontAtlas atlas15;
     TEXT_MSDF::FontAtlas atlas8;
+    TEXT_MSDF::FontAtlas atlasMSDF;
     char buffer[100];
     float size = 0.4f;
     float dir = 1;

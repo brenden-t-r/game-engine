@@ -69,7 +69,7 @@ public:
                 }
             }
             if (!found) {
-                printf("Cannot find shader variable with name %s", f.name);
+                printf("Cannot find shader variable with name %s\n", f.name);
                 continue;
             }
             switch(f.type) {
