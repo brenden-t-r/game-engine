@@ -16,10 +16,9 @@ float median(float r, float g, float b) {
 fragment float4 fragment_main(
     VertexOut in            [[stage_in]],
     texture2d<float> tex    [[texture(0)]],
-//    sampler texSampler      [[sampler(0)]],
+    sampler textureSampler  [[sampler(0)]],
     constant ConstantBufferData& uniforms [[buffer(0)]])
 {
-    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
     float4 texColor = tex.sample(textureSampler, in.textureCoordinate);
 
     if (uniforms.IsMSDF)

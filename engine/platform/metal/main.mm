@@ -116,27 +116,25 @@ static void listFilesInDirectory(NSString *directoryPath, int indent) {
         }
     }
 }
-static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDevice> device) {
+static id<MTLTexture> loadImageAsTextureFromBundle(NSString *imageName, id<MTLDevice> device, TextureSettings settings) {
     // Get the path to the image in the app bundle (including extension)
     NSString *imagePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
 
-    // Check if the image exists in the bundle
     if (imagePath) {
         // Read the image data from the file path
         NSData *imageData = [NSData dataWithContentsOfFile:imagePath];
 
         if (imageData) {
-            // Create a MTKTextureLoader instance
             MTKTextureLoader *textureLoader = [[MTKTextureLoader alloc] initWithDevice:device];
-
             NSError *error = nil;
-
             // Load the texture from the image data
+            auto mipsEnabled = settings.mipMapsEnabled ? @YES : @NO;
             NSDictionary *options = @{
-                    MTKTextureLoaderOptionSRGB : @NO // Needed this to fix "dark" sprites. May need to revisit.
+                    MTKTextureLoaderOptionSRGB : @NO, // Needed this to fix "dark" sprites. May need to revisit.
+                    MTKTextureLoaderOptionAllocateMipmaps: mipsEnabled,
+                    MTKTextureLoaderOptionGenerateMipmaps: mipsEnabled
             };
             id<MTLTexture> texture = [textureLoader newTextureWithData:imageData options:options error:&error];
-
             if (texture) {
                 NSLog(@"Texture loaded successfully from %@", imageName);
                 return texture;
@@ -265,9 +263,9 @@ struct ConstantBufferData {
 
 fragment float4 fragment_main(VertexOut in [[stage_in]],
                                texture2d<float> colorTexture [[texture(0)]],
+                                sampler textureSampler  [[sampler(0)]],
                                 constant ConstantBufferData& uniforms [[buffer(0)]]
 ) {
-    constexpr sampler textureSampler (mag_filter::linear, min_filter::linear);
     float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
     colorSample *= uniforms.Color;
     return colorSample;
@@ -285,6 +283,8 @@ public:
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property (nonatomic, assign) ShaderMTL* colorShader;
 @property (nonatomic, assign) ShaderMTL* textureShader;
+@property (nonatomic, assign) id<MTLSamplerState> linearSampler;
+@property (nonatomic, assign) id<MTLSamplerState> pointSampler;
 @property (strong) NSTrackingArea *trackingArea;
 - (void) LoadShaders;
 - (Shader*) LoadShader:(ShaderDef)shaderDef;
@@ -359,11 +359,13 @@ private:
 //region Texture
 class TextureMTL : public Texture{
 public:
-    TextureMTL(const char *path, id <MTLTexture> texture, TextureSettings settings) : Texture(path, settings), texture(texture) {}
+    TextureMTL(const char *path, id <MTLTexture> texture, TextureSettings settings, id<MTLSamplerState> samplerState)
+            : Texture(path, settings), texture(texture), samplerState(samplerState) {}
     ~TextureMTL() override {
         [texture release];
     }
     id<MTLTexture> texture;
+    id<MTLSamplerState> samplerState;
 };
 //endregion
 //region Sprite
@@ -443,6 +445,8 @@ public:
         [renderCommandEncoder setVertexBuffer:vertexBuffer offset:0 atIndex:0];
         [renderCommandEncoder setFragmentTexture:tex->texture atIndex:0];
         [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
+        [renderCommandEncoder setFragmentSamplerState:texture->samplerState atIndex:0];
+
         [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
@@ -538,9 +542,12 @@ public:
     }
     TextureMTL* CreateTexture(const char* path, TextureSettings settings) override {
         NSString *imageName = [NSString stringWithUTF8String:path];
-        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device);
+        id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device, settings);
         assert(texture != nullptr);
-        return new TextureMTL(path, texture, settings);
+        auto sampler = settings.filter == TextureFilter::LINEAR
+                ? [metalAppDelegate.metalView linearSampler]
+                : [metalAppDelegate.metalView pointSampler];
+        return new TextureMTL(path, texture, settings, sampler);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteMetal(
@@ -737,6 +744,19 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
                                              selector:@selector(controllerDisconnected:)
                                                  name:GCControllerDidDisconnectNotification
                                                object:nil];
+
+    // Create sampler states
+    MTLSamplerDescriptor *linearDesc = [[MTLSamplerDescriptor alloc] init];
+    linearDesc.minFilter = MTLSamplerMinMagFilterLinear;
+    linearDesc.magFilter = MTLSamplerMinMagFilterLinear;
+    linearDesc.mipFilter = MTLSamplerMipFilterLinear;
+    self.linearSampler = [self.device newSamplerStateWithDescriptor:linearDesc];
+
+    MTLSamplerDescriptor *pointDesc = [[MTLSamplerDescriptor alloc] init];
+    pointDesc.minFilter = MTLSamplerMinMagFilterNearest;
+    pointDesc.magFilter = MTLSamplerMinMagFilterNearest;
+    pointDesc.mipFilter = MTLSamplerMipFilterNearest;
+    self.pointSampler = [self.device newSamplerStateWithDescriptor:pointDesc];
 }
 - (MTLRenderPipelineDescriptor*)loadShaderLibrary:(const char *)vertexSrc frag:(const char *)fragmentSrc {
     // Compile shader
