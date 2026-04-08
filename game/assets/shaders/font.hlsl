@@ -50,21 +50,21 @@ float4 PSMain(VS_OUTPUT input) : SV_TARGET {
         float screenPxRangeVal = max(0.5 * dot(unitRange, 1.0 / fwidthUV), 1.0);
         float sd = median(texColor.r, texColor.g, texColor.b);
         float screenPxDist = screenPxRangeVal * (sd - 0.5);
-        //float maxOutline = (PxRange / 2) - 0.5; // -0.5 for half-pixel antialiasing band at glyph edge
-        float maxOutline = (screenPxRangeVal * 0.5) - 0.5; // -0.5 for half-pixel antialiasing band at glyph edge
-        float outlineWidth = min(OutlineWidth.r, maxOutline);
-        float4 outlineColor = OutlineColor;
+
         float fillAlpha = clamp(screenPxDist + 0.5, 0.0, 1.0);
-        float rawOutline = clamp(screenPxDist + outlineWidth + 0.5, 0.0, 1.0) - fillAlpha;
-        // Gate outline on SDF data presence.
-        // Dead atlas background: all channels = 0. Glyph padding: at least one channel > 0.
-        // smoothstep gives a soft transition at the padding boundary (via bilinear filtering).
-        float maxChannel = max(texColor.r, max(texColor.g, texColor.b));
-        float dataPresent = smoothstep(0.0, 0.05, maxChannel);
-        float outlineAlpha = rawOutline * dataPresent;
-        // Premultiplied alpha composite (blend state: One, InvSrcAlpha)
-        float4 color = float4(Color.rgb, Color.a) * fillAlpha
-                     + float4(outlineColor.rgb, outlineColor.a) * outlineAlpha;
+        float4 color = float4(Color.rgb, Color.a) * fillAlpha;
+
+        if (OutlineWidth > 0) {
+            float maxOutline = (screenPxRangeVal * 0.5) - 0.5; // -0.5 for half-pixel antialiasing band at glyph edge
+            float outlineWidth = min(OutlineWidth.r, maxOutline);
+            float rawOutline = clamp(screenPxDist + outlineWidth + 0.5, 0.0, 1.0) - fillAlpha;
+            // Gate outline on SDF data presence.
+            float maxChannel = max(texColor.r, max(texColor.g, texColor.b));
+            float dataPresent = smoothstep(0.0, 0.05, maxChannel);
+            float outlineAlpha = rawOutline * dataPresent;
+            color += float4(OutlineColor.rgb, OutlineColor.a) * outlineAlpha;
+        }
+
         return color;
     } else {
         float4 color = texColor * Color;

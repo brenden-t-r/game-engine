@@ -148,6 +148,9 @@ public:
         fieldIsMSDF.name = "IsMSDF";
         fieldIsMSDF.type = Shader::UniformFieldType::BOOL;
         uniformFields.push_back(fieldIsMSDF);
+        color[0] = 0.0;
+        color[1] = 0.0;
+        color[2] = 0.0;
     }
     void PreBind() override {
         MaterialColor::UpdateColor();

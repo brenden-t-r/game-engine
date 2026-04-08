@@ -39,13 +39,14 @@ public:
 #endif
         return platform->LoadShader(shaderDef);
     }
-    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader) {
+    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, bool antialiasing) {
         std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
         std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
-        return LoadFont(png.c_str(), json.c_str(), _atlas, shader);
+        return LoadFont(png.c_str(), json.c_str(), _atlas, shader, antialiasing);
     }
-    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas, Shader* shader) {
-        auto texture = platform->CreateTexture(pngPath, TextureSettings{TextureFilter::LINEAR});
+    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, bool antialiasing) {
+        auto settings = antialiasing ? TextureSettings{TextureFilter::LINEAR} : TextureSettings{TextureFilter::POINT};
+        auto texture = platform->CreateTexture(pngPath, settings);
         auto sprite = platform->CreateSprite(texture);
         auto mat = new MaterialFont(shader, texture);
         sprite->SetMaterial(mat);
@@ -65,29 +66,28 @@ public:
     void Start() override {
         platform->LoadShaders();
         auto shader = LoadFontShader();
-        font = LoadFont("arial", atlas, shader);
+        font = LoadFont("arial", atlas, shader, true);
         font->transform.pos = {-0.5, 0.7, 1};
         font->transform.scale = {1, 1, 1};
         auto colorMaterial = (MaterialColor*)font->material;
         colorMaterial->color[0] = 0.0;
         colorMaterial->color[3] = 0.5;
-        font50 = LoadFont("arial_512", atlas50, shader);
-        font25 = LoadFont("arial_25", atlas25, shader);
-        font10 = LoadFont("arial_10", atlas10, shader);
-        font8 = LoadFont("arial_8", atlas8, shader);
-        font15 = LoadFont("arial_15", atlas15, shader);
-        font15->transform.width = 2;
-        font15->transform.height = 2;
-        fontMSDF = LoadFont("arial_msdf", atlasMSDF, shader);
+        font50 = LoadFont("arial_512", atlas50, shader, false);
+        font25 = LoadFont("arial_25", atlas25, shader, false);
+        font10 = LoadFont("arial_10", atlas10, shader, false);
+        font8 = LoadFont("arial_8", atlas8, shader, false);
+        font15 = LoadFont("arial_15", atlas15, shader, false);
+        font16 = LoadFont("arial_16", atlas16, shader, false);
+        fontMSDF = LoadFont("arial_msdf", atlasMSDF, shader, true);
         auto mat = (MaterialFont*)fontMSDF->material;
-        mat->color[0] = 0.7;
-        mat->color[1] = 0.2;
-        mat->color[2] = 0.5;
+        mat->color[0] = 0.0;
+        mat->color[1] = 1.0;
+        mat->color[2] = 0.0;
         mat->outlineColor[0] = 0.6;
         mat->outlineColor[1] = 0.6;
         mat->outlineColor[2] = 1.0;
         mat->outlineColor[3] = 0.6;
-        mat->outlineWidth = 7;
+        mat->outlineWidth = 0;
         mat->isMSDF = true;
     }
 
@@ -127,8 +127,13 @@ public:
         font8->transform.pos = {-0.5, -0.85, 1};
         font8->transform.scale = {1.0, 1.0, 1}; // 5
         RenderText(font8,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
-                   0.1, -0.85, atlas8);
+                   "FONT SIZE 8 (EIGHT) @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+                   -0.3, -0.8, atlas8);
+        font16->transform.pos = {-0.5, -0.85, 1};
+        font16->transform.scale = {1.0, 1.0, 1}; // 5
+        RenderText(font16,
+                   "FONT SIZE 16 @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+                   -0.5, -0.3, atlas16);
 
         RenderText(fontMSDF,
                    "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
@@ -190,6 +195,7 @@ public:
             _font->transform.pos.y = y;
             _font->Update();
             auto pixelAdvance = (float)(g.advance * _atlas.atlas.size * 2.0f);
+            pixelAdvance += 2;
             x += (float)(pixelAdvance/(float)WINDOW_WIDTH*_font->transform.scale.x*1.0);
         }
     }
@@ -199,6 +205,7 @@ private:
     Sprite* font50;
     Sprite* font25;
     Sprite* font15;
+    Sprite* font16;
     Sprite* font10;
     Sprite* font8;
     Sprite* fontMSDF;
@@ -207,6 +214,7 @@ private:
     TEXT_MSDF::FontAtlas atlas25;
     TEXT_MSDF::FontAtlas atlas10;
     TEXT_MSDF::FontAtlas atlas15;
+    TEXT_MSDF::FontAtlas atlas16;
     TEXT_MSDF::FontAtlas atlas8;
     TEXT_MSDF::FontAtlas atlasMSDF;
     char buffer[100];
