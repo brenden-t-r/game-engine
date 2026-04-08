@@ -102,7 +102,7 @@ public:
         UpdateColor();
     }
 
-private:
+protected:
     void UpdateColor() {
         uniformFields[0].f4[0] = color[0];
         uniformFields[0].f4[1] = color[1];
@@ -119,5 +119,30 @@ public:
     }
     Texture* texture;
 };
+
+class MaterialFont : public MaterialSprite {
+public:
+    float outlineColor[4]{1.0,0.0,0.0,0.5};
+    float outlineWidth = 0;
+    MaterialFont(Shader* shader, Texture* texture) : MaterialSprite(shader, texture) {
+        Shader::UniformField field{};
+        field.name = "OutlineColor";
+        field.type = Shader::UniformFieldType::FLOAT4;
+        uniformFields.push_back(field);
+        Shader::UniformField field1{};
+        field1.name = "OutlineWidth";
+        field1.type = Shader::UniformFieldType::FLOAT4;
+        uniformFields.push_back(field1);
+    }
+    void PreBind() override {
+        MaterialColor::UpdateColor();
+        uniformFields[1].f4[0] = outlineColor[0];
+        uniformFields[1].f4[1] = outlineColor[1];
+        uniformFields[1].f4[2] = outlineColor[2];
+        uniformFields[1].f4[3] = outlineColor[3];
+        uniformFields[2].f4[0] = outlineWidth;
+    }
+};
+
 
 #endif //GAMEPROJECT_MATERIAL_H

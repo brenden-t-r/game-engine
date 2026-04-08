@@ -39,16 +39,16 @@ public:
 #endif
         return platform->LoadShader(shaderDef);
     }
-    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas) {
+    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader) {
         std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
         std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
-        return LoadFont(png.c_str(), json.c_str(), _atlas);
+        return LoadFont(png.c_str(), json.c_str(), _atlas, shader);
     }
-    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas) {
+    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas, Shader* shader) {
         auto texture = platform->CreateTexture(pngPath, TextureSettings{TextureFilter::LINEAR});
         auto sprite = platform->CreateSprite(texture);
-        auto mat = (MaterialSprite*)sprite->material;
-        mat->shader = LoadFontShader();
+        auto mat = new MaterialFont(shader, texture);
+        sprite->SetMaterial(mat);
         std::string data = LoadFileData(jsonPath);
         _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
         sprite->useAtlas = true;
@@ -64,35 +64,41 @@ public:
 
     void Start() override {
         platform->LoadShaders();
-        font = LoadFont("arial", atlas);
+        auto shader = LoadFontShader();
+        font = LoadFont("arial", atlas, shader);
         font->transform.pos = {-0.5, 0.7, 1};
         font->transform.scale = {1, 1, 1};
         auto colorMaterial = (MaterialColor*)font->material;
         colorMaterial->color[0] = 0.0;
         colorMaterial->color[3] = 0.5;
-        font50 = LoadFont("arial_512", atlas50);
-        font25 = LoadFont("arial_25", atlas25);
-        font10 = LoadFont("arial_10", atlas10);
-        font8 = LoadFont("arial_8", atlas8);
-        font15 = LoadFont("arial_15", atlas15);
+        font50 = LoadFont("arial_512", atlas50, shader);
+        font25 = LoadFont("arial_25", atlas25, shader);
+        font10 = LoadFont("arial_10", atlas10, shader);
+        font8 = LoadFont("arial_8", atlas8, shader);
+        font15 = LoadFont("arial_15", atlas15, shader);
         font15->transform.width = 2;
         font15->transform.height = 2;
-        fontMSDF = LoadFont("arial_msdf", atlasMSDF);
-        auto mat = (MaterialColor*)fontMSDF->material;
+        fontMSDF = LoadFont("arial_msdf", atlasMSDF, shader);
+        auto mat = (MaterialFont*)fontMSDF->material;
         mat->color[0] = 0.7;
         mat->color[1] = 0.2;
         mat->color[2] = 0.5;
+        mat->outlineColor[0] = 0.6;
+        mat->outlineColor[1] = 0.6;
+        mat->outlineColor[2] = 1.0;
+        mat->outlineColor[3] = 0.6;
+        mat->outlineWidth = 7;
     }
 
     void Update() override {
-        auto colorMaterial = (MaterialColor*)font50->material;
-        if (colorMaterial->color[ind] > 0.9) {
+        auto mat = (MaterialFont*)fontMSDF->material;
+        if (mat->outlineColor[ind] > 0.9) {
             dir = -1;
-        } else if (colorMaterial->color[ind] < 0.1) {
+        } else if (mat->outlineColor[ind] < 0.1) {
             dir = 1;
             ind = ind == 2 ? 1 : 2;
         }
-        colorMaterial->color[ind] += 0.05f * dir;
+        mat->outlineColor[ind] += 0.05f * dir;
 
         RenderText(font,
                    "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",

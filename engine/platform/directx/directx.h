@@ -334,7 +334,7 @@ public:
 
             HRESULT hr = d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
             if (FAILED(hr)) {
-                // Handle the error (e.g., log it)
+                printf("Error creating buffer: %ldl", hr);
             }
 
             // Set the vertex buffer
@@ -388,30 +388,35 @@ public:
     class SpriteD3D : public Sprite {
     public:
         SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState) :
-                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {}
-
-        ~SpriteD3D() override = default;
-
-        void CreateBuffer() {
-            // Create the vertex buffer (same as before)
+                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {
+            // Create the vertex buffer
             D3D11_BUFFER_DESC bufferDesc = {};
             bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
             bufferDesc.ByteWidth = sizeof(d3d_vertices);
             bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
             bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = d3d_vertices;
+            d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
+        }
 
-            // Constant buffer
+        ~SpriteD3D() override = default;
+
+        void SetMaterial(Material* mat) override {
+            Sprite::SetMaterial(mat);
+            CreateConstantBuffer();
+        }
+
+        void CreateConstantBuffer() {
+            if (constantBuffer != nullptr) {
+                constantBuffer->Release();
+            }
             D3D11_BUFFER_DESC cbd = {};
-            cbd.ByteWidth = 32;
+            cbd.ByteWidth = ((ShaderD3D*)material->shader)->constantBufferSize;
             cbd.Usage = D3D11_USAGE_DYNAMIC;
             cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
             cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
             d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
-
-            d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
         }
 
         void Update() override {
@@ -481,6 +486,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+            memset(mapped.pData, 0, shader->constantBufferSize);
             material->BindConstantBuffer(dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
@@ -493,6 +499,7 @@ public:
             return (TextureD3D*)((MaterialSprite*)material)->texture;
         }
 
+    private:
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
@@ -514,7 +521,7 @@ public:
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState);
         gameObject->material = new MaterialSprite(textureShader, texture);
-        gameObject->CreateBuffer();
+        gameObject->CreateConstantBuffer();
         return gameObject;
     }
     //endregion
@@ -569,6 +576,7 @@ public:
         ID3D11VertexShader* vertexShader;
         ID3D11PixelShader* pixelShader;
         ID3D11InputLayout* inputLayout;
+        unsigned int constantBufferSize;
     };
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
@@ -590,21 +598,21 @@ public:
         // Compile vertex shader
         ID3D11VertexShader* vertexShader;
         ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
-        HRESULT hr = d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
+        HRESULT hr = D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
         if (!SUCCEEDED(hr)) {
             printf("Failed to compile vertex shader: %ld\n", hr);
             exit(1);
         }
+        d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
         // Compile pixel shader
         ID3D11PixelShader* pixelShader;
         ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(shaderPath, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
-        hr = d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
+        hr = D3DCompileFromFile(shaderPath, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
         if (!SUCCEEDED(hr)) {
             printf("Failed to compile pixel shader: %ld\n", hr);
             exit(1);
         }
+        d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
         // Input layout
         ID3D11InputLayout* inputLayout;
         d3dDevice->CreateInputLayout(layout, numElements, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
@@ -629,6 +637,7 @@ public:
             cb = reflection->GetConstantBufferByIndex(0);
             D3D11_SHADER_BUFFER_DESC bufferDesc;
             cb->GetDesc(&bufferDesc);
+            shader->constantBufferSize = bufferDesc.Size;
             for (int i = 0; i < bufferDesc.Variables; i++) {
                 auto shaderVar = cb->GetVariableByIndex(i);
                 D3D11_SHADER_VARIABLE_DESC varDesc;
