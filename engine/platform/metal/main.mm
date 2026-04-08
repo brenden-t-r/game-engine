@@ -167,30 +167,6 @@ static NSString* loadTextFileFromBundleAsString(NSString *fileName)
     }
     return fileContents;
 }
-static void BindConstantBuffer(Material* mat, std::unordered_map<std::string, Shader::UniformFieldOffset> uniformFieldMap, uint8_t* dst)
-{
-    mat->PreBind();
-    auto uniformFields = mat->uniformFields;
-    for (auto& f : uniformFields)
-    {
-        auto it = uniformFieldMap.find(f.name);
-        if (it == uniformFieldMap.end()) {
-            printf("Cannot find shader variable with name %s\n", f.name);
-            continue;
-        }
-        uint32_t offset = it->second.offset;
-        switch (f.type)
-        {
-            case Shader::FLOAT:
-                memcpy(dst + offset, &f.f, sizeof(float));
-                break;
-
-            case Shader::FLOAT4:
-                memcpy(dst + offset, f.f4, sizeof(float) * 4);
-                break;
-        }
-    }
-}
 //endregion
 
 //region Shader Source
