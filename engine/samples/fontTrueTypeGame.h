@@ -90,6 +90,7 @@ public:
         mat->outlineColor[2] = 1.0;
         mat->outlineColor[3] = 0.6;
         mat->outlineWidth = 8;
+        mat->pxRange = 16;
         mat->isMSDF = true;
     }
 
