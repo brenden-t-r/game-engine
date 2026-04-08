@@ -23,7 +23,7 @@ struct ShaderDef {
 class Shader {
 public:
     enum UniformFieldType {
-        FLOAT, FLOAT4
+        FLOAT, FLOAT4, BOOL
     };
     struct UniformField {
         UniformFieldType type;
@@ -31,6 +31,7 @@ public:
         union {
             float f;
             float f4[4]{0,0,0,0};
+            bool b;
         };
     };
     struct UniformFieldOffset {
@@ -79,6 +80,10 @@ public:
                 case Shader::FLOAT4:
                     memcpy(dst + offset, f.f4, sizeof(float) * 4);
                     break;
+                case Shader::BOOL:
+                    uint32_t v = f.b ? 1 : 0;
+                    memcpy(dst + offset, &v, sizeof(uint32_t));
+                    break;
             }
         }
     }
@@ -124,15 +129,25 @@ class MaterialFont : public MaterialSprite {
 public:
     float outlineColor[4]{1.0,0.0,0.0,0.5};
     float outlineWidth = 0;
+    float pxRange = 16;
+    bool isMSDF = false;
     MaterialFont(Shader* shader, Texture* texture) : MaterialSprite(shader, texture) {
-        Shader::UniformField field{};
-        field.name = "OutlineColor";
-        field.type = Shader::UniformFieldType::FLOAT4;
-        uniformFields.push_back(field);
-        Shader::UniformField field1{};
-        field1.name = "OutlineWidth";
-        field1.type = Shader::UniformFieldType::FLOAT4;
-        uniformFields.push_back(field1);
+        Shader::UniformField fieldOutlineColor{};
+        fieldOutlineColor.name = "OutlineColor";
+        fieldOutlineColor.type = Shader::UniformFieldType::FLOAT4;
+        uniformFields.push_back(fieldOutlineColor);
+        Shader::UniformField fieldOutlineWidth{};
+        fieldOutlineWidth.name = "OutlineWidth";
+        fieldOutlineWidth.type = Shader::UniformFieldType::FLOAT;
+        uniformFields.push_back(fieldOutlineWidth);
+        Shader::UniformField fieldPxRange{};
+        fieldPxRange.name = "PxRange";
+        fieldPxRange.type = Shader::UniformFieldType::FLOAT;
+        uniformFields.push_back(fieldPxRange);
+        Shader::UniformField fieldIsMSDF{};
+        fieldIsMSDF.name = "IsMSDF";
+        fieldIsMSDF.type = Shader::UniformFieldType::BOOL;
+        uniformFields.push_back(fieldIsMSDF);
     }
     void PreBind() override {
         MaterialColor::UpdateColor();
@@ -140,7 +155,9 @@ public:
         uniformFields[1].f4[1] = outlineColor[1];
         uniformFields[1].f4[2] = outlineColor[2];
         uniformFields[1].f4[3] = outlineColor[3];
-        uniformFields[2].f4[0] = outlineWidth;
+        uniformFields[2].f = outlineWidth;
+        uniformFields[3].f = pxRange;
+        uniformFields[4].b = isMSDF;
     }
 };
 
