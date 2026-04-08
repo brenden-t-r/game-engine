@@ -6,22 +6,7 @@
 #include "../engine/text_msdf.h"
 
 #include <unordered_map>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 #include <cassert>
-
-std::string LoadFileData(const char* path) {
-    std::ifstream file(path);
-    if (!file) {
-        assert(false);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string contents = buffer.str();
-    return buffer.str();
-}
 
 class FontTrueTypeGame : public Game {
 public:
@@ -36,6 +21,8 @@ public:
         shaderDef.inputLayoutType = InputLayoutType::POSITION_TEXCOORD;
 #elif BACKEND_OPENGL
 #elif BACKEND_METAL
+        shaderDef.vertexPath = "assets/shaders/font.vert.metal";
+        shaderDef.fragmentPath = "assets/shaders/font.frag.metal";
 #endif
         return platform->LoadShader(shaderDef);
     }
@@ -50,7 +37,7 @@ public:
         auto sprite = platform->CreateSprite(texture);
         auto mat = new MaterialFont(shader, texture);
         sprite->SetMaterial(mat);
-        std::string data = LoadFileData(jsonPath);
+        std::string data = platform->LoadFileData(jsonPath);
         _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
         sprite->useAtlas = true;
         sprite->useGlyph = true;

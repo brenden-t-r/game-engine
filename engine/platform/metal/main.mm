@@ -359,7 +359,7 @@ private:
 //region Texture
 class TextureMTL : public Texture{
 public:
-    TextureMTL(const char *path, id <MTLTexture> texture) : Texture(path), texture(texture) {}
+    TextureMTL(const char *path, id <MTLTexture> texture, TextureSettings settings) : Texture(path, settings), texture(texture) {}
     ~TextureMTL() override {
         [texture release];
     }
@@ -399,7 +399,7 @@ public:
         };
 
         int row = atlasRow;
-        if (useAtlas) {
+        if (useAtlas && !useGlyph) {
             newVertices[0].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Top-left
             newVertices[0].textureCoordinate.y = atlasCellSize * (float)atlasRow;
             newVertices[1].textureCoordinate.x = atlasCellSize * (float)atlasColumn; // Bottom left
@@ -412,6 +412,19 @@ public:
             newVertices[4].textureCoordinate.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             newVertices[5].textureCoordinate.x = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top right
             newVertices[5].textureCoordinate.y = atlasCellSize * (float)atlasRow;
+        }
+        if (useAtlas && useGlyph) {
+            float modifier = 0.0f;
+            float u0 = (glyphX + modifier) / (float)atlasWidth;
+            float v0 = (glyphY + modifier) / (float)atlasHeight;
+            float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
+            float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
+            newVertices[0].textureCoordinate = {u0, v0}; // Top-left
+            newVertices[1].textureCoordinate = {u0, v1}; // Bottom-left
+            newVertices[2].textureCoordinate = {u1, v1}; // Bottom-right
+            newVertices[3].textureCoordinate = {u0, v0}; // Top-left  (second triangle)
+            newVertices[4].textureCoordinate = {u1, v1}; // Bottom-right
+            newVertices[5].textureCoordinate = {u1, v0}; // Top-right
         }
 
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
@@ -523,11 +536,11 @@ public:
         triangles.push_back(gameObject);
         return gameObject;
     }
-    TextureMTL* CreateTexture(const char* path) override {
+    TextureMTL* CreateTexture(const char* path, TextureSettings settings) override {
         NSString *imageName = [NSString stringWithUTF8String:path];
         id<MTLTexture> texture = loadImageAsTextureFromBundle(imageName, metalAppDelegate.metalView.device);
         assert(texture != nullptr);
-        return new TextureMTL(path, texture);
+        return new TextureMTL(path, texture, settings);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteMetal(
@@ -539,7 +552,7 @@ public:
         return gameObject;
     }
     Sprite* CreateSprite(const char* path) override {
-        TextureMTL* texture = CreateTexture(path);
+        TextureMTL* texture = CreateTexture(path, DEFAULT_TEXTURE_SETTINGS);
         return CreateSprite(texture);
     }
     Sound* CreateSound(const char* path) override {
@@ -598,6 +611,11 @@ public:
         float ndcX = (mouseLocationView.x / viewBounds.size.width) * 2.0f - 1.0f;
         float ndcY = (mouseLocationView.y / viewBounds.size.height) * 2.0f - 1.0f;
         return {ndcX, ndcY, 1};
+    }
+    const char* LoadFileData(const char* path) override {
+        auto pathNS = [NSString stringWithUTF8String:path];
+        auto result = loadTextFileFromBundleAsString(pathNS);
+        return result.cString;
     }
     void Shutdown() override {
         Running = false;
