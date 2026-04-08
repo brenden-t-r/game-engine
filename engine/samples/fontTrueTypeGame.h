@@ -35,6 +35,8 @@ public:
         shaderDef.path = "assets/shaders/font.hlsl";
         shaderDef.inputLayoutType = InputLayoutType::POSITION_TEXCOORD;
 #elif BACKEND_OPENGL
+        shaderDef.vertexPath = "assets/shaders/font.glsl.vert";
+        shaderDef.fragmentPath = "assets/shaders/font.glsl.frag";
 #elif BACKEND_METAL
 #endif
         return platform->LoadShader(shaderDef);
