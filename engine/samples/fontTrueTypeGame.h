@@ -39,14 +39,14 @@ public:
 #endif
         return platform->LoadShader(shaderDef);
     }
-    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, bool antialiasing) {
+    Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
         std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
         std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
-        return LoadFont(png.c_str(), json.c_str(), _atlas, shader, antialiasing);
+        return LoadFont(png.c_str(), json.c_str(), _atlas, shader, textureSettings);
     }
-    Sprite* LoadFont(const char* pngPath, const char* jsonPath, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, bool antialiasing) {
-        auto settings = antialiasing ? TextureSettings{TextureFilter::LINEAR} : TextureSettings{TextureFilter::POINT};
-        auto texture = platform->CreateTexture(pngPath, settings);
+    Sprite* LoadFont(const char* pngPath, const char* jsonPath,
+                     TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
+        auto texture = platform->CreateTexture(pngPath, textureSettings);
         auto sprite = platform->CreateSprite(texture);
         auto mat = new MaterialFont(shader, texture);
         sprite->SetMaterial(mat);
@@ -66,19 +66,21 @@ public:
     void Start() override {
         platform->LoadShaders();
         auto shader = LoadFontShader();
-        font = LoadFont("arial", atlas, shader, true);
+        auto linearNoMips = TextureSettings{TextureFilter::LINEAR, false};
+        auto pointNoMips = TextureSettings{TextureFilter::POINT, false};
+        font = LoadFont("arial", atlas, shader, linearNoMips);
         font->transform.pos = {-0.5, 0.7, 1};
         font->transform.scale = {1, 1, 1};
         auto colorMaterial = (MaterialColor*)font->material;
         colorMaterial->color[0] = 0.0;
         colorMaterial->color[3] = 0.5;
-        font50 = LoadFont("arial_512", atlas50, shader, false);
-        font25 = LoadFont("arial_25", atlas25, shader, false);
-        font10 = LoadFont("arial_10", atlas10, shader, false);
-        font8 = LoadFont("arial_8", atlas8, shader, false);
-        font15 = LoadFont("arial_15", atlas15, shader, false);
-        font16 = LoadFont("arial_16", atlas16, shader, false);
-        fontMSDF = LoadFont("arial_msdf", atlasMSDF, shader, true);
+        font50 = LoadFont("arial_512", atlas50, shader, pointNoMips);
+        font25 = LoadFont("arial_25", atlas25, shader, pointNoMips);
+        font10 = LoadFont("arial_10", atlas10, shader, pointNoMips);
+        font8 = LoadFont("arial_8", atlas8, shader, pointNoMips);
+        font15 = LoadFont("arial_15", atlas15, shader, pointNoMips);
+        font16 = LoadFont("arial_16", atlas16, shader, pointNoMips);
+        fontMSDF = LoadFont("arial_msdf", atlasMSDF, shader, linearNoMips);
         auto mat = (MaterialFont*)fontMSDF->material;
         mat->color[0] = 0.0;
         mat->color[1] = 1.0;
@@ -87,7 +89,7 @@ public:
         mat->outlineColor[1] = 0.6;
         mat->outlineColor[2] = 1.0;
         mat->outlineColor[3] = 0.6;
-        mat->outlineWidth = 0;
+        mat->outlineWidth = 8;
         mat->isMSDF = true;
     }
 

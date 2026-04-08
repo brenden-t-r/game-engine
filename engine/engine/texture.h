@@ -8,7 +8,7 @@ enum class TextureFilter {
 
 struct TextureSettings {
     TextureFilter filter;
-//    bool mipMaps;
+    bool mipMapsEnabled;
 };
 
 TextureSettings DEFAULT_TEXTURE_SETTINGS = TextureSettings{TextureFilter::LINEAR};

@@ -376,9 +376,9 @@ public:
         delete[] wchar;
         ID3D11SamplerState* samplerState;
         if (textureSettings.filter == TextureFilter::POINT) {
-            samplerState = samplerStatePoint;
+            samplerState = textureSettings.mipMapsEnabled ? samplerStatePoint : samplerStatePointNoMips;
         } else {
-            samplerState = samplerStateLinear;
+            samplerState = textureSettings.mipMapsEnabled ?  samplerStateLinear : samplerStateLinearNoMips;
         }
         auto texture = new TextureD3D(path, textureSettings, textureView, samplerState);
         return texture;
@@ -678,6 +678,8 @@ private:
     ID3D11BlendState* blendState = nullptr;
     ID3D11SamplerState* samplerStatePoint = nullptr;
     ID3D11SamplerState* samplerStateLinear = nullptr;
+    ID3D11SamplerState* samplerStatePointNoMips = nullptr;
+    ID3D11SamplerState* samplerStateLinearNoMips = nullptr;
 
     // State vars
     XINPUT_STATE gamepadStateA = {};
@@ -842,8 +844,19 @@ private:
         samplerDescLinear.MaxLOD = D3D11_FLOAT32_MAX;
         d3dDevice->CreateSamplerState(&samplerDescLinear, &samplerStateLinear);
 
+        // Linear clamp (no mipmaps)
+        D3D11_SAMPLER_DESC samplerDescLinearNoMips = {};
+        samplerDescLinearNoMips.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDescLinearNoMips.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescLinearNoMips.MinLOD = 0;
+        samplerDescLinearNoMips.MaxLOD = 0;
+        d3dDevice->CreateSamplerState(&samplerDescLinearNoMips, &samplerStateLinearNoMips);
+
         // Point clamp
-        D3D11_SAMPLER_DESC samplerDescPoint = {};;
+        D3D11_SAMPLER_DESC samplerDescPoint = {};
         samplerDescPoint.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDescPoint.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDescPoint.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -852,6 +865,17 @@ private:
         samplerDescPoint.MinLOD = 0;
         samplerDescPoint.MaxLOD = D3D11_FLOAT32_MAX;
         d3dDevice->CreateSamplerState(&samplerDescPoint, &samplerStatePoint);
+
+        // Point clamp (no mipmaps)
+        D3D11_SAMPLER_DESC samplerDescPointNoMips = {};;
+        samplerDescPointNoMips.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDescPointNoMips.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescPointNoMips.MinLOD = 0;
+        samplerDescPointNoMips.MaxLOD = 0;
+        d3dDevice->CreateSamplerState(&samplerDescPointNoMips, &samplerStatePointNoMips);
 
         // Set sampler state to linear
         d3dContext->PSSetSamplers(0, 1, &samplerStateLinear);
