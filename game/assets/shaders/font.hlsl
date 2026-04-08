@@ -38,35 +38,45 @@ float median(float r, float g, float b) {
 }
 
 // Pixel Shader
-float4 PSMain(VS_OUTPUT input) : SV_TARGET {
+float4 PSMain(VS_OUTPUT input) : SV_TARGET
+{
     float4 texColor = texture0.Sample(sampler0, input.texCoord);
 
-    if (IsMSDF) {
-        uint w, h;
-        texture0.GetDimensions(w, h);
-        float2 texSize = float2(w, h);
-        float2 unitRange = PxRange / texSize;
-        float2 fwidthUV = abs(ddx(input.texCoord)) + abs(ddy(input.texCoord));
-        float screenPxRangeVal = max(0.5 * dot(unitRange, 1.0 / fwidthUV), 1.0);
-        float sd = median(texColor.r, texColor.g, texColor.b);
-        float screenPxDist = screenPxRangeVal * (sd - 0.5);
+    if (IsMSDF)
+    {
+        uint textureWidth, textureHeight;
+        texture0.GetDimensions(textureWidth, textureHeight);
+        float2 textureSize = float2(textureWidth, textureHeight);
+        float2 uvRangePerPixel = PxRange / textureSize;
+        float2 uvChangePerScreenPixel = abs(ddx(input.texCoord)) + abs(ddy(input.texCoord));
+        float screenPixelRange = max(
+            0.5 * dot(uvRangePerPixel, 1.0 / uvChangePerScreenPixel),
+            1.0
+        );
+        float signedDistance = median(texColor.r, texColor.g, texColor.b);
+        float distanceInScreenPixels = screenPixelRange * (signedDistance - 0.5);
+        float fillAlpha = clamp(distanceInScreenPixels + 0.5, 0.0, 1.0);
+        float4 color = Color * fillAlpha;
 
-        float fillAlpha = clamp(screenPxDist + 0.5, 0.0, 1.0);
-        float4 color = float4(Color.rgb, Color.a) * fillAlpha;
-
-        if (OutlineWidth > 0) {
-            float maxOutline = (screenPxRangeVal * 0.5) - 0.5; // -0.5 for half-pixel antialiasing band at glyph edge
-            float outlineWidth = min(OutlineWidth.r, maxOutline);
-            float rawOutline = clamp(screenPxDist + outlineWidth + 0.5, 0.0, 1.0) - fillAlpha;
-            // Gate outline on SDF data presence.
+        if (OutlineWidth > 0)
+        {
+            float maxPossibleOutlineWidth = (screenPixelRange * 0.5) - 0.5;
+            float clampedOutlineWidth = min(OutlineWidth.r, maxPossibleOutlineWidth);
+            float outlineAndFillAlpha = clamp(
+                distanceInScreenPixels + clampedOutlineWidth + 0.5,
+                0.0, 1.0
+            );
+            float rawOutlineAlpha = outlineAndFillAlpha - fillAlpha;
             float maxChannel = max(texColor.r, max(texColor.g, texColor.b));
-            float dataPresent = smoothstep(0.0, 0.05, maxChannel);
-            float outlineAlpha = rawOutline * dataPresent;
-            color += float4(OutlineColor.rgb, OutlineColor.a) * outlineAlpha;
+            float hasSDFData = smoothstep(0.0, 0.05, maxChannel);
+            float outlineAlpha = rawOutlineAlpha * hasSDFData;
+            color += OutlineColor * outlineAlpha;
         }
 
         return color;
-    } else {
+    }
+    else
+    {
         float4 color = texColor * Color;
         // r-alpha for 1 bit texture
         color.a = texColor.r * Color.a;
