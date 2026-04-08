@@ -74,7 +74,7 @@ public:
         auto colorMaterial = (MaterialColor*)font->material;
         colorMaterial->color[0] = 0.0;
         colorMaterial->color[3] = 0.5;
-        font50 = LoadFont("arial_512", atlas50, shader, pointNoMips);
+        font50 = LoadFont("arial_50", atlas50, shader, pointNoMips);
         font25 = LoadFont("arial_25", atlas25, shader, pointNoMips);
         font10 = LoadFont("arial_10", atlas10, shader, pointNoMips);
         font8 = LoadFont("arial_8", atlas8, shader, pointNoMips);
