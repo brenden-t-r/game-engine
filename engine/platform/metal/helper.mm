@@ -317,6 +317,7 @@ public:
             newVertices[i] = instancedData[i];
         }
 
+        [vertexBuffer release];
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
                                                 length:sizeof(newVertices)
                                                options:MTLResourceStorageModeShared];
