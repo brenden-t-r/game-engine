@@ -128,6 +128,10 @@ public:
         RenderText(fontMSDF,
                    "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
                    -0.9, 0.1, atlasMSDF);
+//        RenderText(fontMSDF,
+//                   "@",
+//                   -0.9, 0.1, atlasMSDF);
+        fontMSDF->Update();
 
         if (platform->IsKeyPressed(KeyCode::Up)) {
             font->transform.scale.x += 0.01f;
@@ -155,7 +159,7 @@ public:
         float x = startX;
         float y = startY;
         //float y = startY + baseline * scale;  // align baseline
-
+        _font->StartInstancedDraw();
         for (char ch : text) {
             TEXT_MSDF::Glyph g{};
             if (ch == '\n') {
@@ -183,7 +187,10 @@ public:
             _font->glyphyoff = (float)(g.planeBounds.top * _atlas.atlas.size) / (float)WINDOW_HEIGHT *2.0f;
             _font->transform.pos.x = x;
             _font->transform.pos.y = y;
-            _font->Update();
+            //_font->Update();
+            _font->SetPosition(_font->transform.pos);
+            _font->AddDrawInstance();
+
             auto pixelAdvance = (float)(g.advance * _atlas.atlas.size * 2.0f);
             pixelAdvance += 2;
             x += (float)(pixelAdvance/(float)WINDOW_WIDTH*_font->transform.scale.x*1.0);

@@ -16,6 +16,7 @@
 #include "../engine/platform/platform.h"
 #include "../engine/engine/game.h"
 #include "../engine/samples/fontTrueTypeGame.h"
+#include "../engine/samples/triangleGame.h"
 #include "../engine/entry.h"
 
 class SampleGame : public Game {
