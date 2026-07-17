@@ -164,15 +164,8 @@ public:
 
     virtual Texture* GetTexture() = 0;
 
-    virtual void StartInstancedDraw() {
-
-    }
-    virtual void AddDrawInstance() {
-
-    }
-
     void Update() override {
-        //SetPosition(transform.pos);
+        SetPosition(transform.pos);
         GameObject::Update();
     }
 

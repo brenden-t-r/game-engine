@@ -258,11 +258,8 @@ public:
         constantBuffer = [metalDevice newBufferWithLength:shader->bufferDataSize options:MTLResourceStorageModeShared];
     }
 
-    std::vector<VertexData> instancedData{};
-    void StartInstancedDraw() override {
-        instancedData.clear();
-    }
-    void AddDrawInstance() override{
+    void Update() override {
+        Sprite::Update();
         VertexData newVertices[]{
                 {{vertices[0].x, vertices[0].y, 0, 1}, {0.0f, 0.0f}}, // Top left
                 {{vertices[3].x, vertices[3].y, 0, 1}, {0.0f, 1.0f}}, // Bottom left
@@ -300,22 +297,6 @@ public:
             newVertices[4].textureCoordinate = {u1, v1}; // Bottom-right
             newVertices[5].textureCoordinate = {u1, v0}; // Top-right
         }
-        instancedData.push_back(newVertices[0]);
-        instancedData.push_back(newVertices[1]);
-        instancedData.push_back(newVertices[2]);
-        instancedData.push_back(newVertices[3]);
-        instancedData.push_back(newVertices[4]);
-        instancedData.push_back(newVertices[5]);
-    }
-
-    void Update() override {
-        Sprite::Update();
-
-
-        VertexData newVertices[instancedData.size()];
-        for (int i = 0; i < instancedData.size(); i++) {
-            newVertices[i] = instancedData[i];
-        }
 
         [vertexBuffer release];
         vertexBuffer = [metalDevice newBufferWithBytes:&newVertices
@@ -336,7 +317,7 @@ public:
         [renderCommandEncoder setFragmentBuffer:constantBuffer offset:0 atIndex:0];
         [renderCommandEncoder setFragmentSamplerState:texture->samplerState atIndex:0];
 
-        [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:instancedData.size()];
+        [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
     }
 
     Texture* GetTexture() override {

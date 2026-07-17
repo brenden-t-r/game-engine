@@ -130,7 +130,6 @@ public:
         Running = true;
         while (Running) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
-            sleep(1000);
         }
         printf("Run end");
     }
