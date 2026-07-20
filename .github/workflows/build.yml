@@ -17,11 +17,11 @@ on:
           - ios
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
     steps:
       - uses: actions/checkout@v4
-      - uses: lukka/get-cmake@v4.2.2
+      - uses: lukka/get-cmake@latest
       - name: Configure
         run: cmake -S . -B build -G "Visual Studio 17 2022" -DBACKEND_DIRECTX=ON
       - name: Build
