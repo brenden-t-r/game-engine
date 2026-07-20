@@ -6,22 +6,7 @@
 #include "../engine/text_msdf.h"
 
 #include <unordered_map>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 #include <cassert>
-
-std::string LoadFileData(const char* path) {
-    std::ifstream file(path);
-    if (!file) {
-        assert(false);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string contents = buffer.str();
-    return buffer.str();
-}
 
 class FontTrueTypeGame : public Game {
 public:
@@ -38,6 +23,8 @@ public:
         shaderDef.vertexPath = "assets/shaders/font.glsl.vert";
         shaderDef.fragmentPath = "assets/shaders/font.glsl.frag";
 #elif BACKEND_METAL
+        shaderDef.vertexPath = "assets/shaders/font.vert.metal";
+        shaderDef.fragmentPath = "assets/shaders/font.frag.metal";
 #endif
         return platform->LoadShader(shaderDef);
     }
@@ -52,7 +39,7 @@ public:
         auto sprite = platform->CreateSprite(texture);
         auto mat = new MaterialFont(shader, texture);
         sprite->SetMaterial(mat);
-        std::string data = LoadFileData(jsonPath);
+        std::string data = platform->LoadFileData(jsonPath);
         _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
         sprite->useAtlas = true;
         sprite->useGlyph = true;
@@ -106,39 +93,39 @@ public:
         }
         mat->outlineColor[ind] += 0.05f * dir;
 
-        RenderText(font,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
-                   -0.9, 0.7, atlas);
-        font50->transform.pos = {-0.5, -0.1, 1};
-        font50->transform.scale = {1, 1, 1}; // 40
-        RenderText(font50,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
-                   -0.1, -0.1, atlas50);
-        font25->transform.pos = {-0.5, -0.7, 1};
-        font25->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderText(font25,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
-                   -0.1, -0.7, atlas25);
-        font10->transform.pos = {-0.5, -0.8, 1};
-        font10->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderText(font10,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
-                   0.3, -0.8, atlas10);
-        font15->transform.pos = {-0.5, -0.8, 1};
-        font15->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderText(font15,
-                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
-                   -0.8, -0.8, atlas15);
-        font8->transform.pos = {-0.5, -0.85, 1};
-        font8->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderText(font8,
-                   "FONT SIZE 8 (EIGHT) @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
-                   -0.3, -0.8, atlas8);
-        font16->transform.pos = {-0.5, -0.85, 1};
-        font16->transform.scale = {1.0, 1.0, 1}; // 5
-        RenderText(font16,
-                   "FONT SIZE 16 @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
-                   -0.5, -0.3, atlas16);
+//        RenderText(font,
+//                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+//                   -0.9, 0.7, atlas);
+//        font50->transform.pos = {-0.5, -0.1, 1};
+//        font50->transform.scale = {1, 1, 1}; // 40
+//        RenderText(font50,
+//                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+//                   -0.1, -0.1, atlas50);
+//        font25->transform.pos = {-0.5, -0.7, 1};
+//        font25->transform.scale = {1.0, 1.0, 1}; // 5
+//        RenderText(font25,
+//                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",
+//                   -0.1, -0.7, atlas25);
+//        font10->transform.pos = {-0.5, -0.8, 1};
+//        font10->transform.scale = {1.0, 1.0, 1}; // 5
+//        RenderText(font10,
+//                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+//                   0.3, -0.8, atlas10);
+//        font15->transform.pos = {-0.5, -0.8, 1};
+//        font15->transform.scale = {1.0, 1.0, 1}; // 5
+//        RenderText(font15,
+//                   "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+//                   -0.8, -0.8, atlas15);
+//        font8->transform.pos = {-0.5, -0.85, 1};
+//        font8->transform.scale = {1.0, 1.0, 1}; // 5
+//        RenderText(font8,
+//                   "FONT SIZE 8 (EIGHT) @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+//                   -0.3, -0.8, atlas8);
+//        font16->transform.pos = {-0.5, -0.85, 1};
+//        font16->transform.scale = {1.0, 1.0, 1}; // 5
+//        RenderText(font16,
+//                   "FONT SIZE 16 @sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, \nJUDGE MY VOW 0123456789!@#$%^&*()[]{};\n@sphinx of black quartz, judge my vow.",
+//                   -0.5, -0.3, atlas16);
 
         RenderText(fontMSDF,
                    "@sphinx of black quartz, judge my vow.\nSPHINX OF BLACK QUARTZ, JUDGE MY VOW 0123456789!@#$%^&*()[]{};",

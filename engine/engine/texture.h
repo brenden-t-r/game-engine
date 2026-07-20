@@ -11,7 +11,7 @@ struct TextureSettings {
     bool mipMapsEnabled;
 };
 
-TextureSettings DEFAULT_TEXTURE_SETTINGS = TextureSettings{TextureFilter::LINEAR};
+static TextureSettings DEFAULT_TEXTURE_SETTINGS = TextureSettings{TextureFilter::LINEAR};
 
 class Texture {
 public:
