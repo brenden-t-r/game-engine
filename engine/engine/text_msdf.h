@@ -7,7 +7,7 @@
 #include "dependencies/json.h"
 
 namespace TEXT_MSDF {
-std::string EXAMPLE_FONT_ATLAS_JSON = R"({
+static std::string EXAMPLE_FONT_ATLAS_JSON = R"({
   "atlas": {
     "type": "sdf",
     "distanceRange": 23.65625,
@@ -88,7 +88,7 @@ struct FontAtlas {
     std::vector<Glyph> glyphs;
 };
 
-Metrics fromJsonMetrics(json_object_s *obj) {
+static Metrics fromJsonMetrics(json_object_s *obj) {
     Metrics metrics{};
     json_object_element_s *node = obj->start;
     for (int i = 0; i < obj->length; i++) {
@@ -115,7 +115,7 @@ Metrics fromJsonMetrics(json_object_s *obj) {
     return metrics;
 }
 
-Atlas fromJsonAtlas(json_object_s *obj) {
+static Atlas fromJsonAtlas(json_object_s *obj) {
     Atlas atlas{};
     json_object_element_s *node = obj->start;
     for (int i = 0; i < obj->length; i++) {
@@ -142,7 +142,7 @@ Atlas fromJsonAtlas(json_object_s *obj) {
     return atlas;
 }
 
-Bounds fromJsonBounds(json_object_s *obj) {
+static Bounds fromJsonBounds(json_object_s *obj) {
     Bounds bounds{};
     json_object_element_s *node = obj->start;
     for (int i = 0; i < obj->length; i++) {
@@ -163,7 +163,7 @@ Bounds fromJsonBounds(json_object_s *obj) {
     return bounds;
 }
 
-Glyph fromJsonGlyph(json_object_s *obj) {
+static Glyph fromJsonGlyph(json_object_s *obj) {
     Glyph glyph{};
     json_object_element_s *node = obj->start;
     for (int i = 0; i < obj->length; i++) {
@@ -190,7 +190,7 @@ Glyph fromJsonGlyph(json_object_s *obj) {
     return glyph;
 }
 
-std::vector<Glyph> fromJsonGlyphs(json_array_s *obj) {
+static std::vector<Glyph> fromJsonGlyphs(json_array_s *obj) {
     std::vector<Glyph> glyphs{};
     json_array_element_s *node = obj->start;
     for (int i = 0; i < obj->length; i++) {
@@ -203,7 +203,7 @@ std::vector<Glyph> fromJsonGlyphs(json_array_s *obj) {
     return glyphs;
 }
 
-FontAtlas fromJsonFontAtlas(const char *_json) {
+static FontAtlas fromJsonFontAtlas(const char *_json) {
     FontAtlas atlas{};
     auto res = json_parse(_json, strlen(_json));
     auto *object = (struct json_object_s *) res->payload;

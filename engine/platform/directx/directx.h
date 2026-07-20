@@ -16,6 +16,8 @@
 #include <iostream>
 #include <Xinput.h>
 #include "math.h"
+#include "fstream"
+#include "sstream"
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "../../dependencies/miniaudio.h"
@@ -657,6 +659,16 @@ public:
     }
     //endregion
 
+    const char * LoadFileData(const char* path) override {
+        std::ifstream file(path);
+        if (!file) {
+            assert(false);
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string contents = buffer.str();
+        return buffer.str().c_str();
+    }
     void Shutdown() override {
         CleanD3D();
     }

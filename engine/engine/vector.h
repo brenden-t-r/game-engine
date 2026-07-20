@@ -2,6 +2,7 @@
 #define GAMEENGINE_VECTOR_H
 
 #include "cmath"
+#include "cstdlib"
 #include "../constants.h"
 
 constexpr float PI = 3.14159265358979323846f;
