@@ -70,7 +70,7 @@ public:
     virtual void RemoveAllCallbacks() = 0;
     virtual vec3 GetMousePos() = 0;
 
-    virtual const char * LoadFileData(const char* path) = 0;
+    virtual std::string LoadFileData(const char* path) = 0;
 
     virtual void Shutdown() = 0;
 

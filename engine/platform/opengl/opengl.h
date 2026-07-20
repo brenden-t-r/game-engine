@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include "fstream"
+#include "sstream"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -206,6 +208,17 @@ public:
                 glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
                 glfwWindowShouldClose(window) == 0
         );
+    }
+
+    std::string LoadFileData(const char* path) override {
+        std::ifstream file(path);
+        if (!file) {
+            assert(false);
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string str = buffer.str();
+        return str;
     }
 
     //region Input Handling

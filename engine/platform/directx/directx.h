@@ -659,7 +659,7 @@ public:
     }
     //endregion
 
-    const char * LoadFileData(const char* path) override {
+    std::string LoadFileData(const char* path) override {
         std::ifstream file(path);
         if (!file) {
             assert(false);
