@@ -196,4 +196,43 @@ static void ShowText(const char* text, Sprite* atlas, ParagraphSettings settings
     }
 }
 
+static void RenderText(Sprite* _font, const std::string &text, float startX, float startY, const TEXT_MSDF::FontAtlas& _atlas) {
+    float x = startX;
+    float y = startY;
+    //float y = startY + baseline * scale;  // align baseline
+
+    for (char ch : text) {
+        TEXT_MSDF::Glyph g{};
+        if (ch == '\n') {
+            x = startX;
+            y -= round(_atlas.atlas.size*_atlas.metrics.lineHeight*_font->transform.scale.y) / WINDOW_HEIGHT*2.0f;
+            continue;
+        }
+        bool found = false;
+        for (TEXT_MSDF::Glyph gly : _atlas.glyphs) {
+            if (gly.unicode == ch) {
+                g = gly;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            continue;
+        }
+
+        _font->glyphX = (float)g.atlasBounds.left;
+        _font->glyphY = (float)_atlas.atlas.height - (float)g.atlasBounds.top;
+        _font->glyphW = (float)(g.atlasBounds.right - g.atlasBounds.left);
+        _font->glyphH = (float)(_atlas.atlas.height - g.atlasBounds.bottom) - (float)(_atlas.atlas.height - g.atlasBounds.top);
+        _font->glyphxoff = (float)(g.planeBounds.left * _atlas.atlas.size) / (float)WINDOW_WIDTH * 2.0f;
+        _font->glyphyoff = (float)(g.planeBounds.top * _atlas.atlas.size) / (float)WINDOW_HEIGHT *2.0f;
+        _font->transform.pos.x = x;
+        _font->transform.pos.y = y;
+        _font->Update();
+        auto pixelAdvance = (float)(g.advance * _atlas.atlas.size * 2.0f);
+        pixelAdvance += 2;
+        x += (float)(pixelAdvance/(float)WINDOW_WIDTH*_font->transform.scale.x*1.0);
+    }
+}
+
 #endif //GAMEENGINE_TEXT_H
