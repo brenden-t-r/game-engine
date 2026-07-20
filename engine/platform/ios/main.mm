@@ -279,7 +279,7 @@ public:
         mouseUpCallback = nullptr;
     }
     vec3 GetMousePos() override { return {}; }
-    const char* LoadFileData(const char* path) override {
+    std::string LoadFileData(const char* path) override {
         auto pathNS = [NSString stringWithUTF8String:path];
         auto result = loadTextFileFromBundleAsString(pathNS);
         return result.cString;

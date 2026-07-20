@@ -226,7 +226,7 @@ public:
         float ndcY = (mouseLocationView.y / viewBounds.size.height) * 2.0f - 1.0f;
         return {ndcX, ndcY, 1};
     }
-    const char* LoadFileData(const char* path) override {
+    std::string LoadFileData(const char* path) override {
         auto pathNS = [NSString stringWithUTF8String:path];
         auto result = loadTextFileFromBundleAsString(pathNS);
         return result.cString;
