@@ -125,49 +125,7 @@ static Matrix3 local_to_world_matrix(vec3 position, vec3 scale, vec3 rotation) {
     return CombinedTransformation;
 }
 
-/*
- * Creates a composite translation, scale and rotation matrix.
- * Accepts position in terms of normalized coordinates.
- *
- *   scale.x * cos  -sin,            position.x
- *   sin            scale.y * cos    position.y
- *   0,             0                1
- */
 static Matrix3 matrix_transformation(vec3 position, vec3 scale, vec3 rotation) {
-    float angle = rotation.z * PI / 180.0f;
-    float c = cosf(angle);
-    float s = sinf(angle);
-
-    Matrix3 R = {
-            c, -s, 0,
-            s,  c, 0,
-            0,  0, 1
-    };
-
-    Matrix3 S = {
-            scale.x, 0,        0,
-            0,        scale.y, 0,
-            0,        0,       1
-    };
-
-    Matrix3 T = {
-            1, 0, position.x,
-            0, 1, position.y,
-            0, 0, 1
-    };
-
-    Matrix3 result = T.multiply(R).multiply(S);
-
-#ifdef DEBUG_CLAMP
-    result._11 = std::roundf(result._11 * 1e5f) / 1e5f;
-    result._12 = std::roundf(result._12 * 1e5f) / 1e5f;
-    result._21 = std::roundf(result._21 * 1e5f) / 1e5f;
-    result._22 = std::roundf(result._22 * 1e5f) / 1e5f;
-#endif
-
-    return result;
-}
-static Matrix3 matrix_transformation3(vec3 position, vec3 scale, vec3 rotation) {
     // Rotation matrix
     float angle = rotation.z * PI/180.0f;
     float cos = cosf(angle);

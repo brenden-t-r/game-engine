@@ -1,5 +1,5 @@
-#ifndef GAMEENGINE_FONTTRUETYPEGAME_H
-#define GAMEENGINE_FONTTRUETYPEGAME_H
+#ifndef GAMEENGINE_FONTMSDF_H
+#define GAMEENGINE_FONTMSDF_H
 
 #include "../engine/game.h"
 #include "../engine/text.h"
@@ -8,11 +8,11 @@
 #include <unordered_map>
 #include <cassert>
 
-class FontTrueTypeGame : public Game {
+class FontMSDFGame : public Game {
 public:
     using Game::Game;
 
-    ~FontTrueTypeGame() override = default;
+    ~FontMSDFGame() override = default;
 
     Shader* LoadFontShader() {
         ShaderDef shaderDef{};

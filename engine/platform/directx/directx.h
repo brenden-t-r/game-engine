@@ -201,7 +201,7 @@ public:
                 }
 
                 // Clear the back buffer
-                float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                float clearColor[4] = { 0.5f, 0.8f, 1.0f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
                 func(ctx);
