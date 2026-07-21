@@ -115,6 +115,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    glfwGetWindowSize(window, &WINDOW_WIDTH, &WINDOW_HEIGHT);
+    glfwGetFramebufferSize(window, &FRAMEBUFFER_WIDTH, &FRAMEBUFFER_HEIGHT);
 }
 //endregion
 
@@ -149,6 +151,8 @@ public:
 
         // Set the resize callback
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        glfwGetWindowSize(window, &WINDOW_WIDTH, &WINDOW_HEIGHT);
+        glfwGetFramebufferSize(window, &FRAMEBUFFER_WIDTH, &FRAMEBUFFER_HEIGHT);
 
         // Initialize glew
         if (glewInit() != GLEW_OK) {
