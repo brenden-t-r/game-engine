@@ -17,7 +17,7 @@ on:
           - ios
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     if: github.event_name == 'pull_request' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows'
     steps:
       - uses: actions/checkout@v4

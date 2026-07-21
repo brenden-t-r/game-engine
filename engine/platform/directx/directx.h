@@ -16,6 +16,8 @@
 #include <iostream>
 #include <Xinput.h>
 #include "math.h"
+#include "fstream"
+#include "sstream"
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "../../dependencies/miniaudio.h"
@@ -199,7 +201,7 @@ public:
                 }
 
                 // Clear the back buffer
-                float clearColor[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
+                float clearColor[4] = { 0.5f, 0.8f, 1.0f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
                 func(ctx);
@@ -334,7 +336,7 @@ public:
 
             HRESULT hr = d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
             if (FAILED(hr)) {
-                // Handle the error (e.g., log it)
+                printf("Error creating buffer: %ldl", hr);
             }
 
             // Set the vertex buffer
@@ -361,18 +363,26 @@ public:
     //region Texture
     class TextureD3D : public Texture {
     public:
-        explicit TextureD3D(const char* path, ID3D11ShaderResourceView* textureView): Texture(path), textureView(textureView) {}
+        TextureD3D(const char *path, TextureSettings settings, ID3D11ShaderResourceView* textureView, ID3D11SamplerState* samplerState)
+                : Texture(path, settings), textureView(textureView), samplerState(samplerState) {}
         ~TextureD3D() override {
             textureView->Release();
         }
-        ID3D11ShaderResourceView* textureView{};
+        ID3D11ShaderResourceView* textureView = nullptr;
+        ID3D11SamplerState* samplerState = nullptr;
     };
-    Texture* CreateTexture(const char* path) override {
+    Texture* CreateTexture(const char* path, TextureSettings textureSettings) override {
         auto wchar = convertToWCHAR(path);
         ID3D11ShaderResourceView* textureView;
         LoadTextureFromFile(d3dDevice, d3dContext, wchar, &textureView);
         delete[] wchar;
-        auto texture = new TextureD3D(path, textureView);
+        ID3D11SamplerState* samplerState;
+        if (textureSettings.filter == TextureFilter::POINT) {
+            samplerState = textureSettings.mipMapsEnabled ? samplerStatePoint : samplerStatePointNoMips;
+        } else {
+            samplerState = textureSettings.mipMapsEnabled ?  samplerStateLinear : samplerStateLinearNoMips;
+        }
+        auto texture = new TextureD3D(path, textureSettings, textureView, samplerState);
         return texture;
     }
     //endregion
@@ -380,30 +390,35 @@ public:
     class SpriteD3D : public Sprite {
     public:
         SpriteD3D(ID3D11Device *d3DDevice, ID3D11DeviceContext *d3DContext, ID3D11BlendState* blendState) :
-                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {}
-
-        ~SpriteD3D() override = default;
-
-        void CreateBuffer() {
-            // Create the vertex buffer (same as before)
+                  d3dDevice(d3DDevice), d3dContext(d3DContext), blendState(blendState) {
+            // Create the vertex buffer
             D3D11_BUFFER_DESC bufferDesc = {};
             bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
             bufferDesc.ByteWidth = sizeof(d3d_vertices);
             bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
             bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = d3d_vertices;
+            d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
+        }
 
-            // Constant buffer
+        ~SpriteD3D() override = default;
+
+        void SetMaterial(Material* mat) override {
+            Sprite::SetMaterial(mat);
+            CreateConstantBuffer();
+        }
+
+        void CreateConstantBuffer() {
+            if (constantBuffer != nullptr) {
+                constantBuffer->Release();
+            }
             D3D11_BUFFER_DESC cbd = {};
-            cbd.ByteWidth = 32;
+            cbd.ByteWidth = ((ShaderD3D*)material->shader)->constantBufferSize;
             cbd.Usage = D3D11_USAGE_DYNAMIC;
             cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
             cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
             d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
-
-            d3dDevice->CreateBuffer(&bufferDesc, &initData, &vertexBuffer);
         }
 
         void Update() override {
@@ -418,7 +433,7 @@ public:
             d3d_vertices[2].position.x = vertices[3].x;
             d3d_vertices[2].position.y = vertices[3].y;
 
-            if (useAtlas) {
+            if (useAtlas && !useGlyph) {
                 d3d_vertices[0].texCoord.x = atlasCellSize * (float)atlasColumn;
                 d3d_vertices[1].texCoord.x = atlasCellSize * (float)atlasColumn + atlasCellSize;
                 d3d_vertices[2].texCoord.x = atlasCellSize * (float)atlasColumn;
@@ -428,10 +443,25 @@ public:
                 d3d_vertices[2].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
                 d3d_vertices[3].texCoord.y = atlasCellSize * (float)atlasRow + atlasCellSize;
             }
+            if (useAtlas && useGlyph) {
+                float modifier = 0.0f;
+                float u0 = (glyphX + modifier) / (float)atlasWidth;
+                float v0 = (glyphY + modifier) / (float)atlasHeight;
+                float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
+                d3d_vertices[0].texCoord.x = u0; d3d_vertices[0].texCoord.y = v0;
+                d3d_vertices[1].texCoord.x = u1; d3d_vertices[1].texCoord.y = v0;
+                d3d_vertices[2].texCoord.x = u0; d3d_vertices[2].texCoord.y = v1;
+                d3d_vertices[3].texCoord.x = u1; d3d_vertices[3].texCoord.y = v1;
+            }
 
             // Set the blend state
             float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
             d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
+            // Set the sampler state
+            auto tex = (TextureD3D*)((MaterialSprite*)material)->texture;
+            d3dContext->PSSetSamplers(0, 1, &tex->samplerState);
 
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -449,7 +479,6 @@ public:
 
             // Bind shader resources
             auto shader = (ShaderD3D*)material->shader;
-            auto tex = (TextureD3D*)((MaterialSprite*)material)->texture;
             d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
             d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
             d3dContext->PSSetShaderResources(0, 1, &tex->textureView);
@@ -459,6 +488,7 @@ public:
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+            memset(mapped.pData, 0, shader->constantBufferSize);
             material->BindConstantBuffer(dst);
             d3dContext->Unmap(constantBuffer, 0);
             d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
@@ -471,6 +501,7 @@ public:
             return (TextureD3D*)((MaterialSprite*)material)->texture;
         }
 
+    private:
         ID3D11Device* d3dDevice = nullptr;
         ID3D11DeviceContext* d3dContext = nullptr;
         ID3D11BlendState* blendState = nullptr;
@@ -486,13 +517,13 @@ public:
         };
     };
     Sprite* CreateSprite(const char * path) override {
-        auto texture = (TextureD3D*)CreateTexture(path);
+        auto texture = (TextureD3D*)CreateTexture(path, DEFAULT_TEXTURE_SETTINGS);
         return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
         auto gameObject = new SpriteD3D(d3dDevice, d3dContext, blendState);
         gameObject->material = new MaterialSprite(textureShader, texture);
-        gameObject->CreateBuffer();
+        gameObject->CreateConstantBuffer();
         return gameObject;
     }
     //endregion
@@ -547,6 +578,7 @@ public:
         ID3D11VertexShader* vertexShader;
         ID3D11PixelShader* pixelShader;
         ID3D11InputLayout* inputLayout;
+        unsigned int constantBufferSize;
     };
     Shader* colorShader = nullptr;
     Shader* textureShader = nullptr;
@@ -568,12 +600,20 @@ public:
         // Compile vertex shader
         ID3D11VertexShader* vertexShader;
         ID3DBlob* vsBlob = nullptr;
-        D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        HRESULT hr = D3DCompileFromFile(shaderPath, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, nullptr);
+        if (!SUCCEEDED(hr)) {
+            printf("Failed to compile vertex shader: %ld\n", hr);
+            exit(1);
+        }
         d3dDevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
         // Compile pixel shader
         ID3D11PixelShader* pixelShader;
         ID3DBlob* psBlob = nullptr;
-        D3DCompileFromFile(shaderPath, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
+        hr = D3DCompileFromFile(shaderPath, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, nullptr);
+        if (!SUCCEEDED(hr)) {
+            printf("Failed to compile pixel shader: %ld\n", hr);
+            exit(1);
+        }
         d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
         // Input layout
         ID3D11InputLayout* inputLayout;
@@ -599,6 +639,7 @@ public:
             cb = reflection->GetConstantBufferByIndex(0);
             D3D11_SHADER_BUFFER_DESC bufferDesc;
             cb->GetDesc(&bufferDesc);
+            shader->constantBufferSize = bufferDesc.Size;
             for (int i = 0; i < bufferDesc.Variables; i++) {
                 auto shaderVar = cb->GetVariableByIndex(i);
                 D3D11_SHADER_VARIABLE_DESC varDesc;
@@ -618,6 +659,16 @@ public:
     }
     //endregion
 
+    std::string LoadFileData(const char* path) override {
+        std::ifstream file(path);
+        if (!file) {
+            assert(false);
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string contents = buffer.str();
+        return buffer.str().c_str();
+    }
     void Shutdown() override {
         CleanD3D();
     }
@@ -636,14 +687,11 @@ private:
     ID3D11Device* d3dDevice = nullptr;
     ID3D11DeviceContext* d3dContext = nullptr;
     ID3D11RenderTargetView* renderTargetView = nullptr;
-    ID3D11InputLayout* inputLayoutSimple = nullptr;
-    ID3D11InputLayout* inputLayoutTexture = nullptr;
-    ID3D11Buffer* vertexBuffer = nullptr;
     ID3D11BlendState* blendState = nullptr;
-    ID3D11VertexShader* vertexShaderTexture = nullptr;
-    ID3D11PixelShader* pixelShaderTexture = nullptr;
-    ID3D11VertexShader* vertexShaderSimple = nullptr;
-    ID3D11PixelShader* pixelShaderSimple = nullptr;
+    ID3D11SamplerState* samplerStatePoint = nullptr;
+    ID3D11SamplerState* samplerStateLinear = nullptr;
+    ID3D11SamplerState* samplerStatePointNoMips = nullptr;
+    ID3D11SamplerState* samplerStateLinearNoMips = nullptr;
 
     // State vars
     XINPUT_STATE gamepadStateA = {};
@@ -797,18 +845,52 @@ private:
     }
 
     void InitPipeline() {
-        // Create a sampler state
-        D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-        ID3D11SamplerState* samplerState;
-        d3dDevice->CreateSamplerState(&samplerDesc, &samplerState);
-        d3dContext->PSSetSamplers(0, 1, &samplerState);
+        // Linear clamp
+        D3D11_SAMPLER_DESC samplerDescLinear = {};
+        samplerDescLinear.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinear.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDescLinear.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescLinear.MinLOD = 0;
+        samplerDescLinear.MaxLOD = D3D11_FLOAT32_MAX;
+        d3dDevice->CreateSamplerState(&samplerDescLinear, &samplerStateLinear);
+
+        // Linear clamp (no mipmaps)
+        D3D11_SAMPLER_DESC samplerDescLinearNoMips = {};
+        samplerDescLinearNoMips.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescLinearNoMips.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDescLinearNoMips.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescLinearNoMips.MinLOD = 0;
+        samplerDescLinearNoMips.MaxLOD = 0;
+        d3dDevice->CreateSamplerState(&samplerDescLinearNoMips, &samplerStateLinearNoMips);
+
+        // Point clamp
+        D3D11_SAMPLER_DESC samplerDescPoint = {};
+        samplerDescPoint.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPoint.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDescPoint.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescPoint.MinLOD = 0;
+        samplerDescPoint.MaxLOD = D3D11_FLOAT32_MAX;
+        d3dDevice->CreateSamplerState(&samplerDescPoint, &samplerStatePoint);
+
+        // Point clamp (no mipmaps)
+        D3D11_SAMPLER_DESC samplerDescPointNoMips = {};;
+        samplerDescPointNoMips.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDescPointNoMips.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        samplerDescPointNoMips.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDescPointNoMips.MinLOD = 0;
+        samplerDescPointNoMips.MaxLOD = 0;
+        d3dDevice->CreateSamplerState(&samplerDescPointNoMips, &samplerStatePointNoMips);
+
+        // Set sampler state to linear
+        d3dContext->PSSetSamplers(0, 1, &samplerStateLinear);
 
         // Update the blend state to handle alpha
         D3D11_BLEND_DESC blendDesc = { 0 };
@@ -827,13 +909,6 @@ private:
 
     void CleanD3D()
     {
-        if (vertexBuffer) {
-            vertexBuffer->Release();
-            vertexBuffer = nullptr;
-        }
-//        inputLayoutSimple->Release();
-//        vertexShaderTexture->Release();
-//        pixelShaderTexture->Release();
         renderTargetView->Release();
         swapChain->Release();
         d3dDevice->Release();

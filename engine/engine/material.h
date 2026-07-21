@@ -23,7 +23,7 @@ struct ShaderDef {
 class Shader {
 public:
     enum UniformFieldType {
-        FLOAT, FLOAT4
+        FLOAT, FLOAT4, BOOL
     };
     struct UniformField {
         UniformFieldType type;
@@ -31,6 +31,7 @@ public:
         union {
             float f;
             float f4[4]{0,0,0,0};
+            bool b;
         };
     };
     struct UniformFieldOffset {
@@ -69,7 +70,7 @@ public:
                 }
             }
             if (!found) {
-                printf("Cannot find shader variable with name %s", f.name);
+                printf("Cannot find shader variable with name %s\n", f.name);
                 continue;
             }
             switch(f.type) {
@@ -78,6 +79,10 @@ public:
                     break;
                 case Shader::FLOAT4:
                     memcpy(dst + offset, f.f4, sizeof(float) * 4);
+                    break;
+                case Shader::BOOL:
+                    uint32_t v = f.b ? 1 : 0;
+                    memcpy(dst + offset, &v, sizeof(uint32_t));
                     break;
             }
         }
@@ -102,7 +107,7 @@ public:
         UpdateColor();
     }
 
-private:
+protected:
     void UpdateColor() {
         uniformFields[0].f4[0] = color[0];
         uniformFields[0].f4[1] = color[1];
@@ -113,11 +118,51 @@ private:
 
 class MaterialSprite : public MaterialColor {
 public:
-    MaterialSprite(Shader *shader, Texture* texture) : MaterialColor(shader), texture(texture) {
+    MaterialSprite(Shader* shader, Texture* texture) : MaterialColor(shader), texture(texture) {
         textures = std::vector<TextureBuffer>{};
         textures.push_back(TextureBuffer{texture, 0});
     }
     Texture* texture;
 };
+
+class MaterialFont : public MaterialSprite {
+public:
+    float outlineColor[4]{1.0,0.0,0.0,0.5};
+    float outlineWidth = 0;
+    float pxRange = 16;
+    bool isMSDF = false;
+    MaterialFont(Shader* shader, Texture* texture) : MaterialSprite(shader, texture) {
+        Shader::UniformField fieldOutlineColor{};
+        fieldOutlineColor.name = "OutlineColor";
+        fieldOutlineColor.type = Shader::UniformFieldType::FLOAT4;
+        uniformFields.push_back(fieldOutlineColor);
+        Shader::UniformField fieldOutlineWidth{};
+        fieldOutlineWidth.name = "OutlineWidth";
+        fieldOutlineWidth.type = Shader::UniformFieldType::FLOAT;
+        uniformFields.push_back(fieldOutlineWidth);
+        Shader::UniformField fieldPxRange{};
+        fieldPxRange.name = "PxRange";
+        fieldPxRange.type = Shader::UniformFieldType::FLOAT;
+        uniformFields.push_back(fieldPxRange);
+        Shader::UniformField fieldIsMSDF{};
+        fieldIsMSDF.name = "IsMSDF";
+        fieldIsMSDF.type = Shader::UniformFieldType::BOOL;
+        uniformFields.push_back(fieldIsMSDF);
+        color[0] = 0.0;
+        color[1] = 0.0;
+        color[2] = 0.0;
+    }
+    void PreBind() override {
+        MaterialColor::UpdateColor();
+        uniformFields[1].f4[0] = outlineColor[0];
+        uniformFields[1].f4[1] = outlineColor[1];
+        uniformFields[1].f4[2] = outlineColor[2];
+        uniformFields[1].f4[3] = outlineColor[3];
+        uniformFields[2].f = outlineWidth;
+        uniformFields[3].f = pxRange;
+        uniformFields[4].b = isMSDF;
+    }
+};
+
 
 #endif //GAMEPROJECT_MATERIAL_H

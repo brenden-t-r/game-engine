@@ -127,7 +127,12 @@ public:
         transform.rot.z += degrees;
     }
 };
-
+struct Glyph {
+    int x, y, w, h;
+    int xoff, yoff;
+    float advance;
+};
+#include "text_msdf.h"
 class Sprite : public GameObject {
 public:
     vec3 vertices[4] {
@@ -142,6 +147,16 @@ public:
     int atlasRow = 0;
     int atlasColumn = 1;
     float atlasCellSize = 0.125f;
+
+    bool useGlyph = false;
+    float glyphX = 0;
+    float glyphY = 0;
+    float glyphW = 0;
+    float glyphH = 0;
+    float glyphxoff = 0;
+    float glyphyoff = 0;
+    float atlasWidth = 0;
+    float atlasHeight = 0;
 
     Sprite() {
         SetPosition({0,0,0});
@@ -158,10 +173,25 @@ public:
         transform.pos = position;
 
         // Start the object with the appropriate width and height at the origin in normalized coordinates
-        vertices[0] = {-transform.width/2, +transform.height/2, 1};
-        vertices[1] = {+transform.width/2, +transform.height/2, 1};
-        vertices[2] = {+transform.width/2, -transform.height/2, 1};
-        vertices[3] = {-transform.width/2, -transform.height/2, 1};
+        if (useAtlas && useGlyph) {
+            float ndcXoff = glyphxoff;
+            float ndcYoff = glyphyoff;
+            float w = (glyphW*2.0f/ (float)FRAMEBUFFER_WIDTH)  ;
+            float h = (glyphH*2.0f / (float)FRAMEBUFFER_HEIGHT) ;
+            float x0 = ndcXoff;
+            float y0 = ndcYoff;
+            float x1 = x0 + w;
+            float y1 = y0 - h;   // minus because top-left to bottom-left in NDC
+            vertices[0] = {x0, y0, 1};  // top-left
+            vertices[1] = {x1, y0, 1};  // top-right
+            vertices[2] = {x1, y1, 1};  // bottom-right
+            vertices[3] = {x0, y1, 1};  // bottom-left
+        } else {
+            vertices[0] = {-transform.width/2, +transform.height/2, 1};
+            vertices[1] = {+transform.width/2, +transform.height/2, 1};
+            vertices[2] = {+transform.width/2, -transform.height/2, 1};
+            vertices[3] = {-transform.width/2, -transform.height/2, 1};
+        }
 
         // Create transformation matrix
         Matrix3 localMatrix = to_transform_matrix(&transform);

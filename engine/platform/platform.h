@@ -51,7 +51,10 @@ public:
     virtual GameObject* CreateTriangle() = 0;
     virtual Sprite* CreateSprite(const char* path) = 0;
     virtual Sprite* CreateSprite(Texture* texture) = 0;
-    virtual Texture* CreateTexture(const char* path) = 0;
+    virtual Texture* CreateTexture(const char* path, TextureSettings settings) = 0;
+    virtual Texture* CreateTexture(const char* path) {
+        return CreateTexture(path, DEFAULT_TEXTURE_SETTINGS);
+    }
     virtual Sound* CreateSound(const char* path) = 0;
     virtual void Delete(GameObject* object) {
         delete object;
@@ -67,6 +70,7 @@ public:
     virtual void RemoveAllCallbacks() = 0;
     virtual vec3 GetMousePos() = 0;
 
+    virtual std::string LoadFileData(const char* path) = 0;
 
     virtual void Shutdown() = 0;
 

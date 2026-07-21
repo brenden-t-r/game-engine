@@ -13,12 +13,13 @@
 #include "spriteGame.h"
 #include "triangleGame.h"
 #include "materialGame.h"
+#include "fontMSDFGame.h"
 
 enum GAME_TYPES{
     AUDIO_GAME, COLLISION_GAME, FONT_GAME,
     INPUT_GAME, LOCAL_MOVEMENT_GAME, PONG_GAME,
     ROTATION_GAME, SPRITE_GAME, TRIANGLE_GAME,
-    MATERIAL_GAME
+    MATERIAL_GAME, FONTMSDF_GAME
 };
 Game* LoadGame(GAME_TYPES type, Platform* platform) {
     switch (type) {
@@ -32,6 +33,7 @@ Game* LoadGame(GAME_TYPES type, Platform* platform) {
         case SPRITE_GAME: return new SpriteGame(platform);
         case TRIANGLE_GAME: return new TriangleGame(platform);
         case MATERIAL_GAME: return new MaterialGame(platform);
+        case FONTMSDF_GAME: return new FontMSDFGame(platform);
     }
 }
 
@@ -73,7 +75,7 @@ private:
     Game* currentGame{};
 
     int gameIndex = -1;
-    static const int TOTAL_GAMES = 9;
+    static const int TOTAL_GAMES = 11;
 };
 
 #endif // GAMEENGINE_REGRESSIONTESTGAME_H

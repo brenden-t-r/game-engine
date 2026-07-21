@@ -154,6 +154,7 @@ struct ParagraphSettings{
     float tracking;
 };
 
+// deprecated
 static void ShowText(const char* text, Sprite* atlas, ParagraphSettings settings) {
     int i = 0;
     float xPos = settings.pos.x;
@@ -193,6 +194,64 @@ static void ShowText(const char* text, Sprite* atlas, ParagraphSettings settings
         i++;
         horOffset++;
         atlas->Update();
+    }
+}
+
+static Sprite* LoadFont(Platform* platform, const char* pngPath, const char* jsonPath,
+                        TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
+    auto texture = platform->CreateTexture(pngPath, textureSettings);
+    auto sprite = platform->CreateSprite(texture);
+    auto mat = new MaterialFont(shader, texture);
+    sprite->SetMaterial(mat);
+    std::string data = platform->LoadFileData(jsonPath);
+    _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
+    sprite->useAtlas = true;
+    sprite->useGlyph = true;
+    sprite->atlasWidth = (float)_atlas.atlas.width;
+    sprite->atlasHeight = (float)_atlas.atlas.height;
+    sprite->transform.width = (float)_atlas.atlas.width * 2.0f / ((float)FRAMEBUFFER_WIDTH*1.0f);
+    sprite->transform.height = (float)_atlas.atlas.height * 2.0f / ((float)FRAMEBUFFER_HEIGHT*1.0f);
+    sprite->transform.scale = {1, 1, 1};
+    sprite->transform.pos = {0,0,0};
+    return sprite;
+}
+
+static void RenderText(Sprite* _font, const std::string &text, float startX, float startY, const TEXT_MSDF::FontAtlas& _atlas) {
+    float x = startX;
+    float y = startY;
+    //float y = startY + baseline * scale;  // align baseline
+
+    for (char ch : text) {
+        TEXT_MSDF::Glyph g{};
+        if (ch == '\n') {
+            x = startX;
+            y -= round(_atlas.atlas.size*_atlas.metrics.lineHeight*_font->transform.scale.y) / FRAMEBUFFER_HEIGHT*2.0f;
+            continue;
+        }
+        bool found = false;
+        for (TEXT_MSDF::Glyph gly : _atlas.glyphs) {
+            if (gly.unicode == ch) {
+                g = gly;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            continue;
+        }
+
+        _font->glyphX = (float)g.atlasBounds.left;
+        _font->glyphY = (float)_atlas.atlas.height - (float)g.atlasBounds.top;
+        _font->glyphW = (float)(g.atlasBounds.right - g.atlasBounds.left);
+        _font->glyphH = (float)(_atlas.atlas.height - g.atlasBounds.bottom) - (float)(_atlas.atlas.height - g.atlasBounds.top);
+        _font->glyphxoff = (float)(g.planeBounds.left * _atlas.atlas.size) / (float)FRAMEBUFFER_WIDTH * 2.0f;
+        _font->glyphyoff = (float)(g.planeBounds.top * _atlas.atlas.size) / (float)FRAMEBUFFER_HEIGHT *2.0f;
+        _font->transform.pos.x = x;
+        _font->transform.pos.y = y;
+        _font->Update();
+        auto pixelAdvance = (float)(g.advance * _atlas.atlas.size * 2.0f);
+        pixelAdvance += 2;
+        x += (float)(pixelAdvance/(float)FRAMEBUFFER_WIDTH*_font->transform.scale.x*1.0);
     }
 }
 

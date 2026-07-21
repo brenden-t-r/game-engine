@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include "fstream"
+#include "sstream"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -113,6 +115,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    glfwGetWindowSize(window, &WINDOW_WIDTH, &WINDOW_HEIGHT);
+    glfwGetFramebufferSize(window, &FRAMEBUFFER_WIDTH, &FRAMEBUFFER_HEIGHT);
 }
 //endregion
 
@@ -147,6 +151,8 @@ public:
 
         // Set the resize callback
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        glfwGetWindowSize(window, &WINDOW_WIDTH, &WINDOW_HEIGHT);
+        glfwGetFramebufferSize(window, &FRAMEBUFFER_WIDTH, &FRAMEBUFFER_HEIGHT);
 
         // Initialize glew
         if (glewInit() != GLEW_OK) {
@@ -206,6 +212,17 @@ public:
                 glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
                 glfwWindowShouldClose(window) == 0
         );
+    }
+
+    std::string LoadFileData(const char* path) override {
+        std::ifstream file(path);
+        if (!file) {
+            assert(false);
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string str = buffer.str();
+        return str;
     }
 
     //region Input Handling
@@ -290,16 +307,16 @@ public:
     //region Texture
     class TextureGL : public Texture {
     public:
-        TextureGL(const char *path, GLuint textureID) : Texture(path), textureID(textureID) {}
+        TextureGL(const char *path, GLuint textureID, TextureSettings settings) : Texture(path, settings), textureID(textureID) {}
         ~TextureGL() override {
             glDeleteTextures(1, &textureID);
         }
         GLuint textureID;
     };
-    TextureGL* CreateTexture(const char* path) override {
-        GLuint texture = loadTexture(path);
+    TextureGL* CreateTexture(const char* path, TextureSettings settings) override {
+        GLuint texture = loadTexture(path, settings);
         assert(texture != 0);
-        return new TextureGL(nullptr, texture);
+        return new TextureGL(path, texture, settings);
     }
     //endregion
     //region Sprite
@@ -316,7 +333,7 @@ public:
             };
 
             int row = atlasNumRows - atlasRow - 1;
-            if (useAtlas) {
+            if (useAtlas && !useGlyph) {
                 newVertices[3] = atlasCellSize * (float)atlasColumn; // Top-left
                 newVertices[4] = atlasCellSize * (float)row + atlasCellSize;
                 newVertices[8] = atlasCellSize * (float)atlasColumn + atlasCellSize; // Top-right
@@ -325,6 +342,20 @@ public:
                 newVertices[14] = atlasCellSize * (float)row;
                 newVertices[18] = atlasCellSize * (float)atlasColumn;  // Bottom-left
                 newVertices[19] = atlasCellSize * (float)row;
+            }
+            if (useAtlas && useGlyph) {
+                float modifier = 0.0f;
+                float u0 = (glyphX + modifier) / (float)atlasWidth;
+                float v0 = (glyphY + modifier) / (float)atlasHeight;
+                float u1 = (glyphX + glyphW - modifier) / (float)atlasWidth;
+                float v1 = (glyphY + glyphH - modifier) / (float)atlasHeight;
+                // OpenGL UV origin is bottom-left
+                float v0gl = 1.0f - v0;
+                float v1gl = 1.0f - v1;
+                newVertices[3]  = u0; newVertices[4]  = v0gl; // Top-left
+                newVertices[8]  = u1; newVertices[9]  = v0gl; // Top-right
+                newVertices[13] = u1; newVertices[14] = v1gl; // Bottom-right
+                newVertices[18] = u0; newVertices[19] = v1gl; // Bottom-left
             }
 
             glEnable(GL_BLEND);
@@ -348,7 +379,7 @@ public:
         GLuint vertexBufferObject = 0;
     };
     Sprite* CreateSprite(const char* path) override {
-        auto texture = CreateTexture(path);
+        auto texture = CreateTexture(path, DEFAULT_TEXTURE_SETTINGS);
         return CreateSprite(texture);
     }
     Sprite* CreateSprite(Texture* texture) override {
@@ -413,6 +444,9 @@ public:
                 case Shader::FLOAT4:
                     glUniform4f(loc, f.f4[0], f.f4[1], f.f4[2], f.f4[3]);
                     break;
+                case Shader::BOOL:
+                    glUniform1i(loc, static_cast<GLint>(f.b));
+                    break;
             }
         }
     }
@@ -475,7 +509,7 @@ public:
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success) {
             char infoLog[512];
-            glGetShaderInfoLog(shader, 512, NULL, infoLog);
+            glGetShaderInfoLog(shader, 512, nullptr, infoLog);
             std::cerr << "Shader compilation failed: " << infoLog << std::endl;
         }
 
@@ -554,12 +588,7 @@ private:
         glBindVertexArray(0); // Unbind VAO
     }
 
-
-
-    static GLuint loadTexture(const char* path) {
-        GLuint textureID;
-        glGenTextures(1, &textureID);
-
+    static GLuint loadTexture(const char* path, TextureSettings settings) {
         // Load image data
         int width, height, channels;
         stbi_set_flip_vertically_on_load(true); // OpenGL expects texture coordinates to start from bottom-left
@@ -582,26 +611,34 @@ private:
                     break;
             }
 
-            // Bind and set texture parameters
+            GLuint textureID;
+            glGenTextures(1, &textureID);
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
 
             // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            if (settings.filter == TextureFilter::LINEAR) {
+                auto filter = settings.mipMapsEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+            } else {
+                auto filter = settings.mipMapsEnabled ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST;
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+            }
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            if (settings.mipMapsEnabled) {
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
 
-            // Free image data
             stbi_image_free(data);
+            return textureID;
         } else {
             std::cerr << "Failed to load texture: " << path << std::endl;
             stbi_image_free(data);
             return 0;
         }
-
-        return textureID;
     }
     static char* getFileContent(const char* fileName)
     {

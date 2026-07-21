@@ -11,16 +11,12 @@
 - Vector
   - Collision detection (Rays)
 - Text
-  - Text color (shader color input)
   - Line wrapping
-  - Outline effect
   - Shadow effect
-  - SDF
+  - Consistent font size
 - Orthographic projection
 - Gamepad
   - Triggers, axes
-- iOS
-  - Game settings for virtual controller, orientation
 - Keyboard
   - Key mappings
 - WebGL support
