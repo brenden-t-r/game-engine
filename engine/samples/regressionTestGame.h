@@ -75,7 +75,7 @@ private:
     Game* currentGame{};
 
     int gameIndex = -1;
-    static const int TOTAL_GAMES = 9;
+    static const int TOTAL_GAMES = 11;
 };
 
 #endif // GAMEENGINE_REGRESSIONTESTGAME_H
