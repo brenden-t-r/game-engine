@@ -514,6 +514,8 @@ static void RealMainMetal(MetalAppDelegate* app) {
 }
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
     NSLog(@"resized: %f, %f", size.width, size.height);
+    FRAMEBUFFER_WIDTH = size.width;
+    FRAMEBUFFER_HEIGHT = size.height;
 }
 - (void)viewWillLayoutSubviews {
     [super viewWillLayoutSubviews];
@@ -692,6 +694,8 @@ name:UIDeviceOrientationDidChangeNotification
     self.viewController = [[MetalViewController alloc] init];
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
+    FRAMEBUFFER_WIDTH = self.viewController.metalView.drawableSize.width;
+    FRAMEBUFFER_HEIGHT = self.viewController.metalView.drawableSize.height;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         RealMainMetal(self);
     });
