@@ -31,25 +31,7 @@ public:
     Sprite* LoadFont(const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
         std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
         std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
-        return LoadFont(png.c_str(), json.c_str(), _atlas, shader, textureSettings);
-    }
-    Sprite* LoadFont(const char* pngPath, const char* jsonPath,
-                     TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
-        auto texture = platform->CreateTexture(pngPath, textureSettings);
-        auto sprite = platform->CreateSprite(texture);
-        auto mat = new MaterialFont(shader, texture);
-        sprite->SetMaterial(mat);
-        std::string data = platform->LoadFileData(jsonPath);
-        _atlas = TEXT_MSDF::fromJsonFontAtlas(data.c_str());
-        sprite->useAtlas = true;
-        sprite->useGlyph = true;
-        sprite->atlasWidth = (float)_atlas.atlas.width;
-        sprite->atlasHeight = (float)_atlas.atlas.height;
-        sprite->transform.width = (float)atlas.atlas.width * 2.0f / ((float)WINDOW_WIDTH*1.0f);
-        sprite->transform.height = (float)atlas.atlas.height * 2.0f / ((float)WINDOW_HEIGHT*1.0f);
-        sprite->transform.scale = {1, 1, 1};
-        sprite->transform.pos = {0,0,0};
-        return sprite;
+        return ::LoadFont(platform, png.c_str(), json.c_str(), _atlas, shader, textureSettings);
     }
 
     void Start() override {

@@ -254,6 +254,12 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
         self.device = MTLCreateSystemDefaultDevice();
         self.delegate = self;
         self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+//        self.colorPixelFormat = MTLPixelFormatBGRA8Unorm;
+//        self.framebufferOnly = YES;
+//        self.paused = NO;
+//        self.enableSetNeedsDisplay = NO;
+        FRAMEBUFFER_WIDTH = self.drawableSize.width;
+        FRAMEBUFFER_HEIGHT = self.drawableSize.height;
         [self setupPipeline];
     }
     return self;
@@ -418,7 +424,8 @@ static void RealMainMetal(MetalAppDelegate* app, MetalView* view) {
     [commandBuffer waitUntilCompleted];
 }
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size __attribute__((swift_attr("@UIActor"))) {
-    NSLog(@"resized");
+    FRAMEBUFFER_WIDTH = size.width;
+    FRAMEBUFFER_HEIGHT = size.height;
 }
 - (BOOL)acceptsFirstResponder {
     return YES;
