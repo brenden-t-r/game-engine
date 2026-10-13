@@ -40,6 +40,16 @@ static USHORT GetWindowsKey(KeyCode keyCode) {
         case KeyCode::A:        return 'A';
         case KeyCode::S:        return 'S';
         case KeyCode::D:        return 'D';
+        case KeyCode::E:        return 'E';
+        case KeyCode::H:        return 'H';
+        case KeyCode::L:        return 'L';
+        case KeyCode::R:        return 'R';
+        case KeyCode::_1:       return '1';
+        case KeyCode::_2:       return '2';
+        case KeyCode::_3:       return '3';
+        case KeyCode::_4:       return '4';
+        case KeyCode::_5:       return '5';
+        case KeyCode::Unknown:  return -1;
         default:                return -1;
     }
 }
@@ -53,6 +63,15 @@ static KeyCode GetKeyCode(USHORT keyCode) {
         case 'A':         return KeyCode::A;
         case 'S':         return KeyCode::S;
         case 'D':         return KeyCode::D;
+        case 'E':         return KeyCode::E;
+        case 'H':         return KeyCode::H;
+        case 'L':         return KeyCode::L;
+        case 'R':         return KeyCode::R;
+        case '1':         return KeyCode::_1;
+        case '2':         return KeyCode::_2;
+        case '3':         return KeyCode::_3;
+        case '4':         return KeyCode::_4;
+        case '5':         return KeyCode::_5;
         default:          return KeyCode::Unknown;
     }
 }
