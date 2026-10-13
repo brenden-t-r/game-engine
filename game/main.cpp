@@ -15,8 +15,8 @@
 
 #include "../engine/platform/platform.h"
 #include "../engine/engine/game.h"
-#include "../engine/samples/regressionTestGame.h"
 #include "../engine/entry.h"
+#include "game.h"
 
 class SampleGame : public Game {
 public:
@@ -29,7 +29,7 @@ public:
 
 int RealMain(Platform* platform) {
     platform->Init();
-    Game* game = new RegressionTestGame(platform);
+    Game* game = new IsoGame(platform);
     game->Start();
     RunLoop(platform, game);
     platform->Shutdown();
