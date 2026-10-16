@@ -77,13 +77,14 @@ public:
         {-1.0f, -1.0f, 0.0f},
         {0, 1.0f, 0.0f},
     };
+    bool manualVertices = false;
 
     Triangle() {
         SetPosition({0,0,0});
     }
 
     void Update() override {
-        SetPosition(transform.pos);
+        if (!manualVertices) SetPosition(transform.pos);
         GameObject::Update();
     }
 

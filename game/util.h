@@ -1,7 +1,13 @@
+#include "../engine/engine/matrix.h"
+#include "../engine/platform/platform.h"
+#include "../engine/platform/directx/directx.h"
+
 #include "model.h"
 
 #include <cmath>
 #include <algorithm>
+
+#pragma once
 
 //region: math
 float distance(float x1, float y1, float x2, float y2)
@@ -273,5 +279,45 @@ void sortPointsAroundCenter(std::vector<Point>& points)
                   return angleA < angleB;
               });
 }
-
 //endregion
+
+//region: draw
+void drawIsoTile(Platform* platform, Material* mat, int screenX, int screenY, int tileW, int tileH) {
+    vec2 points[5] = {
+            screen_to_normalized(vec2{ (float)screenX,              (float)screenY }),
+            screen_to_normalized(vec2{ (float)(screenX + tileW/2),  (float)(screenY + tileH/2)  }),
+            screen_to_normalized(vec2{ (float)screenX,              (float)(screenY + tileH)     }),
+            screen_to_normalized(vec2{ (float)(screenX - tileW/2),  (float)(screenY + tileH/2)  }),
+            screen_to_normalized(vec2{ (float)screenX,              (float)screenY            }),
+    };
+    ((PlatformDirectX*)platform)->drawLine(points[0], points[1], mat);
+    ((PlatformDirectX*)platform)->drawLine(points[1], points[2], mat);
+    ((PlatformDirectX*)platform)->drawLine(points[2], points[3], mat);
+    ((PlatformDirectX*)platform)->drawLine(points[3], points[4], mat);
+
+}
+void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
+    for (int row = 0; row < GRID_ROWS; row++) {
+        for (int col = 0; col < GRID_COLS; col++) {
+            int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
+            int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
+            drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
+        }
+    }
+}
+Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
+    auto t = (Triangle*)platform->CreateTriangle();
+    t->manualVertices = true;
+    t->vertices[0] = {_1.x, _1.y, 0.0};
+    t->vertices[1] = {_2.x, _2.y, 0.0};
+    t->vertices[2] = {_3.x, _3.y, 0.0};
+    return t;
+}
+Quad* getQuad(Platform* platform, vec2 _1, vec2 _2, vec2 _3, vec2 _4) {
+    auto o = new Quad();
+    o->a = getTriangle(platform, _1, _2, _3);
+    o->b = getTriangle(platform, _1, _3, _4);
+    return o;
+}
+//endregion
+

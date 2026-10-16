@@ -329,7 +329,10 @@ public:
         d3dContext->Unmap(constantBuffer, 0);
         d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
+        d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
+
         d3dContext->Draw(2, 0);
+        vertexBuffer->Release();
     }
 
     //region Triangle
