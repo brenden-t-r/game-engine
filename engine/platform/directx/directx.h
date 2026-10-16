@@ -220,7 +220,7 @@ public:
                 }
 
                 // Clear the back buffer
-                float clearColor[4] = { 0.5f, 0.8f, 1.0f, 1.0f };
+                float clearColor[4] = { 0.9f, 0.9f, 1.0f, 1.0f };
                 d3dContext->ClearRenderTargetView(renderTargetView, clearColor);
 
                 func(ctx);
@@ -278,6 +278,60 @@ public:
     // endregion
 
     //region GameObjects
+
+    void drawLine(vec2 a, vec2 b, Material* material) {
+        VertexBasic vertices[] =
+        {
+            { { a.x, a.y, 0.0f } },
+            { {  b.x, b.y, 0.0f } }
+        };
+        UINT stride = sizeof(VertexBasic);
+        UINT offset = 0;
+
+        D3D11_BUFFER_DESC desc = {};
+        desc.Usage = D3D11_USAGE_IMMUTABLE;
+        desc.ByteWidth = sizeof(vertices);
+        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        D3D11_SUBRESOURCE_DATA data = {};
+        data.pSysMem = vertices;
+        ID3D11Buffer* vertexBuffer = nullptr;
+        HRESULT hr = d3dDevice->CreateBuffer(
+                &desc,
+                &data,
+                &vertexBuffer
+        );
+        assert(SUCCEEDED(hr));
+
+        auto shaderd3d = (ShaderD3D*)colorShader;
+        d3dContext->IASetInputLayout(shaderd3d->inputLayout);
+        d3dContext->IASetVertexBuffers(
+                0, 1, &vertexBuffer, &stride, &offset
+        );
+        d3dContext->IASetPrimitiveTopology(
+                D3D11_PRIMITIVE_TOPOLOGY_LINELIST
+        );
+        d3dContext->VSSetShader(shaderd3d->vertexShader, nullptr, 0);
+        d3dContext->PSSetShader(shaderd3d->pixelShader, nullptr, 0);
+
+        ID3D11Buffer* constantBuffer = nullptr;
+        D3D11_BUFFER_DESC cbd = {};
+        cbd.ByteWidth = 32;
+        cbd.Usage = D3D11_USAGE_DYNAMIC;
+        cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
+
+        // Bind constant buffer
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        auto* dst = reinterpret_cast<uint8_t*>(mapped.pData);
+        material->BindConstantBuffer(dst);
+        d3dContext->Unmap(constantBuffer, 0);
+        d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+
+        d3dContext->Draw(2, 0);
+    }
+
     //region Triangle
     class TriangleD3D : public Triangle {
     public:

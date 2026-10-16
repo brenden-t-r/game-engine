@@ -36,9 +36,9 @@ public:
         auto _this = (Game*)context;
         _this->GamepadReleasedCallback(button);
     }
+    Platform* platform;
 
 protected:
-    Platform* platform;
 };
 
 class Scene {

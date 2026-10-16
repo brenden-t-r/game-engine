@@ -7,7 +7,7 @@
 struct VertexBasic
 {
     DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT4 color;
+//    DirectX::XMFLOAT4 color;
 };
 
 // Vertex structure
