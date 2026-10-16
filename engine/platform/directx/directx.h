@@ -768,6 +768,7 @@ private:
     ID3D11SamplerState* samplerStateLinear = nullptr;
     ID3D11SamplerState* samplerStatePointNoMips = nullptr;
     ID3D11SamplerState* samplerStateLinearNoMips = nullptr;
+    ID3D11RasterizerState* rasterizerState;
 
     // State vars
     XINPUT_STATE gamepadStateA = {};
@@ -981,6 +982,15 @@ private:
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
         d3dDevice->CreateBlendState(&blendDesc, &blendState);
+
+        // Rasterizer state (w/ backface culling disabled to avoid winding order considerations)
+        D3D11_RASTERIZER_DESC desc = {};
+        desc.FillMode = D3D11_FILL_SOLID;
+        desc.CullMode = D3D11_CULL_NONE;
+        desc.FrontCounterClockwise = FALSE;
+        desc.DepthClipEnable = TRUE;
+        d3dDevice->CreateRasterizerState(&desc, &rasterizerState);
+        d3dContext->RSSetState(rasterizerState);
     }
 
     void CleanD3D()
@@ -989,6 +999,7 @@ private:
         swapChain->Release();
         d3dDevice->Release();
         d3dContext->Release();
+        if (rasterizerState) rasterizerState->Release();
     }
 };
 

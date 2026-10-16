@@ -313,11 +313,23 @@ Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
     t->vertices[2] = {_3.x, _3.y, 0.0};
     return t;
 }
+vec2 pointToVec2(Point p){
+    return screen_to_normalized(vec2{(float)p.x, (float)p.y});
+}
+Quad* getQuad(Platform* platform, Point _1, Point _2, Point _3, Point _4) {
+    auto o = new Quad();
+    o->a = getTriangle(platform, pointToVec2(_1), pointToVec2(_2), pointToVec2(_3));
+    o->b = getTriangle(platform, pointToVec2(_1), pointToVec2(_3), pointToVec2(_4));
+    return o;
+}
 Quad* getQuad(Platform* platform, vec2 _1, vec2 _2, vec2 _3, vec2 _4) {
     auto o = new Quad();
     o->a = getTriangle(platform, _1, _2, _3);
     o->b = getTriangle(platform, _1, _3, _4);
     return o;
+}
+void drawLine(Platform* platform, Material* mat, Point a, Point b) {
+    ((PlatformDirectX*)platform)->drawLine(pointToVec2(a), pointToVec2(b), mat);
 }
 //endregion
 
