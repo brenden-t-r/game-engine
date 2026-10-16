@@ -331,5 +331,53 @@ Quad* getQuad(Platform* platform, vec2 _1, vec2 _2, vec2 _3, vec2 _4) {
 void drawLine(Platform* platform, Material* mat, Point a, Point b) {
     ((PlatformDirectX*)platform)->drawLine(pointToVec2(a), pointToVec2(b), mat);
 }
+void drawDebugTriangle(Platform* platform, Material* mat, vec3 pos) {
+    auto t = (Triangle*)platform->CreateTriangle();
+    t->SetMaterial(mat);
+    t->SetPosition(pos);
+    t->SetScale({0.01,0.01,1.0});
+    t->Update();
+    platform->Delete(t);
+}
+void _delete(Platform* platform, Quad* o) {
+    platform->Delete(o->a);
+    platform->Delete(o->b);
+    delete o;
+}
+void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int height) {
+    Point bottom[4];
+    getIsoTilePoints(row, col, height, bottom);
+    Point top[4];
+    getIsoTilePoints(row, col, height+1, top);
+
+    auto quadFront = getQuad(platform, bottom[0], top[0], top[3], bottom[3]);
+    SetColor(mat->color, COLOR::MID);
+    quadFront->SetMaterial(mat);
+    quadFront->Update();
+    _delete(platform, quadFront);
+
+    auto quadSide = getQuad(platform, bottom[0], bottom[1], top[1], top[0]);
+    SetColor(mat->color, COLOR::DARK);
+    quadSide->SetMaterial(mat);
+    quadSide->Update();
+    _delete(platform, quadSide);
+
+    auto quadTop = getQuad(platform, top[0], top[1], top[2], top[3]);
+    SetColor(mat->color, COLOR::LIGHTEST);
+    quadTop->SetMaterial(mat);
+    quadTop->Update();
+    _delete(platform, quadTop);
+
+    SetColor(mat->color, COLOR::BLACK);
+    drawLine(platform, mat, bottom[0], top[0]);
+    drawLine(platform, mat, bottom[1], top[1]);
+    drawLine(platform, mat, bottom[3], top[3]);
+    drawLine(platform, mat, bottom[0], bottom[1]);
+    drawLine(platform, mat, bottom[0], bottom[3]);
+    drawLine(platform, mat, top[0], top[1]);
+    drawLine(platform, mat, top[1], top[2]);
+    drawLine(platform, mat, top[2], top[3]);
+    drawLine(platform, mat, top[3], top[0]);
+}
 //endregion
 
