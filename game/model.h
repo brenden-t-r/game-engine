@@ -113,7 +113,6 @@ struct CompositeTile : public Tile{
     std::vector<CompositeTileLine>lines{};
     CompositePiece* parent = nullptr;
 };
-std::vector<Tile*> tiles{};
 
 class Quad {
 public:

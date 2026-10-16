@@ -10,6 +10,7 @@ class IsoGame : public Game {
 public:
     using Game::Game;
     MaterialColor* mat = nullptr;
+    std::vector<Tile*> tiles{};
     Tile* hoverTile = new Tile();
     bool shouldRotate;
     int h = 1;
@@ -32,10 +33,12 @@ public:
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
 
+        // Rotation
         if (shouldRotate) {
             // TODO
         }
 
+        // Hover preview
         bool hover = false;
         int row, col;
         auto mousePos = normalized_to_screen(platform->GetMousePos());
@@ -53,15 +56,20 @@ public:
             hoverTile->type = selected;
         }
 
-
-        // TODO: sort tiles
-        // TODO: Prune duplicates
-        // TODO: Draw tiles to render
+        // Sort and draw tiles
         drawCube(platform, mat, 0, 0, 0);
-
+        std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
-        if (hover) {
-            printf("Hover: %d %d \n", hoverTile->row, hoverTile->col);
+        for (auto tile : tiles) {
+            if (hover && !hoverDrawn) {
+                if (compareTiles(hoverTile, tile)) {
+                    hoverDrawn = true;
+                    drawTile(hoverTile);
+                }
+            }
+            drawTile(tile);
+        }
+        if (hover && !hoverDrawn) {
             drawTile(hoverTile);
         }
     }
@@ -79,6 +87,31 @@ public:
     void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         if (key == MouseButton::Left) {
             printf("mouse click\n");
+            auto mousePos = normalized_to_screen(platform->GetMousePos());
+            int row, col;
+            if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
+                if (selected == COMPOSITE_RAMP) {
+//                    printf("COMPOSITE RAMP CLICK\n");
+//                    auto tcTiles = drawRampCompositeTile(row, col, l, w, h, piece_orientation, -1);
+//                    for (auto tile: tcTiles) {
+//                        tiles.push_back(tile);
+//                    }
+                    // TODO:
+                } else {
+                    Tile *t = nullptr;
+                    t = new Tile();
+                    t->type = selected,
+                    t->orientation = piece_orientation,
+                    t->row = row,
+                    t->col = col,
+                    t->height_base = 0,
+                    t->length = l,
+                    t->width = w,
+                    t->height = h,
+                    t->stairCount = s;
+                    tiles.push_back(t);
+                }
+            }
         }
     }
     void KeyReleasedCallback(KeyCode key) override {
