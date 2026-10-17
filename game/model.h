@@ -99,7 +99,7 @@ static void SetColor(float* float4, Color c) {
 }
 struct CompositeTileFace{
     std::vector<Point>points;
-    COLOR color;
+    Color color;
 };
 struct CompositeTileLine{
     Point a;

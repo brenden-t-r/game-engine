@@ -13,6 +13,8 @@ public:
     MaterialFont* matFont = nullptr;
     std::vector<Tile*> tiles{};
     Tile* hoverTile = new Tile();
+    Tile* hoverBasic = new Tile();
+    CompositePiece* hoverTileComposite = new CompositePiece();
     bool shouldRotate;
     int h = 1;
     int w = 1;
@@ -51,7 +53,7 @@ public:
         SetColor(mat->color, Color(0,0,0,0.05));
         q->SetMaterial(mat);
         q->Update();
-        _delete(platform, q);
+        deleteQuad(platform, q);
         SetColor(mat->color, COLOR::BLACK);
         drawLine(platform, mat, Point{20, 20}, Point{400, 20});
         drawLine(platform, mat, Point{20, 20}, Point{20, 200});
@@ -60,8 +62,10 @@ public:
         setFontSize(font, 9);
         matFont->color[3] = 1.0;
         char buffer[100];
-        drawText(font, atlas, "Selected: Cube", {50, 50});
-        sprintf(buffer, "L: %d  W: %d  H: %d  Orientation: %s", l, w, h, orientationToStr(selected_orientation));
+        sprintf(buffer, "Selected: %s", selectedPieceStr());
+        drawText(font, atlas, buffer, {50, 50});
+        sprintf(buffer, "L: %d  W: %d  H: %d  Global: %s Piece: %s", l, w, h,
+                orientationToStr(selected_orientation), orientationToStr(piece_orientation));
         drawText(font, atlas, buffer, {50, 80});
         matFont->color[3] = 0.3;
 
@@ -97,6 +101,12 @@ public:
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
             printf("Hover %d %d\n", row, col);
             hover = true;
+            if (selected == COMPOSITE_RAMP) {
+                auto tile = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                hoverTile = hoverTileComposite;
+            } else {
+                hoverTile = hoverBasic;
+            }
             hoverTile->orientation = piece_orientation;
             hoverTile->row = row;
             hoverTile->col = col;
@@ -131,6 +141,46 @@ public:
             case CUBE:
                 drawCube(platform, mat, t->row, t->col, 0);
                 break;
+            case COMPOSITE_RAMP: {
+                // Used for hover display only
+                auto cr = dynamic_cast<CompositePiece*>(t);
+                for (auto tile: cr->tiles) {
+                    drawTile(tile);
+                }
+                break;
+            }
+            case COMPOSITE_RAMP_UNIT: {
+                auto cruTile = dynamic_cast<CompositeTile *>(t);
+                for (auto face: cruTile->faces) {
+                    auto points = face.points;
+                    if (points.size() == 3) {
+                        auto tri = getTriangle(platform, points[0], points[1], points[2]);
+                        SetColor(mat->color, face.color);
+                        tri->SetMaterial(mat);
+                        tri->Update();
+                        platform->Delete(tri);
+                    } else if (points.size() == 4) {
+                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                        drawQuadAndCleanUp(platform, mat, q1, face.color);
+                    } else if (points.size() == 5) {
+                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                        auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
+                        auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
+                        auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
+                        auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
+                        drawQuadAndCleanUp(platform, mat, q1, face.color);
+                        drawQuadAndCleanUp(platform, mat, q2, face.color);
+                        drawQuadAndCleanUp(platform, mat, q3, face.color);
+                        drawQuadAndCleanUp(platform, mat, q4, face.color);
+                        drawQuadAndCleanUp(platform, mat, q5, face.color);
+                    }
+                }
+                SetColor(mat->color, COLOR::BLACK);
+                for (auto line: cruTile->lines) {
+                    drawLine(platform, mat, line.a, line.b);
+                }
+                break;
+            }
             default:
                 assert(false);
         }
@@ -194,18 +244,34 @@ public:
             case KeyCode::_4:
                 break;
             case KeyCode::_5:
+                selected = COMPOSITE_RAMP;
                 break;
             case KeyCode::L:
+                selected_tool = LENGTH;
                 break;
             case KeyCode::W:
+                selected_tool = WIDTH;
                 break;
             case KeyCode::H:
+                selected_tool = HEIGHT;
                 break;
             case KeyCode::S:
                 break;
             case KeyCode::Up:
+                switch (selected_tool) {
+                    case WIDTH: w++; break;
+                    case LENGTH: l++; break;
+                    case HEIGHT: h++; break;
+                    case STAIRCOUNT: s++; break;
+                }
                 break;
             case KeyCode::Down:
+                switch (selected_tool) {
+                    case WIDTH: w--; break;
+                    case LENGTH: l--; break;
+                    case HEIGHT: h--; break;
+                    case STAIRCOUNT: s--; break;
+                }
                 break;
             default:
                 break;

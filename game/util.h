@@ -307,6 +307,9 @@ void drawIsoTile(Platform* platform, Material* mat, int screenX, int screenY, in
 //        }
 //    }
 //}
+vec2 pointToVec2(Point p){
+    return screen_to_normalized(vec2{(float)p.x, (float)p.y});
+}
 Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
     auto t = (Triangle*)platform->CreateTriangle();
     t->manualVertices = true;
@@ -315,8 +318,13 @@ Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
     t->vertices[2] = {_3.x, _3.y, 0.0};
     return t;
 }
-vec2 pointToVec2(Point p){
-    return screen_to_normalized(vec2{(float)p.x, (float)p.y});
+Triangle* getTriangle(Platform* platform, Point _1, Point _2, Point _3) {
+    return getTriangle(platform, pointToVec2(_1),pointToVec2(_2),pointToVec2(_3));
+}
+void deleteQuad(Platform* platform, Quad* o) {
+    platform->Delete(o->a);
+    platform->Delete(o->b);
+    delete o;
 }
 Quad* getQuad(Platform* platform, Point _1, Point _2, Point _3, Point _4) {
     auto o = new Quad();
@@ -330,6 +338,12 @@ Quad* getQuad(Platform* platform, vec2 _1, vec2 _2, vec2 _3, vec2 _4) {
     o->b = getTriangle(platform, _1, _3, _4);
     return o;
 }
+void drawQuadAndCleanUp(Platform* platform, MaterialColor* mat, Quad* quad, Color color) {
+    SetColor(mat->color, color);
+    quad->SetMaterial(mat);
+    quad->Update();
+    deleteQuad(platform, quad);
+}
 void drawLine(Platform* platform, Material* mat, Point a, Point b) {
     ((PlatformDirectX*)platform)->drawLine(pointToVec2(a), pointToVec2(b), mat);
 }
@@ -341,11 +355,6 @@ void drawDebugTriangle(Platform* platform, Material* mat, vec3 pos) {
     t->Update();
     platform->Delete(t);
 }
-void _delete(Platform* platform, Quad* o) {
-    platform->Delete(o->a);
-    platform->Delete(o->b);
-    delete o;
-}
 void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int height) {
     Point bottom[4];
     getIsoTilePoints(row, col, height, bottom);
@@ -356,19 +365,19 @@ void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int heig
     SetColor(mat->color, COLOR::MID);
     quadFront->SetMaterial(mat);
     quadFront->Update();
-    _delete(platform, quadFront);
+    deleteQuad(platform, quadFront);
 
     auto quadSide = getQuad(platform, bottom[0], bottom[1], top[1], top[0]);
     SetColor(mat->color, COLOR::DARK);
     quadSide->SetMaterial(mat);
     quadSide->Update();
-    _delete(platform, quadSide);
+    deleteQuad(platform, quadSide);
 
     auto quadTop = getQuad(platform, top[0], top[1], top[2], top[3]);
     SetColor(mat->color, COLOR::LIGHTEST);
     quadTop->SetMaterial(mat);
     quadTop->Update();
-    _delete(platform, quadTop);
+    deleteQuad(platform, quadTop);
 
     SetColor(mat->color, COLOR::BLACK);
     drawLine(platform, mat, bottom[0], top[0]);
@@ -418,5 +427,910 @@ const char* orientationToStr(Orientation o) {
         case NORTHWEST: return "NW";
     }
 }
+const char* selectedPieceStr() {
+    switch(selected) {
+        case PIECE_TYPE::CUBE: return "Cube";
+        case PIECE_TYPE::COMPOSITE_RAMP: return "Ramp Composite";
+        default: return "?";
+    }
+}
 //endregion
 
+std::vector<CompositeTile*> drawRampCompositeTile(
+        Platform* platform, MaterialColor* mat,
+        int row, int col, int length, int width, int height, Orientation orientation
+) {
+    std::vector<CompositeTile*> cTiles{};
+    auto root = new CompositePiece();
+    root->row = row;
+    root->col = col;
+    root->orientation = orientation;
+    root->type = COMPOSITE_RAMP_UNIT;
+    printf("Creating root %d %d\n", row, col);
+
+    if (orientation == SOUTHEAST) {
+        root->col = col+(length-1);
+
+        Point p1[4];
+        getIsoTilePoints(row, col, 0, p1);
+        Point p2[4];
+        getIsoTilePoints(row, col+(length-1), height, p2);
+        Point p1a = p1[3];
+        Point p2a = p2[0];
+//        drawPoint(p1a, 10);
+//        drawLineWithEndpoints(p1a, p2a, 5);
+
+        for (int h = 0; h < height; h++) {
+            for (int l = 0; l < length; l++) {
+                for (int w = 0; w < width; w++) {
+                    //region: setup
+                    Point bottom[4];
+                    getIsoTilePoints(row - w, col + l, h, bottom);
+                    Point top[4];
+                    getIsoTilePoints(row - w, col + l, h + 1, top);
+                    Point sideFace[4];
+                    sideFace[0] = bottom[0];
+                    sideFace[1] = top[0];
+                    sideFace[2] = top[3];
+                    sideFace[3] = bottom[3];
+
+                    auto *tile = new CompositeTile();
+                    tile->type = COMPOSITE_RAMP_UNIT;
+                    tile->row = row - w;
+                    tile->col = col + l;
+                    tile->height = h;
+                    tile->parent = root;
+                    //endregion
+
+                    if (true) {
+                        //region: draw faces
+//                        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+//
+//                        // top/front face
+//                        setRenderColor(COLOR_LIGHTEST);
+                        Point p1[4];
+                        getIsoTilePoints(row - w, col, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row - w, col + (length -1), height, p2);
+                        Point p2a = p1[3];
+                        Point p2b = p2[0];
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[3],
+                                bottom[3]
+                        };
+                        Point start, end;
+                        Point ef2 = sideFace[0];
+                        Point ef3 = sideFace[3];
+                        bool intersects = false;
+                        if (LineQuadIntersection(p2a, p2b, quad, start, end)) {
+                            ef2 = start;
+                            ef3 = end;
+//                            drawLineWithEndpoints(start, end, 10);
+                            intersects = true;
+                        }
+                        if (intersects) {
+                            Point ef2b{ef2.x, ef2.y};
+                            Point ef3b{ef3.x, ef3.y};
+                            ef2b.x += TILE_W / 2;
+                            ef2b.y -= TILE_H / 2;
+                            ef3b.x += TILE_W / 2;
+                            ef3b.y -= TILE_H / 2;
+                            std::vector<Point> facePoints{};
+                            addUnique(facePoints, ef2);
+                            addUnique(facePoints, ef2b);
+                            addUnique(facePoints, ef3);
+                            addUnique(facePoints, ef3b);
+                            sortPointsAroundCenter(facePoints);
+                            tile->faces.push_back(CompositeTileFace{facePoints,  GetColor(COLOR::LIGHTEST)});
+                        }
+
+                        // side face
+                        if (w == 0) {
+//                            setRenderColor(COLOR::MID2);
+                            std::vector<Point> points{};
+                            if (!isAboveLine(p2a, p2b, sideFace[0])) {
+                                addUnique(points, sideFace[0]);
+                            }
+                            if (!isAboveLine(p2a, p2b, sideFace[1])) {
+                                addUnique(points, sideFace[1]);
+                            }
+                            if (!isAboveLine(p2a, p2b, sideFace[2])) {
+                                addUnique(points, sideFace[2]);
+                            }
+                            if (!isAboveLine(p2a, p2b, sideFace[3])) {
+                                addUnique(points, sideFace[3]);
+                            }
+                            if (!isAboveLine(p2a, p2b, top[3])) {
+                                addUnique(points, top[3]);
+                            }
+                            if (!isAboveLine(p2a, p2b, top[0])) {
+                                addUnique(points, top[0]);
+                            }
+                            Point intersection;
+                            if (lineSegmentIntersection(p2a, p2b, bottom[0], bottom[3], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p2a, p2b, bottom[0], top[0], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p2a, p2b, top[0], top[3], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p2a, p2b, bottom[3], top[3], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            sortPointsAroundCenter(points);
+                            if (points.size() >= 3) {
+                                tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::MID2)});
+                            }
+//                            for (auto point : points) {
+//                                drawPoint(point, 10);
+//                            }
+                        }
+
+                        // back face
+//                        setRenderColor(COLOR_DARK);
+                        if (l == length-1) {
+                            std::vector<Point> points{};
+                            points = {bottom[0],top[0],top[1],bottom[1]};
+                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::DARK)});
+                        }
+
+                        //endregion
+                    }
+
+                    if (true) {
+                        //region: draw lines
+                        if (w == 0) {
+                            Point p1[4];
+                            getIsoTilePoints(row - w, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row - w, col  + (length - 1), height, p2);
+                            Point quad[4] = {
+                                    bottom[0],
+                                    top[0],
+                                    top[3],
+                                    bottom[3]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[3], p2[0], quad, start, end)) {
+                                tile->lines.push_back(CompositeTileLine{start, end});
+                            }
+                        }
+                        if (w == width - 1) {
+                            Point p1[4];
+                            getIsoTilePoints(row - w, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row - w, col  + (length - 1), height, p2);
+                            Point quad[4] = {
+                                    bottom[1],
+                                    top[1],
+                                    top[2],
+                                    bottom[2]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[2], p2[1], quad, start, end)) {
+                                tile->lines.push_back(CompositeTileLine{start, end});
+                            }
+                        }
+                        if (h == 0 && w == 0) {
+                            // bottom side line
+                            tile->lines.push_back(CompositeTileLine{bottom[3], bottom[0]});
+                        }
+                        if (l == length - 1 && w == 0) {
+                            // back vert line
+                            tile->lines.push_back(CompositeTileLine{bottom[0], top[0]});
+                        }
+                        if (l == length - 1 && w == width - 1) {
+                            // back vert line far
+                            tile->lines.push_back(CompositeTileLine{bottom[1], top[1]});
+                        }
+                        if (l == 0 && h == 0) {
+                            // front bottom line
+                            tile->lines.push_back(CompositeTileLine{bottom[3], bottom[2]});
+                        }
+                        if (h == 0 && l == length - 1) {
+                            // back bottom line
+                            tile->lines.push_back(CompositeTileLine{bottom[0], bottom[1]});
+                        }
+                        if (h == height - 1 && l == length - 1) {
+                            // back top line
+                            tile->lines.push_back(CompositeTileLine{top[0], top[1]});
+                        }
+                        //endregion
+                    }
+
+                    if (!tile->faces.empty() || !tile->lines.empty()) {
+                        cTiles.push_back(tile);
+                    }
+                }
+            }
+        }
+    }
+
+    /*
+    if (orientation == SOUTHWEST) {
+        root->row = row+(length-1);
+
+        Point p1[4];
+        getIsoTilePoints(row, col, 0, p1);
+        Point p2[4];
+        getIsoTilePoints(row+(length-1), col, height, p2);
+        Point p1a = p1[1];
+        Point p2a = p2[0];
+//        drawPoint(p1a, 10);
+//        drawLineWithEndpoints(p1[0], p1[1], 5);
+//        drawLineWithEndpoints(p1a, p2a, 5);
+
+        for (int h = 0; h < height; h++) {
+            for (int l = 0; l < length; l++) {
+                for (int w = 0; w < width; w++) {
+                    //region: setup
+                    Point bottom[4];
+                    getIsoTilePoints(row + l, col - w, h, bottom);
+                    Point top[4];
+                    getIsoTilePoints(row + l, col - w, h + 1, top);
+                    Point sideFace[4];
+                    sideFace[0] = bottom[0];
+                    sideFace[1] = bottom[1];
+                    sideFace[2] = top[1];
+                    sideFace[3] = top[0];
+//                    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 80);
+//                    fillQuad(sideFace[0],sideFace[1],sideFace[2],sideFace[3]);
+
+                    auto *tile = new CompositeTile();
+                    tile->type = COMPOSITE_RAMP_UNIT;
+                    tile->orientation = orientation;
+                    tile->row = row + l;
+                    tile->col = col - w;
+                    tile->height = h;
+                    tile->parent = root;
+                    //endregion
+
+                    if (true) {
+                        //region: draw faces
+                        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+                        std::vector<Point> points{};
+
+                        // side face
+                        if (w == 0) {
+                            setRenderColor(COLOR_DARK);
+                            if (isAboveLine(p1a, p2a, sideFace[0])) {
+                                addUnique(points, sideFace[0]);
+                            }
+                            if (isAboveLine(p1a, p2a, sideFace[1])) {
+                                addUnique(points, sideFace[1]);
+                            }
+                            if (isAboveLine(p1a, p2a, sideFace[2])) {
+                                addUnique(points, sideFace[2]);
+                            }
+                            if (isAboveLine(p1a, p2a, sideFace[3])) {
+                                addUnique(points, sideFace[3]);
+                            }
+                            if (isAboveLine(p1a, p2a, top[1])) {
+                                addUnique(points, top[1]);
+                            }
+                            if (isAboveLine(p1a, p2a, top[0])) {
+                                addUnique(points, top[0]);
+                            }
+                            Point intersection;
+                            if (lineSegmentIntersection(p1a, p2a, bottom[0], bottom[1], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p1a, p2a, bottom[0], top[0], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p1a, p2a, top[0], top[1], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            if (lineSegmentIntersection(p1a, p2a, bottom[1], top[1], intersection)) {
+                                addUnique(points, Point{intersection.x, intersection.y});
+                            }
+                            sortPointsAroundCenter(points);
+                            if (points.size() >= 3) {
+                                tile->faces.push_back(CompositeTileFace{points, COLOR_DARK});
+                            }
+                        }
+
+                        // back face
+                        setRenderColor(COLOR_MID);
+                        if (l == length-1) {
+                            std::vector<Point> points{};
+                            points = {bottom[0],top[0],top[3],bottom[3]};
+                            tile->faces.push_back(CompositeTileFace{points, COLOR_MID});
+                        }
+
+                        // top/front face
+                        setRenderColor(COLOR_LIGHTEST);
+                        Point p1[4];
+                        getIsoTilePoints(row, col - w, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row + (length -1), col - w, height, p2);
+                        Point p2a = p1[1];
+                        Point p2b = p2[0];
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[1],
+                                bottom[1]
+                        };
+                        Point start, end;
+                        Point ef2 = sideFace[0];
+                        Point ef3 = sideFace[3];
+                        bool intersects = false;
+                        if (LineQuadIntersection(p2a, p2b, quad, start, end)) {
+                            ef2 = start;
+                            ef3 = end;
+                            intersects = true;
+                        }
+                        if (intersects) {
+                            Point ef2b{ef2.x, ef2.y};
+                            Point ef3b{ef3.x, ef3.y};
+                            ef2b.x -= TILE_W / 2;
+                            ef2b.y -= TILE_H / 2;
+                            ef3b.x -= TILE_W / 2;
+                            ef3b.y -= TILE_H / 2;
+                            std::vector<Point> facePoints{};
+                            addUnique(facePoints, ef2);
+                            addUnique(facePoints, ef2b);
+                            addUnique(facePoints, ef3);
+                            addUnique(facePoints, ef3b);
+                            sortPointsAroundCenter(facePoints);
+                            tile->faces.push_back(CompositeTileFace{facePoints, COLOR_LIGHTEST});
+                        }
+                        //endregion
+                    }
+
+                    if (true) {
+                        //region: draw lines
+                        if (w == 0) {
+                            Point p1[4];
+                            getIsoTilePoints(row, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row + (length - 1), col, height, p2);
+                            Point quad[4] = {
+                                    bottom[0],
+                                    top[0],
+                                    top[1],
+                                    bottom[1]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[1], p2[0], quad, start, end)) {
+                                tile->lines.push_back(CompositeTileLine{start, end});
+                            }
+                        }
+                        if (w == width - 1) {
+                            Point p1[4];
+                            getIsoTilePoints(row, col - width, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row + (length - 1), col - width, height, p2);
+                            Point quad[4] = {
+                                    bottom[2],
+                                    top[2],
+                                    top[3],
+                                    bottom[3]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[1], p2[0], quad, start, end)) {
+                                tile->lines.push_back(CompositeTileLine{start, end});
+                            }
+                        }
+                        if (h == 0 && w == 0) {
+                            // bottom side line
+                            tile->lines.push_back(CompositeTileLine{bottom[1], bottom[0]});
+                        }
+                        if (l == length - 1 && w == 0) {
+                            // back vert line
+                            tile->lines.push_back(CompositeTileLine{bottom[0], top[0]});
+                        }
+                        if (l == length - 1 && w == width - 1) {
+                            // back vert line far
+                            tile->lines.push_back(CompositeTileLine{bottom[3], top[3]});
+                        }
+                        if (l == 0 && h == 0) {
+                            // front bottom line
+                            tile->lines.push_back(CompositeTileLine{bottom[1], bottom[2]});
+                        }
+                        if (h == 0 && l == length - 1) {
+                            // back bottom line
+                            tile->lines.push_back(CompositeTileLine{bottom[0], bottom[3]});
+                        }
+                        if (h == height - 1 && l == length - 1) {
+                            // back top line
+                            tile->lines.push_back(CompositeTileLine{top[0], top[3]});
+                        }
+                        //endregion
+                    }
+
+//                    for (auto face : tile->faces) {
+//                        setRenderColor(face.color);
+//                        auto points = face.points;
+//                        if (points.size() == 3) {
+//                            fillTriangle(points[0],points[1],points[2], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                        } else if (points.size() == 4) {
+//                            fillQuad(points[0],points[1],points[2],points[3], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                        }
+//                        else if (points.size() == 5) {
+//                            fillQuad(points[0],points[1],points[2],points[3], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                            fillQuad(points[1],points[2],points[3],points[4], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                            fillQuad(points[0],points[1],points[3],points[4], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                            fillQuad(points[0],points[1],points[2],points[4], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                            fillQuad(points[0],points[2],points[3],points[4], SDL_FColor(face.color.r, face.color.g, face.color.b, face.color.a));
+//                        }
+//                    }
+//                    setRenderColor(COLOR_BLACK);
+//                    for (auto line : tile->lines) {
+//                        drawLineWithEndpoints(line.a, line.b, 1);
+//                    }
+
+                    if (!tile->faces.empty() || !tile->lines.empty()) {
+                        cTiles.push_back(tile);
+                    }
+                }
+            }
+        }
+    }
+
+    if (orientation == NORTHWEST) {
+        Point p1[4];
+        getIsoTilePoints(row, col, 0, p1);
+        Point p2[4];
+        getIsoTilePoints(row, col - (length - 1), height, p2);
+        Point p1a = p1[0];
+        Point p2a = p2[3];
+
+        for (int h = 0; h < height; h++) {
+            for (int l = 0; l < length; l++) {
+                for (int w = 0; w < width; w++) {
+                    //region: setup
+                    Point bottom[4];
+                    getIsoTilePoints(row - w, col - l, h, bottom);
+                    Point top[4];
+                    getIsoTilePoints(row - w, col - l, h + 1, top);
+                    Point westFace[4];
+                    westFace[0] = bottom[0];
+                    westFace[1] = bottom[3];
+                    westFace[2] = top[3];
+                    westFace[3] = top[0];
+//                    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 80);
+//                    fillQuad(westFace[0],westFace[1],westFace[2],westFace[3]);
+
+                    auto *tile = new CompositeTile();
+                    tile->type = COMPOSITE_RAMP_UNIT;
+                    tile->row = row - w;
+                    tile->col = col - l;
+                    tile->height = h;
+                    tile->parent = root;
+                    //endregion
+
+                    if (true) {
+                        //region: draw faces
+                        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+                        std::vector<Point> points{};
+
+                        // side face
+                        setRenderColor(COLOR_LIGHTEST);
+                        if (isAboveLine(p1a, p2a, westFace[0])) {
+                            addUnique(points, westFace[0]);
+                        }
+                        if (isAboveLine(p1a, p2a, westFace[1])) {
+                            addUnique(points, westFace[1]);
+                        }
+                        if (isAboveLine(p1a, p2a, westFace[2])) {
+                            addUnique(points, westFace[2]);
+                        }
+                        if (isAboveLine(p1a, p2a, westFace[3])) {
+                            addUnique(points, westFace[3]);
+                        }
+                        if (isAboveLine(p1a, p2a, top[1])) {
+                            addUnique(points, top[1]);
+                        }
+                        if (isAboveLine(p1a, p2a, top[0])) {
+                            addUnique(points, top[0]);
+                        }
+                        Point intersection;
+                        if (lineSegmentIntersection(p1a, p2a, bottom[0], bottom[3], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1a, p2a, bottom[0], top[0], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1a, p2a, top[0], top[3], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1a, p2a, bottom[3], top[3], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        sortPointsAroundCenter(points);
+                        if (points.size() >= 3) {
+                            tile->faces.push_back(CompositeTileFace{points, COLOR_MID2});
+                        }
+//                        if (points.size() == 3) {
+//                            fillTriangle(points[0],points[1],points[2]);
+//                        } else if (points.size() == 4) {
+//                            fillQuad(points[0],points[1],points[2],points[3]);
+//                        }
+//                        else if (points.size() == 5) {
+//                            fillQuad(points[0],points[1],points[2],points[3]);
+//                            fillQuad(points[1],points[2],points[3],points[4]);
+//                            fillQuad(points[0],points[1],points[3],points[4]);
+//                            fillQuad(points[0],points[1],points[2],points[4]);
+//                            fillQuad(points[0],points[2],points[3],points[4]);
+//                        }
+//                        else {
+//                            printf("count %zu\n", points.size());
+//                        }
+
+                        // front face
+                        setRenderColor(COLOR_MID2);
+                        Point p1[4];
+                        getIsoTilePoints(row -w, col, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row -w, col - (length -1), height, p2);
+                        Point p2a = p1[0];
+                        Point p2b = p2[3];
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[3],
+                                bottom[3]
+                        };
+                        Point start, end;
+                        Point ef2 = westFace[0];
+                        Point ef3 = westFace[2];
+                        bool intersects = false;
+                        if (LineQuadIntersection(p2a, p2b, quad, start, end)) {
+                            ef2 = start;
+                            ef3 = end;
+                            intersects = true;
+                        }
+                        if (intersects) {
+
+                            Point ef2b{ef2.x, ef2.y};
+                            Point ef3b{ef3.x, ef3.y};
+                            ef2b.x += TILE_W / 2;
+                            ef2b.y -= TILE_H / 2;
+                            ef3b.x += TILE_W / 2;
+                            ef3b.y -= TILE_H / 2;
+                            std::vector<Point> facePoints{};
+                            addUnique(facePoints, ef2);
+                            addUnique(facePoints, ef2b);
+                            addUnique(facePoints, ef3);
+                            addUnique(facePoints, ef3b);
+                            sortPointsAroundCenter(facePoints);
+//                            fillQuad(facePoints[0], facePoints[1], facePoints[2], facePoints[3]);
+                            tile->faces.push_back(CompositeTileFace{facePoints, COLOR_LIGHTEST});
+                        }
+                        //endregion
+                    }
+
+                    if (true) {
+                        //region: draw lines
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                        if (w == 0) {
+                            Point p1[4];
+                            getIsoTilePoints(row, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row, col - (length - 1), height, p2);
+                            Point quad[4] = {
+                                    bottom[0],
+                                    top[0],
+                                    top[3],
+                                    bottom[3]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[0], p2[3], quad, start, end)) {
+//                                drawLineWithEndpoints(start, end, 1);
+                                tile->lines.push_back(CompositeTileLine{start, end});
+//                            westFace[2] = start;
+//                            westFace[3] = end;
+                            }
+                        }
+                        if (w == width - 1) {
+                            Point p1[4];
+                            getIsoTilePoints(row - width, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row - width, col - (length - 1), height, p2);
+                            Point quad[4] = {
+                                    bottom[1],
+                                    top[1],
+                                    top[2],
+                                    bottom[2]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[0], p2[3], quad, start, end)) {
+//                                drawLineWithEndpoints(start, end, 1);
+                                tile->lines.push_back(CompositeTileLine{start, end});
+//                        eastFace[3] = start;
+//                        eastFace[2] = end;
+                            }
+                        }
+                        if (h == 0 && w == 0) {
+                            // bottom side line
+//                            drawLineWithEndpoints(bottom[0], bottom[3], 1);
+                            tile->lines.push_back(CompositeTileLine{bottom[0], bottom[3]});
+                        }
+                        if (l == length - 1 && w == 0) {
+                            // back vert line
+//                            drawLineWithEndpoints(bottom[3], top[3], 1);
+                            tile->lines.push_back(CompositeTileLine{bottom[3], top[3]});
+                        }
+                        if (l == 0 && h == 0) {
+                            // front bottom line
+//                            drawLineWithEndpoints(bottom[0], bottom[1], 1);
+                            tile->lines.push_back(CompositeTileLine{bottom[0], bottom[1]});
+                        }
+                        if (h == height - 1 && l == length - 1) {
+                            // front top line
+//                            drawLineWithEndpoints(top[2], top[3], 1);
+                            tile->lines.push_back(CompositeTileLine{top[2], top[3]});
+                        }
+                        //endregion
+                    }
+
+//                    for (auto face : tile->faces) {
+//                        setRenderColor(face.color);
+//                        auto points = face.points;
+//                        if (points.size() == 3) {
+//                            fillTriangle(points[0],points[1],points[2]);
+//                        } else if (points.size() == 4) {
+////                            SDL_SetRenderDrawColor(renderer, h == 0 ? 180 : h == 1 ? 90 : h == 2 ? 30: 0, 0, 0,
+////                                                   l == 0 ? 255 : l == 1 ? 190 : l == 2 ? 140: 100
+////                                                   );
+////                            drawPoint(points[0], 5);
+////                            drawPoint(points[1], 5);
+////                            drawPoint(points[2], 5);
+////                            drawPoint(points[3], 5);
+//                            fillQuad(points[0],points[1],points[2],points[3]);
+//                        }
+//                        else if (points.size() == 5) {
+//                            fillQuad(points[0],points[1],points[2],points[3]);
+//                            fillQuad(points[1],points[2],points[3],points[4]);
+//                            fillQuad(points[0],points[1],points[3],points[4]);
+//                            fillQuad(points[0],points[1],points[2],points[4]);
+//                            fillQuad(points[0],points[2],points[3],points[4]);
+//                        }
+//                    }
+//                    setRenderColor(COLOR_BLACK);
+//                    for (auto line : tile->lines) {
+//                        drawLineWithEndpoints(line.a, line.b, 1);
+//                    }
+
+                    if (!tile->faces.empty() || !tile->lines.empty()) {
+                        cTiles.push_back(tile);
+                    }
+                }
+            }
+        }
+    }
+
+    if (orientation == NORTHEAST) {
+        Point p1[4];
+        getIsoTilePoints(row, col, 0, p1);
+        Point p2[4];
+        getIsoTilePoints(row - (length - 1), col, height, p2);
+
+        for (int h = 0; h < height; h++) {
+            for (int l = 0; l < length; l++) {
+                for (int w = 0; w < width; w++) {
+                    Point bottom[4];
+                    getIsoTilePoints(row - l, col - w, h, bottom);
+                    Point top[4];
+                    getIsoTilePoints(row - l, col - w, h + 1, top);
+                    Point eastFace[4];
+                    if (w == 0) {
+                        eastFace[0] = bottom[0];
+                        eastFace[1] = bottom[1];
+                        eastFace[2] = top[1];
+                        eastFace[3] = top[0];
+                    }
+
+                    auto tile = new CompositeTile();
+                    tile->type = COMPOSITE_RAMP_UNIT;
+                    tile->row = row - l;
+                    tile->col = col - w;
+                    tile->height = h;
+                    tile->parent = root;
+
+                    // draw faces
+                    if (w > -1) {
+                        std::vector<Point> points{};
+                        if (!isAboveLine(p1[0], p2[1], eastFace[0])) {
+                            addUnique(points, eastFace[0]);
+                        }
+                        if (!isAboveLine(p1[0], p2[1], eastFace[1])) {
+                            addUnique(points, eastFace[1]);
+                        }
+                        if (!isAboveLine(p1[0], p2[1], eastFace[2])) {
+                            addUnique(points, eastFace[2]);
+                        }
+                        if (!isAboveLine(p1[0], p2[1], eastFace[3])) {
+                            addUnique(points, eastFace[3]);
+                        }
+                        if (!isAboveLine(p1[0], p2[1], top[1])) {
+                            addUnique(points, top[1]);
+                        }
+                        if (!isAboveLine(p1[0], p2[1], top[0])) {
+                            addUnique(points, top[0]);
+                        }
+                        Point intersection;
+                        if (lineSegmentIntersection(p1[0], p2[1], bottom[0], bottom[1], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1[0], p2[1], bottom[1], top[1], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1[0], p2[1], top[1], top[0], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+                        if (lineSegmentIntersection(p1[0], p2[1], bottom[0], top[0], intersection)) {
+                            addUnique(points, Point{intersection.x, intersection.y});
+                        }
+
+                        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 150);
+
+                        sortPointsAroundCenter(points);
+//                    for(auto point: points) {
+//                        drawPoint(point.x, point.y, 5);
+//                    }
+                        if (points.size() >= 3) {
+                            tile->faces.push_back(CompositeTileFace{points, COLOR_MID2});
+                        }
+
+//                    if (points.size() == 3) {
+//                        fillTriangle(points[0],points[1],points[2], COLORF_DARK);
+//                    } else if (points.size() == 4) {
+//                        fillQuad(points[0],points[1],points[2],points[3], COLORF_MID2);
+//                    }
+//                    else if (points.size() == 5) {
+//                        fillQuad(points[0],points[1],points[2],points[3], COLORF_MID);
+//                        fillQuad(points[1],points[2],points[3],points[4], COLORF_MID);
+//                        fillQuad(points[0],points[1],points[3],points[4], COLORF_MID);
+//                        fillQuad(points[0],points[1],points[2],points[4], COLORF_MID);
+//                        fillQuad(points[0],points[2],points[3],points[4], COLORF_MID);
+//                    }
+//                        else {
+//                        printf("count %zu\n", points.size());
+//                        }
+
+                        SDL_SetRenderDrawColor(renderer, 230, 230, 230, 150);
+
+                        Point p1b[4];
+                        getIsoTilePoints(row, col - w, 0, p1b);
+                        Point p2b[4];
+                        getIsoTilePoints(row - (length - 1), col - w, height, p2b);
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[1],
+                                bottom[1]
+                        };
+                        Point start, end;
+                        Point ef2 = eastFace[2];
+                        Point ef3 = eastFace[3];
+                        if (LineQuadIntersection(p1b[0], p2b[1], quad, start, end)) {
+//                        drawLineWithEndpoints(start, end, 1);
+                            ef2 = start;
+                            ef3 = end;
+                        }
+                        if (w > 0 || points.size() >= 3) {
+                            Point ef2b{ef2.x, ef2.y};
+                            Point ef3b{ef3.x, ef3.y};
+                            ef2b.x -= TILE_W / 2;
+                            ef2b.y -= TILE_H / 2;
+                            ef3b.x -= TILE_W / 2;
+                            ef3b.y -= TILE_H / 2;
+                            std::vector<Point> facePoints{};
+                            addUnique(facePoints, ef2);
+                            addUnique(facePoints, ef2b);
+                            addUnique(facePoints, ef3);
+                            addUnique(facePoints, ef3b);
+                            sortPointsAroundCenter(facePoints);
+                            fillQuad(facePoints[0], facePoints[1], facePoints[2], facePoints[3], COLORF_BLACK);
+                            tile->faces.push_back(CompositeTileFace{facePoints, COLOR_LIGHTEST});
+                        }
+
+                    }
+
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+                    // draw lines
+                    if (w == 0) {
+                        Point p1[4];
+                        getIsoTilePoints(row, col, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row - (length - 1), col, height, p2);
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[1],
+                                bottom[1]
+                        };
+                        Point start, end;
+                        if (LineQuadIntersection(p1[0], p2[1], quad, start, end)) {
+                            drawLineWithEndpoints(start, end, 1);
+                            tile->lines.push_back(CompositeTileLine{start, end});
+                            eastFace[2] = start;
+                            eastFace[3] = end;
+                        }
+                    }
+                    if (w == width - 1) {
+                        Point p1[4];
+                        getIsoTilePoints(row, col - width, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row - (length - 1), col - width, height, p2);
+                        Point quad[4] = {
+                                bottom[3],
+                                top[3],
+                                top[2],
+                                bottom[2]
+                        };
+                        Point start, end;
+                        if (LineQuadIntersection(p1[0], p2[1], quad, start, end)) {
+                            drawLineWithEndpoints(start, end, 1);
+                            tile->lines.push_back(CompositeTileLine{start, end});
+//                        eastFace[3] = start;
+//                        eastFace[2] = end;
+                        }
+                    }
+                    if (h == 0 && w == 0) {
+                        drawLineWithEndpoints(bottom[0], bottom[1], 1);
+                        tile->lines.push_back(CompositeTileLine{bottom[0], bottom[1]});
+                    }
+                    if (l == length - 1 && w == 0) {
+                        drawLineWithEndpoints(bottom[1], top[1], 1);
+                        tile->lines.push_back(CompositeTileLine{bottom[1], top[1]});
+                    }
+                    if (l == 0 && h == 0) {
+                        drawLineWithEndpoints(bottom[0], bottom[3], 1);
+                        tile->lines.push_back(CompositeTileLine{bottom[0], bottom[3]});
+                    }
+                    if (h == height - 1 && l == length - 1) {
+                        drawLineWithEndpoints(top[1], top[2], 1);
+                        tile->lines.push_back(CompositeTileLine{top[1], top[2]});
+                    }
+
+                    if (!tile->faces.empty() || !tile->lines.empty()) {
+                        cTiles.push_back(tile);
+                    }
+                }
+            }
+        }
+    }
+     */
+
+    for (auto tile : cTiles) {
+        for (auto face: tile->faces) {
+            auto points = face.points;
+            if (points.size() == 3) {
+                auto t = getTriangle(platform, points[0], points[1], points[2]);
+                SetColor(mat->color, face.color);
+                t->SetMaterial(mat);
+                t->Update();
+                platform->Delete(t);
+            } else if (points.size() == 4) {
+                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                drawQuadAndCleanUp(platform, mat, q1, face.color);
+            } else if (points.size() == 5) {
+                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
+                auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
+                auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
+                auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
+                drawQuadAndCleanUp(platform, mat, q1, face.color);
+                drawQuadAndCleanUp(platform, mat, q2, face.color);
+                drawQuadAndCleanUp(platform, mat, q3, face.color);
+                drawQuadAndCleanUp(platform, mat, q4, face.color);
+                drawQuadAndCleanUp(platform, mat, q5, face.color);
+            }
+        }
+        SetColor(mat->color, COLOR::BLACK);
+        for (auto line: tile->lines) {
+            drawLine(platform, mat, line.a, line.b);
+        }
+    }
+
+    return cTiles;
+}
