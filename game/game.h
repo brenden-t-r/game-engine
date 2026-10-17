@@ -44,6 +44,9 @@ public:
     }
 
     void Update() override {
+        if (platform->IsKeyPressed(KeyCode::Right)) {
+            OffsetX += 1;
+        }
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
@@ -102,8 +105,13 @@ public:
             printf("Hover %d %d\n", row, col);
             hover = true;
             if (selected == COMPOSITE_RAMP) {
-                auto tile = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
-                hoverTile = hoverTileComposite;
+                auto _tiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                auto p = new CompositePiece();
+                for (auto t : _tiles) {
+                    p->tiles.push_back(t);
+                }
+                hoverTile = p;
+                // TODO: Memory leak
             } else {
                 hoverTile = hoverBasic;
             }
@@ -193,12 +201,10 @@ public:
             int row, col;
             if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
                 if (selected == COMPOSITE_RAMP) {
-//                    printf("COMPOSITE RAMP CLICK\n");
-//                    auto tcTiles = drawRampCompositeTile(row, col, l, w, h, piece_orientation, -1);
-//                    for (auto tile: tcTiles) {
-//                        tiles.push_back(tile);
-//                    }
-                    // TODO:
+                    auto tcTiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                    for (auto tile: tcTiles) {
+                        tiles.push_back(tile);
+                    }
                 } else {
                     Tile *t = nullptr;
                     t = new Tile();

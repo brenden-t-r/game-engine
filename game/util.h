@@ -1303,36 +1303,36 @@ std::vector<CompositeTile*> drawRampCompositeTile(
     }
      */
 
-    for (auto tile : cTiles) {
-        for (auto face: tile->faces) {
-            auto points = face.points;
-            if (points.size() == 3) {
-                auto t = getTriangle(platform, points[0], points[1], points[2]);
-                SetColor(mat->color, face.color);
-                t->SetMaterial(mat);
-                t->Update();
-                platform->Delete(t);
-            } else if (points.size() == 4) {
-                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
-                drawQuadAndCleanUp(platform, mat, q1, face.color);
-            } else if (points.size() == 5) {
-                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
-                auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
-                auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
-                auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
-                auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
-                drawQuadAndCleanUp(platform, mat, q1, face.color);
-                drawQuadAndCleanUp(platform, mat, q2, face.color);
-                drawQuadAndCleanUp(platform, mat, q3, face.color);
-                drawQuadAndCleanUp(platform, mat, q4, face.color);
-                drawQuadAndCleanUp(platform, mat, q5, face.color);
-            }
-        }
-        SetColor(mat->color, COLOR::BLACK);
-        for (auto line: tile->lines) {
-            drawLine(platform, mat, line.a, line.b);
-        }
-    }
+//    for (auto tile : cTiles) {
+//        for (auto face: tile->faces) {
+//            auto points = face.points;
+//            if (points.size() == 3) {
+//                auto t = getTriangle(platform, points[0], points[1], points[2]);
+//                SetColor(mat->color, face.color);
+//                t->SetMaterial(mat);
+//                t->Update();
+//                platform->Delete(t);
+//            } else if (points.size() == 4) {
+//                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+//                drawQuadAndCleanUp(platform, mat, q1, face.color);
+//            } else if (points.size() == 5) {
+//                auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+//                auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
+//                auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
+//                auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
+//                auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
+//                drawQuadAndCleanUp(platform, mat, q1, face.color);
+//                drawQuadAndCleanUp(platform, mat, q2, face.color);
+//                drawQuadAndCleanUp(platform, mat, q3, face.color);
+//                drawQuadAndCleanUp(platform, mat, q4, face.color);
+//                drawQuadAndCleanUp(platform, mat, q5, face.color);
+//            }
+//        }
+//        SetColor(mat->color, COLOR::BLACK);
+//        for (auto line: tile->lines) {
+//            drawLine(platform, mat, line.a, line.b);
+//        }
+//    }
 
     return cTiles;
 }
