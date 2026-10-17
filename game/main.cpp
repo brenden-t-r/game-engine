@@ -17,6 +17,7 @@
 #include "../engine/engine/game.h"
 #include "../engine/entry.h"
 #include "game.h"
+#include "../engine/samples/fontMSDFGame.h"
 
 class SampleGame : public Game {
 public:
@@ -29,6 +30,7 @@ public:
 
 int RealMain(Platform* platform) {
     platform->Init();
+//    Game* game = new FontMSDFGame(platform);
     Game* game = new IsoGame(platform);
     game->Start();
     RunLoop(platform, game);

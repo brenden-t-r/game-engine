@@ -10,7 +10,7 @@ const int TILE_H = 32*2;
 const int GRID_COLS = 10;
 const int GRID_ROWS = 10;
 const int ORIGIN_X = WINDOW_WIDTH / 2;
-const int ORIGIN_Y = 150;
+const int ORIGIN_Y = WINDOW_HEIGHT/ 4;
 int OffsetX = 0;
 int OffsetY = 0;
 

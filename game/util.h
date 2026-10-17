@@ -1,4 +1,5 @@
 #include "../engine/engine/matrix.h"
+#include "../engine/engine/text.h"
 #include "../engine/platform/platform.h"
 #include "../engine/platform/directx/directx.h"
 
@@ -294,17 +295,18 @@ void drawIsoTile(Platform* platform, Material* mat, int screenX, int screenY, in
     ((PlatformDirectX*)platform)->drawLine(points[1], points[2], mat);
     ((PlatformDirectX*)platform)->drawLine(points[2], points[3], mat);
     ((PlatformDirectX*)platform)->drawLine(points[3], points[4], mat);
-
 }
-void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
-    for (int row = 0; row < GRID_ROWS; row++) {
-        for (int col = 0; col < GRID_COLS; col++) {
-            int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
-            int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
-            drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
-        }
-    }
-}
+//void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
+//    for (int row = 0; row < GRID_ROWS; row++) {
+//        for (int col = 0; col < GRID_COLS; col++) {
+//            int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
+//            int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
+//            drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
+//            auto n = screen_to_normalized(vec2{(float)screenX, (float)screenY});
+//            RenderText(font, "Hi", n.x, n.y, atlas);
+//        }
+//    }
+//}
 Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
     auto t = (Triangle*)platform->CreateTriangle();
     t->manualVertices = true;
@@ -378,6 +380,35 @@ void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int heig
     drawLine(platform, mat, top[1], top[2]);
     drawLine(platform, mat, top[2], top[3]);
     drawLine(platform, mat, top[3], top[0]);
+}
+//endregion
+
+//region: text
+Shader* loadFontShader(Platform* platform) {
+    ShaderDef shaderDef{};
+#if BACKEND_DIRECTX
+    shaderDef.path = "assets/shaders/font.hlsl";
+    shaderDef.inputLayoutType = InputLayoutType::POSITION_TEXCOORD;
+#elif BACKEND_OPENGL
+    shaderDef.vertexPath = "assets/shaders/font.glsl.vert";
+        shaderDef.fragmentPath = "assets/shaders/font.glsl.frag";
+#elif BACKEND_METAL
+        shaderDef.vertexPath = "assets/shaders/font.vert.metal";
+        shaderDef.fragmentPath = "assets/shaders/font.frag.metal";
+#endif
+    return platform->LoadShader(shaderDef);
+}
+Sprite* loadFont(Platform* platform, const char* name, TEXT_MSDF::FontAtlas& _atlas, Shader* shader, TextureSettings textureSettings) {
+    std::string png = "assets/sprites/fonts/" + std::string(name) + ".png";
+    std::string json = "assets/sprites/fonts/" + std::string(name) + ".json";
+    return ::LoadFont(platform, png.c_str(), json.c_str(), _atlas, shader, textureSettings);
+}
+void setFontSize(Sprite* font, float size) {
+    font->SetScale({size/50, size/60, 1.0});
+}
+void drawText(Sprite* font, TEXT_MSDF::FontAtlas atlas, const char* text, Point p) {
+    auto n = screen_to_normalized(vec2{(float)p.x,(float)p.y});
+    RenderText(font, text, n.x, n.y, atlas);
 }
 //endregion
 

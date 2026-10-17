@@ -10,6 +10,7 @@ class IsoGame : public Game {
 public:
     using Game::Game;
     MaterialColor* mat = nullptr;
+    MaterialFont* matFont = nullptr;
     std::vector<Tile*> tiles{};
     Tile* hoverTile = new Tile();
     bool shouldRotate;
@@ -17,6 +18,8 @@ public:
     int w = 1;
     int l = 1;
     int s = 2;
+    Sprite* font;
+    TEXT_MSDF::FontAtlas atlas;
 
     void Start() override {
         this->EnableCallback(Callback::KEY_RELEASED);
@@ -26,12 +29,39 @@ public:
             "assets/shaders/color.hlsl","","",InputLayoutType::POSITION
         });
         mat = new MaterialColor(shader);
+
+        auto fontShader = loadFontShader(platform);
+        auto linearNoMips = TextureSettings{TextureFilter::LINEAR, false};
+        font = loadFont(platform, "arial_msdf", atlas, fontShader, linearNoMips);
+        matFont = (MaterialFont*)font->material;
+        matFont->color[3] = 0.3;
+        matFont->outlineWidth = 0;
+        matFont->pxRange = 16;
+        matFont->isMSDF = true;
+        setFontSize(font, 9);
     }
 
     void Update() override {
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
+
+        // Debug display
+        auto q = getQuad(platform, Point{20,20},{400,20},{400,200},{20,200});
+        SetColor(mat->color, Color(0,0,0,0.05));
+        q->SetMaterial(mat);
+        q->Update();
+        _delete(platform, q);
+        SetColor(mat->color, COLOR::BLACK);
+        drawLine(platform, mat, Point{20, 20}, Point{400, 20});
+        drawLine(platform, mat, Point{20, 20}, Point{20, 200});
+        drawLine(platform, mat, Point{20, 200}, Point{400, 200});
+        drawLine(platform, mat, Point{400, 20}, Point{400, 200});
+        setFontSize(font, 9);
+        matFont->color[3] = 1.0;
+        drawText(font, atlas, "Selected: Cube", {50, 50});
+        drawText(font, atlas, "L: 1  W: 1  H: 1  Orientation: NW", {50, 80});
+        matFont->color[3] = 0.3;
 
         // Rotation
         if (shouldRotate) {
@@ -145,6 +175,19 @@ public:
                 break;
             default:
                 break;
+        }
+    }
+    void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
+        for (int row = 0; row < GRID_ROWS; row++) {
+            for (int col = 0; col < GRID_COLS; col++) {
+                int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
+                int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
+                drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
+                auto n = screen_to_normalized(vec2{(float)screenX - 20, (float)screenY + TILE_H/2 + 6});
+                char buffer[100];
+                sprintf(buffer, "(%d,%d)", row, col);
+                RenderText(font, buffer, n.x, n.y, atlas);
+            }
         }
     }
 };
