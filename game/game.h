@@ -59,13 +59,35 @@ public:
         drawLine(platform, mat, Point{400, 20}, Point{400, 200});
         setFontSize(font, 9);
         matFont->color[3] = 1.0;
+        char buffer[100];
         drawText(font, atlas, "Selected: Cube", {50, 50});
-        drawText(font, atlas, "L: 1  W: 1  H: 1  Orientation: NW", {50, 80});
+        sprintf(buffer, "L: %d  W: %d  H: %d  Orientation: %s", l, w, h, orientationToStr(selected_orientation));
+        drawText(font, atlas, buffer, {50, 80});
         matFont->color[3] = 0.3;
 
         // Rotation
         if (shouldRotate) {
-            // TODO
+            shouldRotate = false;
+            switch(selected_orientation) {
+                case NORTHEAST: selected_orientation = SOUTHEAST;
+                    break;
+                case SOUTHEAST: selected_orientation = SOUTHWEST;
+                    break;
+                case SOUTHWEST: selected_orientation = NORTHWEST;
+                    break;
+                case NORTHWEST: selected_orientation = NORTHEAST;
+                    break;
+            }
+            for (int i = 0; i < tiles.size(); i++){
+                if (tiles[i]->type != COMPOSITE_RAMP_UNIT) {
+                    int row = tiles[i]->row;
+                    int col = tiles[i]->col;
+                    int rotatedRow = col;
+                    int rotatedCol = GRID_ROWS - 1 - row;
+                    tiles[i]->row = rotatedRow;
+                    tiles[i]->col = rotatedCol;
+                }
+            }
         }
 
         // Hover preview
@@ -87,7 +109,7 @@ public:
         }
 
         // Sort and draw tiles
-        drawCube(platform, mat, 0, 0, 0);
+//        drawCube(platform, mat, 0, 0, 0);
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
         for (auto tile : tiles) {
@@ -148,10 +170,22 @@ public:
         printf("%d\n",key);
         switch (key) {
             case KeyCode::R:
+                shouldRotate = true;
                 break;
             case KeyCode::E:
+                switch(piece_orientation) {
+                    case NORTHEAST: piece_orientation = SOUTHEAST;
+                        break;
+                    case SOUTHEAST: piece_orientation = SOUTHWEST;
+                        break;
+                    case SOUTHWEST: piece_orientation = NORTHWEST;
+                        break;
+                    case NORTHWEST: piece_orientation = NORTHEAST;
+                        break;
+                }
                 break;
             case KeyCode::_1:
+                selected = CUBE;
                 break;
             case KeyCode::_2:
                 break;

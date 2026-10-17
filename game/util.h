@@ -410,5 +410,13 @@ void drawText(Sprite* font, TEXT_MSDF::FontAtlas atlas, const char* text, Point 
     auto n = screen_to_normalized(vec2{(float)p.x,(float)p.y});
     RenderText(font, text, n.x, n.y, atlas);
 }
+const char* orientationToStr(Orientation o) {
+    switch(o) {
+        case NORTHEAST: return "NE";
+        case SOUTHEAST: return "SE";
+        case SOUTHWEST: return "SW";
+        case NORTHWEST: return "NW";
+    }
+}
 //endregion
 
