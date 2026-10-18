@@ -98,12 +98,14 @@ bool screenToIsoCell(float sx, float sy,int height,int* outRow, int* outCol)
     return true;
 }
 int tileSortKey(const Tile* t) {
-    return ((t->row+t->height) + (t->col+t->height)); // - 2 * t.height;
+    return ((t->row+t->height) + (t->col+t->height));
 }
 bool compareTiles(const Tile* a, const Tile* b) {
-    printf("%d => (%d,%d) vs %d => (%d,%d)\n", a->id, a->row, a->col, b->id, b->row, b->col);
     int ka = tileSortKey(a);
     int kb = tileSortKey(b);
+#if DEBUG_PRINT
+    printf("%d => (%d,%d) vs %d => (%d,%d) ka: %d kb %d\n", a->id, a->row, a->col, b->id, b->row, b->col, ka, kb);
+#endif
     if (ka != kb)return ka < kb;
     if (a->row != b->row)return a->row < b->row;
     if (a->col != b->col)return a->col < b->col;
@@ -116,7 +118,9 @@ bool compareTiles(const Tile* a, const Tile* b) {
                     printf("Nullptr parent\n");
                     return a->col < b->col;
                 }
-                printf("%d(A) and %d(B) parents %d %d , %d %d\n", a->id, b->id, aParent->row, aParent->col, bParent->row, bParent->col);
+#if DEBUG_PRINT
+                printf("compare %d(A) and %d(B) parents %d %d , %d %d\n", a->id, b->id, aParent->row, aParent->col, bParent->row, bParent->col);
+#endif
                 return compareTiles(aParent, bParent);
             } else {
                 return a->col < b->col;
@@ -296,17 +300,6 @@ void drawIsoTile(Platform* platform, Material* mat, int screenX, int screenY, in
     ((PlatformDirectX*)platform)->drawLine(points[2], points[3], mat);
     ((PlatformDirectX*)platform)->drawLine(points[3], points[4], mat);
 }
-//void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
-//    for (int row = 0; row < GRID_ROWS; row++) {
-//        for (int col = 0; col < GRID_COLS; col++) {
-//            int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
-//            int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
-//            drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
-//            auto n = screen_to_normalized(vec2{(float)screenX, (float)screenY});
-//            RenderText(font, "Hi", n.x, n.y, atlas);
-//        }
-//    }
-//}
 vec2 pointToVec2(Point p){
     return screen_to_normalized(vec2{(float)p.x, (float)p.y});
 }
@@ -427,14 +420,22 @@ const char* orientationToStr(Orientation o) {
         case NORTHWEST: return "NW";
     }
 }
-const char* selectedPieceStr() {
-    switch(selected) {
+const char* pieceTypeStr(PIECE_TYPE c) {
+    switch(c) {
         case PIECE_TYPE::CUBE: return "Cube";
         case PIECE_TYPE::COMPOSITE_RAMP: return "Ramp Composite";
+        case PIECE_TYPE::COMPOSITE_RAMP_UNIT: return "Ramp Composite Unit";
         default: return "?";
     }
 }
+const char* selectedPieceStr() {
+    return pieceTypeStr(selected);
+}
+void printTile(Tile* t) {
+    printf("Draw: %d %s (%d,%d h%d) sort:%d\n", t->id, pieceTypeStr(t->type), t->row, t->col, t->height, tileSortKey(t));
+}
 //endregion
+
 
 std::vector<CompositeTile*> drawRampCompositeTile(
         Platform* platform, MaterialColor* mat,
@@ -446,7 +447,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
     root->col = col;
     root->orientation = orientation;
     root->type = COMPOSITE_RAMP_UNIT;
-    printf("Creating root %d %d\n", row, col);
+//    printf("Creating root %d %d\n", row, col);
 
     if (orientation == SOUTHEAST) {
         root->col = col+(length-1);

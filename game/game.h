@@ -1,5 +1,6 @@
 #pragma once
 #define DEBUG_QUAD 0
+#define DEBUG_PRINT 0
 
 #include "engine/game.h"
 #include "../engine/platform/directx/directx.h"
@@ -14,7 +15,6 @@ public:
     std::vector<Tile*> tiles{};
     Tile* hoverTile = new Tile();
     Tile* hoverBasic = new Tile();
-    CompositePiece* hoverTileComposite = new CompositePiece();
     bool shouldRotate;
     int h = 1;
     int w = 1;
@@ -22,6 +22,7 @@ public:
     int s = 2;
     Sprite* font;
     TEXT_MSDF::FontAtlas atlas;
+    int frame = 0;
 
     void Start() override {
         this->EnableCallback(Callback::KEY_RELEASED);
@@ -44,6 +45,11 @@ public:
     }
 
     void Update() override {
+        frame += 1;
+#if DEBUG_PRINT
+        printf("frame: %d\n", frame);
+#endif
+
         if (platform->IsKeyPressed(KeyCode::Right)) {
             OffsetX += 1;
         }
@@ -102,7 +108,7 @@ public:
         int row, col;
         auto mousePos = normalized_to_screen(platform->GetMousePos());
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
-            printf("Hover %d %d\n", row, col);
+//            printf("Hover %d %d\n", row, col);
             hover = true;
             if (selected == COMPOSITE_RAMP) {
                 auto _tiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
@@ -111,7 +117,6 @@ public:
                     p->tiles.push_back(t);
                 }
                 hoverTile = p;
-                // TODO: Memory leak
             } else {
                 hoverTile = hoverBasic;
             }
@@ -127,7 +132,6 @@ public:
         }
 
         // Sort and draw tiles
-//        drawCube(platform, mat, 0, 0, 0);
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
         for (auto tile : tiles) {
@@ -142,9 +146,16 @@ public:
         if (hover && !hoverDrawn) {
             drawTile(hoverTile);
         }
+        if (hoverDrawn && hoverTile->type == COMPOSITE_RAMP) {
+            delete(hoverTile);
+        }
     }
 
+
     void drawTile(Tile* t) {
+#if DEBUG_PRINT
+        printTile(t);
+#endif
         switch(t->type) {
             case CUBE:
                 drawCube(platform, mat, t->row, t->col, 0);
@@ -196,7 +207,6 @@ public:
 
     void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         if (key == MouseButton::Left) {
-            printf("mouse click\n");
             auto mousePos = normalized_to_screen(platform->GetMousePos());
             int row, col;
             if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
@@ -213,9 +223,9 @@ public:
                     t->row = row,
                     t->col = col,
                     t->height_base = 0,
-                    t->length = l,
-                    t->width = w,
-                    t->height = h,
+                    t->length = l - 1,
+                    t->width = w - 1,
+                    t->height = 0, // TODO: Support height and/or base height for cube etc.
                     t->stairCount = s;
                     tiles.push_back(t);
                 }
@@ -223,7 +233,6 @@ public:
         }
     }
     void KeyReleasedCallback(KeyCode key) override {
-        printf("%d\n",key);
         switch (key) {
             case KeyCode::R:
                 shouldRotate = true;

@@ -50,9 +50,6 @@ static int ID = 0;
 struct Tile {
     Tile(){
         id = ++ID;
-        if (id >3) {
-            printf(".");
-        }
         printf("Create tile %d\n", id);
     }
     virtual ~Tile() = default;
