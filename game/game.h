@@ -2,10 +2,12 @@
 #define DEBUG_QUAD 0
 #define DEBUG_PRINT 1
 
-#include "engine/game.h"
+#include "../engine/engine/game.h"
 #include "../engine/platform/directx/directx.h"
+
 #include "model.h"
 #include "util.h"
+#include "ramp.h"
 
 class IsoGame : public Game {
 public:
@@ -57,7 +59,7 @@ public:
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
 
-        // Debug display
+        // region: Debug display
         auto q = getQuad(platform, Point{20,20},{400,20},{400,200},{20,200});
         SetColor(mat->color, Color(0,0,0,0.05));
         q->SetMaterial(mat);
@@ -77,8 +79,9 @@ public:
                 orientationToStr(selected_orientation), orientationToStr(piece_orientation));
         drawText(font, atlas, buffer, {50, 80});
         matFont->color[3] = 0.3;
+        //endregion
 
-        // Rotation
+        //region: Rotation
         if (shouldRotate) {
             shouldRotate = false;
             switch(selected_orientation) {
@@ -102,8 +105,9 @@ public:
                 }
             }
         }
+        //endregion
 
-        // Hover preview
+        //region: Hover preview
         bool hover = false;
         int row, col;
         auto mousePos = normalized_to_screen(platform->GetMousePos());
@@ -146,8 +150,9 @@ public:
             hoverTile->stairCount = s;
             hoverTile->type = selected;
         }
+        //endregion
 
-        // Sort and draw tiles
+        //region: Sort and draw tiles
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
         for (auto tile : tiles) {
@@ -167,60 +172,7 @@ public:
         if (hoverDrawn && hoverTile->type == COMPOSITE_RAMP) {
             delete(hoverTile);
         }
-    }
-
-
-    void drawTile(Tile* t) {
-#if DEBUG_PRINT
-        printTile(t);
-#endif
-        switch(t->type) {
-            case CUBE:
-                drawCube(platform, mat, t->row, t->col, 0);
-                break;
-            case COMPOSITE_RAMP: {
-                // Used for hover display only
-                auto cr = dynamic_cast<CompositePiece*>(t);
-                for (auto tile: cr->tiles) {
-                    drawTile(tile);
-                }
-                break;
-            }
-            case COMPOSITE_RAMP_UNIT: {
-                auto cruTile = dynamic_cast<CompositeTile *>(t);
-                for (auto face: cruTile->faces) {
-                    auto points = face.points;
-                    if (points.size() == 3) {
-                        auto tri = getTriangle(platform, points[0], points[1], points[2]);
-                        SetColor(mat->color, face.color);
-                        tri->SetMaterial(mat);
-                        tri->Update();
-                        platform->Delete(tri);
-                    } else if (points.size() == 4) {
-                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
-                        drawQuadAndCleanUp(platform, mat, q1, face.color);
-                    } else if (points.size() == 5) {
-                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
-                        auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
-                        auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
-                        auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
-                        auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
-                        drawQuadAndCleanUp(platform, mat, q1, face.color);
-                        drawQuadAndCleanUp(platform, mat, q2, face.color);
-                        drawQuadAndCleanUp(platform, mat, q3, face.color);
-                        drawQuadAndCleanUp(platform, mat, q4, face.color);
-                        drawQuadAndCleanUp(platform, mat, q5, face.color);
-                    }
-                }
-                SetColor(mat->color, COLOR::BLACK);
-                for (auto line: cruTile->lines) {
-                    drawLine(platform, mat, line.a, line.b);
-                }
-                break;
-            }
-            default:
-                assert(false);
-        }
+        //endregion
     }
 
     void MouseReleasedCallback(MouseButton key, vec3 pos) override {
@@ -321,6 +273,58 @@ public:
                 sprintf(buffer, "(%d,%d)", row, col);
                 RenderText(font, buffer, n.x, n.y, atlas);
             }
+        }
+    }
+    void drawTile(Tile* t) {
+#if DEBUG_PRINT
+        printTile(t);
+#endif
+        switch(t->type) {
+            case CUBE:
+                drawCube(platform, mat, t->row, t->col, 0);
+                break;
+            case COMPOSITE_RAMP: {
+                // Used for hover display only
+                auto cr = dynamic_cast<CompositePiece*>(t);
+                for (auto tile: cr->tiles) {
+                    drawTile(tile);
+                }
+                break;
+            }
+            case COMPOSITE_RAMP_UNIT: {
+                auto cruTile = dynamic_cast<CompositeTile *>(t);
+                for (auto face: cruTile->faces) {
+                    auto points = face.points;
+                    if (points.size() == 3) {
+                        auto tri = getTriangle(platform, points[0], points[1], points[2]);
+                        SetColor(mat->color, face.color);
+                        tri->SetMaterial(mat);
+                        tri->Update();
+                        platform->Delete(tri);
+                    } else if (points.size() == 4) {
+                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                        drawQuadAndCleanUp(platform, mat, q1, face.color);
+                    } else if (points.size() == 5) {
+                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                        auto q2 = getQuad(platform, points[1], points[2], points[3], points[4]);
+                        auto q3 = getQuad(platform, points[0], points[1], points[3], points[4]);
+                        auto q4 = getQuad(platform, points[0], points[1], points[2], points[4]);
+                        auto q5 = getQuad(platform, points[0], points[2], points[3], points[4]);
+                        drawQuadAndCleanUp(platform, mat, q1, face.color);
+                        drawQuadAndCleanUp(platform, mat, q2, face.color);
+                        drawQuadAndCleanUp(platform, mat, q3, face.color);
+                        drawQuadAndCleanUp(platform, mat, q4, face.color);
+                        drawQuadAndCleanUp(platform, mat, q5, face.color);
+                    }
+                }
+                SetColor(mat->color, COLOR::BLACK);
+                for (auto line: cruTile->lines) {
+                    drawLine(platform, mat, line.a, line.b);
+                }
+                break;
+            }
+            default:
+                assert(false);
         }
     }
 };
