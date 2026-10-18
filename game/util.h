@@ -109,26 +109,27 @@ bool compareTiles(const Tile* a, const Tile* b) {
     if (ka != kb)return ka < kb;
     if (a->row != b->row)return a->row < b->row;
     if (a->col != b->col)return a->col < b->col;
-    else {
-        if (auto aCast = dynamic_cast<const CompositeTile*>(a)) {
-            if (auto bCast = dynamic_cast<const CompositeTile*>(b)) {
-                auto aParent = aCast->parent;
-                auto bParent = bCast->parent;
-                if (aParent == nullptr || bParent == nullptr) {
-                    printf("Nullptr parent\n");
-                    return a->col < b->col;
-                }
-#if DEBUG_PRINT
-                printf("compare %d(A) and %d(B) parents %d %d , %d %d\n", a->id, b->id, aParent->row, aParent->col, bParent->row, bParent->col);
-#endif
-                return compareTiles(aParent, bParent);
-            } else {
-                return a->col < b->col;
-            }
-        } else {
-            return a->col < b->col;
-        }
-    }
+    else return a->id < b->id;
+//    else {
+//        if (auto aCast = dynamic_cast<const CompositeTile*>(a)) {
+//            if (auto bCast = dynamic_cast<const CompositeTile*>(b)) {
+//                auto aParent = aCast->parent;
+//                auto bParent = bCast->parent;
+//                if (aParent == nullptr || bParent == nullptr) {
+//                    printf("Nullptr parent\n");
+//                    return a->col < b->col;
+//                }
+//#if DEBUG_PRINT
+//                printf("compare %d(A) and %d(B) parents %d %d , %d %d\n", a->id, b->id, aParent->row, aParent->col, bParent->row, bParent->col);
+//#endif
+//                return compareTiles(aParent, bParent);
+//            } else {
+//                return a->col < b->col;
+//            }
+//        } else {
+//            return a->col < b->col;
+//        }
+//    }
 }
 bool LineQuadIntersection(Point lineA, Point lineB,Point quad[4], Point& outA, Point& outB)
 {

@@ -50,7 +50,7 @@ static int ID = 0;
 struct Tile {
     Tile(){
         id = ++ID;
-        printf("Create tile %d\n", id);
+//        printf("Create tile %d\n", id);
     }
     virtual ~Tile() = default;
     PIECE_TYPE type;

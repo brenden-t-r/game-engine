@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_QUAD 0
-#define DEBUG_PRINT 0
+#define DEBUG_PRINT 1
 
 #include "engine/game.h"
 #include "../engine/platform/directx/directx.h"
@@ -107,14 +107,30 @@ public:
         bool hover = false;
         int row, col;
         auto mousePos = normalized_to_screen(platform->GetMousePos());
+        bool canDraw = true;
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
 //            printf("Hover %d %d\n", row, col);
             hover = true;
+
+            for (auto t : tiles) {
+                if (t->row == row && t->col==col) {
+                    canDraw = false;
+                }
+            }
+
             if (selected == COMPOSITE_RAMP) {
                 auto _tiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
                 auto p = new CompositePiece();
                 for (auto t : _tiles) {
                     p->tiles.push_back(t);
+                }
+                for (auto t : tiles) {
+                    for (auto thisT : _tiles) {
+                        if (thisT->row == t->row && thisT->col == t->col) {
+                            // todo effective row w height
+                            canDraw = false;
+                        }
+                    }
                 }
                 hoverTile = p;
             } else {
@@ -124,9 +140,9 @@ public:
             hoverTile->row = row;
             hoverTile->col = col;
             hoverTile->height_base = 0;
-            hoverTile->length = l;
-            hoverTile->width = w;
-            hoverTile->height = h;
+            hoverTile->length = l - 1;
+            hoverTile->width = w - 1;
+            hoverTile->height = 0; // hardcoded for now
             hoverTile->stairCount = s;
             hoverTile->type = selected;
         }
@@ -138,12 +154,14 @@ public:
             if (hover && !hoverDrawn) {
                 if (compareTiles(hoverTile, tile)) {
                     hoverDrawn = true;
-                    drawTile(hoverTile);
+                    if (canDraw) {
+                        drawTile(hoverTile);
+                    }
                 }
             }
             drawTile(tile);
         }
-        if (hover && !hoverDrawn) {
+        if (hover && !hoverDrawn && canDraw) {
             drawTile(hoverTile);
         }
         if (hoverDrawn && hoverTile->type == COMPOSITE_RAMP) {
