@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_QUAD 0
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
 
 #include "../engine/engine/game.h"
 #include "../engine/platform/directx/directx.h"
@@ -100,8 +100,9 @@ public:
         int row, col;
         auto mousePos = normalized_to_screen(platform->GetMousePos());
         bool canDraw = true;
+        int hoverBaseRow = -1;
+        int hoverBaseCol = -1;
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
-//            printf("Hover %d %d\n", row, col);
             hover = true;
 
             for (auto t : tiles) {
@@ -125,6 +126,13 @@ public:
                     }
                 }
                 hoverTile = p;
+                if (piece_orientation == SOUTHWEST) {
+                    hoverBaseRow = row + l - 1;
+                    hoverBaseCol = col;
+                } else if (piece_orientation == SOUTHEAST) {
+                    hoverBaseCol = col + l - 1;
+                    hoverBaseRow = row;
+                }
             } else {
                 hoverTile = hoverBasic;
             }
@@ -145,10 +153,24 @@ public:
         bool hoverDrawn = false;
         for (auto tile : tiles) {
             if (hover && !hoverDrawn) {
-                if (compareTiles(hoverTile, tile)) {
-                    hoverDrawn = true;
-                    if (canDraw) {
-                        drawTile(hoverTile);
+                if (hoverBaseRow>-1) {
+                    Tile* tmp = new Tile();
+                    tmp->row = hoverBaseRow;
+                    tmp->col = hoverBaseCol;
+                    tmp->height = 0;
+                    if (compareTiles(tmp, tile)) {
+                        hoverDrawn = true;
+                        if (canDraw) {
+                            drawTile(hoverTile);
+                        }
+                    }
+                    delete tmp;
+                } else {
+                    if (compareTiles(hoverTile, tile)) {
+                        hoverDrawn = true;
+                        if (canDraw) {
+                            drawTile(hoverTile);
+                        }
                     }
                 }
             }
