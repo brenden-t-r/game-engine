@@ -12,19 +12,6 @@
 class IsoGame : public Game {
 public:
     using Game::Game;
-    MaterialColor* mat = nullptr;
-    MaterialFont* matFont = nullptr;
-    std::vector<Tile*> tiles{};
-    Tile* hoverTile = new Tile();
-    Tile* hoverBasic = new Tile();
-    bool shouldRotate;
-    int h = 1;
-    int w = 1;
-    int l = 1;
-    int s = 2;
-    Sprite* font;
-    TEXT_MSDF::FontAtlas atlas;
-    int frame = 0;
 
     void Start() override {
         this->EnableCallback(Callback::KEY_RELEASED);
@@ -47,17 +34,18 @@ public:
     }
 
     void Update() override {
+        //region: Init
         frame += 1;
 #if DEBUG_PRINT
         printf("frame: %d\n", frame);
 #endif
-
         if (platform->IsKeyPressed(KeyCode::Right)) {
             OffsetX += 1;
         }
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
+        //endregion
 
         // region: Debug display
         auto q = getQuad(platform, Point{20,20},{400,20},{400,200},{20,200});
@@ -174,6 +162,21 @@ public:
         }
         //endregion
     }
+
+private:
+    MaterialColor* mat = nullptr;
+    MaterialFont* matFont = nullptr;
+    std::vector<Tile*> tiles{};
+    Tile* hoverTile = new Tile();
+    Tile* hoverBasic = new Tile();
+    bool shouldRotate;
+    int h = 1;
+    int w = 1;
+    int l = 1;
+    int s = 2;
+    Sprite* font;
+    TEXT_MSDF::FontAtlas atlas;
+    int frame = 0;
 
     void MouseReleasedCallback(MouseButton key, vec3 pos) override {
         if (key == MouseButton::Left) {
