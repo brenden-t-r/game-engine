@@ -15,10 +15,12 @@ std::vector<CompositeTile*> drawRampCompositeTile(
     root->row = row;
     root->col = col;
     root->orientation = orientation;
+    root->width = width;
+    root->length = length;
+    root->height = height;
     root->type = COMPOSITE_RAMP_UNIT;
 
     if (orientation == SOUTHEAST) {
-        root->col = col+(length-1);
 
         for (int h = 0; h < height; h++) {
             for (int l = 0; l < length; l++) {
@@ -208,7 +210,6 @@ std::vector<CompositeTile*> drawRampCompositeTile(
     }
 
     if (orientation == SOUTHWEST) {
-        root->row = row+(length-1);
 
         Point p1[4];
         getIsoTilePoints(row, col, 0, p1);

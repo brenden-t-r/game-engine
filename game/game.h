@@ -33,6 +33,19 @@ public:
         setFontSize(font, 9);
     }
 
+    Orientation rotatedOrientation(Orientation o, bool cw = true) {
+        switch (o) {
+            case NORTHEAST:
+                return cw ? SOUTHEAST : NORTHWEST;
+            case NORTHWEST:
+                return cw ? NORTHEAST : SOUTHWEST;
+            case SOUTHWEST:
+                return cw ? NORTHWEST : SOUTHEAST;
+            case SOUTHEAST:
+                return cw ? SOUTHWEST : NORTHEAST;
+        }
+    }
+
     void Update() override {
         //region: Init
         frame += 1;
@@ -82,14 +95,43 @@ public:
                 case NORTHWEST: selected_orientation = NORTHEAST;
                     break;
             }
-            for (int i = 0; i < tiles.size(); i++){
-                if (tiles[i]->type != COMPOSITE_RAMP_UNIT) {
-                    int row = tiles[i]->row;
-                    int col = tiles[i]->col;
+            std::vector<Tile*> temp = std::move(tiles);
+            tiles = {};
+            std::vector<int> seen{};
+
+            for (int i = 0; i < temp.size(); i++){
+                auto t = temp[i];
+                if (t->type != COMPOSITE_RAMP_UNIT && t->type != COMPOSITE_RAMP) {
+                    int row = t->row;
+                    int col = t->col;
                     int rotatedRow = col;
                     int rotatedCol = GRID_ROWS - 1 - row;
-                    tiles[i]->row = rotatedRow;
-                    tiles[i]->col = rotatedCol;
+                    t->row = rotatedRow;
+                    t->col = rotatedCol;
+                    tiles.push_back(t);
+                } else {
+                    auto parent = ((CompositeTile*)t)->parent;
+                    bool hasSeen = false;
+                    for (auto id : seen) {
+                        if (parent->id==id) {
+                            hasSeen = true;
+                            break;
+                        }
+                    }
+                    if (!hasSeen) {
+                        seen.push_back(parent->id);
+                        int rotatedRow = parent->col;
+                        int rotatedCol = GRID_ROWS - 1 - parent->row;
+
+                        auto rotated = drawRampCompositeTile(
+                                platform, mat,
+                                rotatedRow, rotatedCol, parent->length, parent->width, parent->height,
+                                rotatedOrientation(parent->orientation)
+                        );
+                        for (auto tile : rotated) {
+                            tiles.push_back(tile);
+                        }
+                    }
                 }
             }
         }
