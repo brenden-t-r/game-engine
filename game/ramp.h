@@ -21,7 +21,6 @@ std::vector<CompositeTile*> drawRampCompositeTile(
     root->type = COMPOSITE_RAMP_UNIT;
 
     if (orientation == SOUTHEAST) {
-
         for (int h = 0; h < height; h++) {
             for (int l = 0; l < length; l++) {
                 for (int w = 0; w < width; w++) {
@@ -223,9 +222,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                 for (int w = 0; w < width; w++) {
                     //region: setup
                     Point bottom[4];
-                    getIsoTilePoints(row + l, col - w, h, bottom);
+                    getIsoTilePoints(row + l, col + w, h, bottom);
                     Point top[4];
-                    getIsoTilePoints(row + l, col - w, h + 1, top);
+                    getIsoTilePoints(row + l, col + w, h + 1, top);
                     Point sideFace[4];
                     sideFace[0] = bottom[0];
                     sideFace[1] = bottom[1];
@@ -236,7 +235,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                     tile->type = COMPOSITE_RAMP_UNIT;
                     tile->orientation = orientation;
                     tile->row = row + l;
-                    tile->col = col - w;
+                    tile->col = col + w;
                     tile->height = h;
                     tile->parent = root;
                     //endregion
@@ -246,7 +245,13 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                         std::vector<Point> points{};
 
                         // side face
-                        if (w == 0) {
+                        if (w == width - 1) {
+                            Point p1[4];
+                            getIsoTilePoints(row, col + w, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row + (length -1), col + w, height, p2);
+                            Point p1a = p1[1];
+                            Point p2a = p2[0];
                             if (isAboveLine(p1a, p2a, sideFace[0])) {
                                 addUnique(points, sideFace[0]);
                             }
@@ -293,9 +298,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
 
                         // top/front face
                         Point p1[4];
-                        getIsoTilePoints(row, col - w, 0, p1);
+                        getIsoTilePoints(row, col + w, 0, p1);
                         Point p2[4];
-                        getIsoTilePoints(row + (length -1), col - w, height, p2);
+                        getIsoTilePoints(row + (length -1), col + w, height, p2);
                         Point p2a = p1[1];
                         Point p2b = p2[0];
                         Point quad[4] = {
@@ -339,43 +344,43 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             Point p2[4];
                             getIsoTilePoints(row + (length - 1), col, height, p2);
                             Point quad[4] = {
-                                    bottom[0],
-                                    top[0],
-                                    top[1],
-                                    bottom[1]
+                                    bottom[3],
+                                    bottom[2],
+                                    top[2],
+                                    top[3]
                             };
                             Point start, end;
-                            if (LineQuadIntersection(p1[1], p2[0], quad, start, end)) {
+                            if (LineQuadIntersection(p1[2], p2[3], quad, start, end)) {
                                 tile->lines.push_back(CompositeTileLine{start, end});
                             }
                         }
                         if (w == width - 1) {
                             Point p1[4];
-                            getIsoTilePoints(row, col - width, 0, p1);
+                            getIsoTilePoints(row, col + width - 1, 0, p1);
                             Point p2[4];
-                            getIsoTilePoints(row + (length - 1), col - width, height, p2);
+                            getIsoTilePoints(row + (length - 1), col + width - 1, height, p2);
                             Point quad[4] = {
-                                    bottom[2],
-                                    top[2],
-                                    top[3],
-                                    bottom[3]
+                                    bottom[0],
+                                    bottom[1],
+                                    top[1],
+                                    top[0]
                             };
                             Point start, end;
                             if (LineQuadIntersection(p1[1], p2[0], quad, start, end)) {
                                 tile->lines.push_back(CompositeTileLine{start, end});
                             }
                         }
-                        if (h == 0 && w == 0) {
+                        if (h == 0 && w == width - 1) {
                             // bottom side line
                             tile->lines.push_back(CompositeTileLine{bottom[1], bottom[0]});
                         }
                         if (l == length - 1 && w == 0) {
                             // back vert line
-                            tile->lines.push_back(CompositeTileLine{bottom[0], top[0]});
+                            tile->lines.push_back(CompositeTileLine{bottom[3], top[3]});
                         }
                         if (l == length - 1 && w == width - 1) {
                             // back vert line far
-                            tile->lines.push_back(CompositeTileLine{bottom[3], top[3]});
+                            tile->lines.push_back(CompositeTileLine{bottom[0], top[0]});
                         }
                         if (l == 0 && h == 0) {
                             // front bottom line
@@ -413,9 +418,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                 for (int w = 0; w < width; w++) {
                     //region: setup
                     Point bottom[4];
-                    getIsoTilePoints(row - w, col - l, h, bottom);
+                    getIsoTilePoints(row + w, col - l, h, bottom);
                     Point top[4];
-                    getIsoTilePoints(row - w, col - l, h + 1, top);
+                    getIsoTilePoints(row + w, col - l, h + 1, top);
                     Point westFace[4];
                     westFace[0] = bottom[0];
                     westFace[1] = bottom[3];
@@ -426,7 +431,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
 
                     auto *tile = new CompositeTile();
                     tile->type = COMPOSITE_RAMP_UNIT;
-                    tile->row = row - w;
+                    tile->row = row + w;
                     tile->col = col - l;
                     tile->height = h;
                     tile->parent = root;
@@ -475,9 +480,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
 
                         // front face
                         Point p1[4];
-                        getIsoTilePoints(row -w, col, 0, p1);
+                        getIsoTilePoints(row + w, col, 0, p1);
                         Point p2[4];
-                        getIsoTilePoints(row -w, col - (length -1), height, p2);
+                        getIsoTilePoints(row + w, col - (length -1), height, p2);
                         Point p2a = p1[0];
                         Point p2b = p2[3];
                         Point quad[4] = {
@@ -534,9 +539,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                         }
                         if (w == width - 1) {
                             Point p1[4];
-                            getIsoTilePoints(row - width, col, 0, p1);
+                            getIsoTilePoints(row + width, col, 0, p1);
                             Point p2[4];
-                            getIsoTilePoints(row - width, col - (length - 1), height, p2);
+                            getIsoTilePoints(row + width, col - (length - 1), height, p2);
                             Point quad[4] = {
                                     bottom[1],
                                     top[1],
