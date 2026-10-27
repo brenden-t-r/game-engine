@@ -285,6 +285,10 @@ void sortPointsAroundCenter(std::vector<Point>& points)
                   return angleA < angleB;
               });
 }
+float lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
 //endregion
 
 //region: draw
