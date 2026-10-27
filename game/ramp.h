@@ -407,9 +407,9 @@ std::vector<CompositeTile*> drawRampCompositeTile(
 
     if (orientation == NORTHWEST) {
         Point p1[4];
-        getIsoTilePoints(row, col, 0, p1);
+        getIsoTilePoints(row + width - 1, col, 0, p1);
         Point p2[4];
-        getIsoTilePoints(row, col - (length - 1), height, p2);
+        getIsoTilePoints(row + width - 1, col - (length - 1), height, p2);
         Point p1a = p1[0];
         Point p2a = p2[3];
 
@@ -426,8 +426,6 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                     westFace[1] = bottom[3];
                     westFace[2] = top[3];
                     westFace[3] = top[0];
-//                    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 80);
-//                    fillQuad(westFace[0],westFace[1],westFace[2],westFace[3]);
 
                     auto *tile = new CompositeTile();
                     tile->type = COMPOSITE_RAMP_UNIT;
@@ -527,6 +525,22 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             Point p2[4];
                             getIsoTilePoints(row, col - (length - 1), height, p2);
                             Point quad[4] = {
+                                    bottom[1],
+                                    top[1],
+                                    top[2],
+                                    bottom[2]
+                            };
+                            Point start, end;
+                            if (LineQuadIntersection(p1[1], p2[2], quad, start, end)) {
+                                tile->lines.push_back(CompositeTileLine{start, end});
+                            }
+                        }
+                        if (w == width - 1) {
+                            Point p1[4];
+                            getIsoTilePoints(row + width - 1, col, 0, p1);
+                            Point p2[4];
+                            getIsoTilePoints(row + width - 1, col - (length - 1), height, p2);
+                            Point quad[4] = {
                                     bottom[0],
                                     top[0],
                                     top[3],
@@ -537,27 +551,11 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                                 tile->lines.push_back(CompositeTileLine{start, end});
                             }
                         }
-                        if (w == width - 1) {
-                            Point p1[4];
-                            getIsoTilePoints(row + width, col, 0, p1);
-                            Point p2[4];
-                            getIsoTilePoints(row + width, col - (length - 1), height, p2);
-                            Point quad[4] = {
-                                    bottom[1],
-                                    top[1],
-                                    top[2],
-                                    bottom[2]
-                            };
-                            Point start, end;
-                            if (LineQuadIntersection(p1[0], p2[3], quad, start, end)) {
-                                tile->lines.push_back(CompositeTileLine{start, end});
-                            }
-                        }
-                        if (h == 0 && w == 0) {
+                        if (h == 0 && w == width - 1) {
                             // bottom side line
                             tile->lines.push_back(CompositeTileLine{bottom[0], bottom[3]});
                         }
-                        if (l == length - 1 && w == 0) {
+                        if (l == length - 1 && w == width - 1) {
                             // back vert line
                             tile->lines.push_back(CompositeTileLine{bottom[3], top[3]});
                         }
