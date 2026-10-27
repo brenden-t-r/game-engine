@@ -244,6 +244,44 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                         //region: draw faces
                         std::vector<Point> points{};
 
+                        // top/front face
+                        Point p1[4];
+                        getIsoTilePoints(row, col + w, 0, p1);
+                        Point p2[4];
+                        getIsoTilePoints(row + (length -1), col + w, height, p2);
+                        Point p2a = p1[1];
+                        Point p2b = p2[0];
+                        Point quad[4] = {
+                                bottom[0],
+                                top[0],
+                                top[1],
+                                bottom[1]
+                        };
+                        Point start, end;
+                        Point ef2 = sideFace[0];
+                        Point ef3 = sideFace[3];
+                        bool intersects = false;
+                        if (LineQuadIntersection(p2a, p2b, quad, start, end)) {
+                            ef2 = start;
+                            ef3 = end;
+                            intersects = true;
+                        }
+                        if (intersects) {
+                            Point ef2b{ef2.x, ef2.y};
+                            Point ef3b{ef3.x, ef3.y};
+                            ef2b.x -= TILE_W / 2;
+                            ef2b.y -= TILE_H / 2;
+                            ef3b.x -= TILE_W / 2;
+                            ef3b.y -= TILE_H / 2;
+                            std::vector<Point> facePoints{};
+                            addUnique(facePoints, ef2);
+                            addUnique(facePoints, ef2b);
+                            addUnique(facePoints, ef3);
+                            addUnique(facePoints, ef3b);
+                            sortPointsAroundCenter(facePoints);
+                            tile->faces.push_back(CompositeTileFace{facePoints, GetColor(COLOR::LIGHTEST)});
+                        }
+
                         // side face
                         if (w == width - 1) {
                             Point p1[4];
@@ -296,43 +334,6 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::MID)});
                         }
 
-                        // top/front face
-                        Point p1[4];
-                        getIsoTilePoints(row, col + w, 0, p1);
-                        Point p2[4];
-                        getIsoTilePoints(row + (length -1), col + w, height, p2);
-                        Point p2a = p1[1];
-                        Point p2b = p2[0];
-                        Point quad[4] = {
-                                bottom[0],
-                                top[0],
-                                top[1],
-                                bottom[1]
-                        };
-                        Point start, end;
-                        Point ef2 = sideFace[0];
-                        Point ef3 = sideFace[3];
-                        bool intersects = false;
-                        if (LineQuadIntersection(p2a, p2b, quad, start, end)) {
-                            ef2 = start;
-                            ef3 = end;
-                            intersects = true;
-                        }
-                        if (intersects) {
-                            Point ef2b{ef2.x, ef2.y};
-                            Point ef3b{ef3.x, ef3.y};
-                            ef2b.x -= TILE_W / 2;
-                            ef2b.y -= TILE_H / 2;
-                            ef3b.x -= TILE_W / 2;
-                            ef3b.y -= TILE_H / 2;
-                            std::vector<Point> facePoints{};
-                            addUnique(facePoints, ef2);
-                            addUnique(facePoints, ef2b);
-                            addUnique(facePoints, ef3);
-                            addUnique(facePoints, ef3b);
-                            sortPointsAroundCenter(facePoints);
-                            tile->faces.push_back(CompositeTileFace{facePoints, GetColor(COLOR::LIGHTEST)});
-                        }
                         //endregion
                     }
 
@@ -640,12 +641,10 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                         if (lineSegmentIntersection(p1[0], p2[1], bottom[0], top[0], intersection)) {
                             addUnique(points, Point{intersection.x, intersection.y});
                         }
-
                         sortPointsAroundCenter(points);
                         if (points.size() >= 3) {
-                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::MID)});
+                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::BLACK)});
                         }
-
 
                         Point p1b[4];
                         getIsoTilePoints(row, col - w, 0, p1b);
