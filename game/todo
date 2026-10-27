@@ -1,0 +1,4 @@
+
+- dont draw lines in SW that are obscured by faces
+- draw cubes and pieces that start above h=1
+- calculate the tile the camera is centered on. On global rotation, move camera to where that tile moved to.

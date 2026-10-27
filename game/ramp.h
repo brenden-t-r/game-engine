@@ -282,7 +282,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             tile->faces.push_back(CompositeTileFace{facePoints, GetColor(COLOR::LIGHTEST)});
                         }
 
-                        // back face
+                        // side face
                         if (w == width - 1) {
                             Point p1[4];
                             getIsoTilePoints(row, col + w, 0, p1);
@@ -323,15 +323,15 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             }
                             sortPointsAroundCenter(points);
                             if (points.size() >= 3) {
-                                tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::MID)});
+                                tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::DARK)});
                             }
                         }
 
-                        // side face
+                        // back face
                         if (l == length-1) {
                             std::vector<Point> points{};
                             points = {bottom[0],top[0],top[3],bottom[3]};
-                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::DARK)});
+                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::MID)});
                         }
 
                         //endregion
@@ -514,13 +514,13 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                             addUnique(facePoints, ef3b);
                             sortPointsAroundCenter(facePoints);
 
-                            // lerp between lightest and X,  X is black
+                            // lerp between lightest and X,  X is dark
                             int mh = height;
                             int max = 5;
                             if (mh > max) {
                                 mh = max;
                             }
-                            float lerped = lerp(250, 0.0, ((float)mh) / max);
+                            float lerped = lerp(250, 60.0, ((float)mh) / max);
                             auto color = Color(lerped/255.0, lerped/255.0, lerped/255.0, 1.0);
 
                             tile->faces.push_back(CompositeTileFace{facePoints, color});

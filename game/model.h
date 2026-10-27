@@ -7,10 +7,10 @@
 
 const int TILE_W = 64*2;
 const int TILE_H = 32*2;
-const int GRID_COLS = 10;
-const int GRID_ROWS = 10;
-const int ORIGIN_X = WINDOW_WIDTH / 2;
-const int ORIGIN_Y = WINDOW_HEIGHT/ 4;
+const int GRID_COLS = 20;
+const int GRID_ROWS = 20;
+int ORIGIN_X = WINDOW_WIDTH / 2;
+int ORIGIN_Y = WINDOW_HEIGHT/ 4;
 int OffsetX = 0;
 int OffsetY = 0;
 

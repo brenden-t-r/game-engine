@@ -31,6 +31,8 @@ public:
         matFont->pxRange = 16;
         matFont->isMSDF = true;
         setFontSize(font, 9);
+
+        CenterCameraOnCell(4,4,0);
     }
 
     Orientation rotatedOrientation(Orientation o, bool cw = true) {
@@ -53,11 +55,27 @@ public:
         printf("frame: %d\n", frame);
 #endif
         if (platform->IsKeyPressed(KeyCode::Right)) {
-            OffsetX += 1;
+            ORIGIN_X -= 10;
+        }
+        if (platform->IsKeyPressed(KeyCode::Left)) {
+            ORIGIN_X += 10;
+        }
+        if (platform->IsKeyPressed(KeyCode::Up)) {
+            ORIGIN_Y += 10;
+        }
+        if (platform->IsKeyPressed(KeyCode::Down)) {
+            ORIGIN_Y -= 10;
         }
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
         SetColor(mat->color, COLOR::BLACK);
+
+        int ccol = GetCenterCol(0);
+        int crow = GetCenterRow(0);
+        printf("%d, %d\n", crow, ccol);
+
+
+
         //endregion
 
         // region: Debug display
@@ -105,7 +123,9 @@ public:
                     int row = t->row;
                     int col = t->col;
                     int rotatedRow = col;
-                    int rotatedCol = GRID_ROWS - 1 - row;
+                    int rotatedCol = -row;
+//                    int rotatedRow = col;
+//                    int rotatedCol = GRID_ROWS - 1 - row;
                     t->row = rotatedRow;
                     t->col = rotatedCol;
                     tiles.push_back(t);
@@ -134,6 +154,11 @@ public:
                     }
                 }
             }
+
+            // Update cam
+            int rotated_crow = ccol;
+            int rotated_ccol = -crow;
+            CenterCameraOnCell(rotated_crow, rotated_ccol, 0);
         }
         //endregion
 
@@ -193,7 +218,23 @@ public:
         //region: Sort and draw tiles
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
+        bool playerDrawn = false;
         for (auto tile : tiles) {
+            if (!playerDrawn) {
+                Tile* camTile = new Tile();
+                camTile->row = GetCenterRow(0);
+                camTile->col = GetCenterCol(0);
+                camTile->height = 0;
+                if (compareTiles(camTile, tile)) {
+                    playerDrawn = true;
+                    Triangle* tri = (Triangle*)platform->CreateTriangle();
+                    tri->SetScale({0.1,0.1,1});
+                    tri->Update();
+                    platform->Delete(tri);
+                }
+                delete camTile;
+            }
+
             if (hover && !hoverDrawn) {
                 if (hoverBaseRow>-1) {
                     Tile* tmp = new Tile();
@@ -218,6 +259,12 @@ public:
             }
             drawTile(tile);
         }
+        if (!playerDrawn) {
+            Triangle* tri = (Triangle*)platform->CreateTriangle();
+            tri->SetScale({0.1,0.1,1});
+            tri->Update();
+            platform->Delete(tri);
+        }
         if (hover && !hoverDrawn && canDraw) {
             drawTile(hoverTile);
         }
@@ -233,7 +280,7 @@ private:
     std::vector<Tile*> tiles{};
     Tile* hoverTile = new Tile();
     Tile* hoverBasic = new Tile();
-    bool shouldRotate;
+    bool shouldRotate = false;
     int h = 1;
     int w = 1;
     int l = 1;
@@ -328,6 +375,21 @@ private:
             default:
                 break;
         }
+    }
+    void CenterCameraOnCell(int row, int col, int height) {
+        ORIGIN_X = WINDOW_WIDTH / 2
+                   - (col - row) * (TILE_W / 2);
+        ORIGIN_Y = WINDOW_HEIGHT / 2
+                   - (col + row) * (TILE_H / 2)
+                   + height * TILE_H;
+    }
+    int GetCenterCol(int height) {
+        return (WINDOW_WIDTH / 2 - ORIGIN_X) / TILE_W
+               + (WINDOW_HEIGHT / 2 - ORIGIN_Y + height * TILE_H) / TILE_H;
+    }
+    int GetCenterRow(int height) {
+        return (WINDOW_HEIGHT / 2 - ORIGIN_Y + height * TILE_H) / TILE_H
+               - (WINDOW_WIDTH / 2 - ORIGIN_X) / TILE_W;
     }
     void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
         for (int row = 0; row < GRID_ROWS; row++) {
