@@ -285,7 +285,7 @@ public:
         std::vector<VertexBasic> vertices;
         vertices.reserve(points.size());
         for (const vec2& p : points) {
-            vertices.push_back({ { p.x, p.y, 0.0f } });
+            vertices.push_back({ { p.x - CAMERA.x, p.y - CAMERA.y, 0.0f } });
         }
 
         D3D11_BUFFER_DESC desc = {};
@@ -335,8 +335,8 @@ public:
     void drawLine(vec2 a, vec2 b, Material* material) {
         VertexBasic vertices[] =
         {
-            { { a.x, a.y, 0.0f } },
-            { {  b.x, b.y, 0.0f } }
+            { { a.x - CAMERA.x, a.y - CAMERA.y, 0.0f } },
+            { { b.x - CAMERA.x, b.y - CAMERA.y, 0.0f } }
         };
         UINT stride = sizeof(VertexBasic);
         UINT offset = 0;
@@ -402,12 +402,12 @@ public:
 
         void Update() override {
             Triangle::Update();
-            d3d_vertices[0].position.x = vertices[0].x;
-            d3d_vertices[0].position.y = vertices[0].y;
-            d3d_vertices[1].position.x = vertices[1].x;
-            d3d_vertices[1].position.y = vertices[1].y;
-            d3d_vertices[2].position.x = vertices[2].x;
-            d3d_vertices[2].position.y = vertices[2].y;
+            d3d_vertices[0].position.x = vertices[0].x - CAMERA.x;
+            d3d_vertices[0].position.y = vertices[0].y - CAMERA.y;
+            d3d_vertices[1].position.x = vertices[1].x - CAMERA.x;
+            d3d_vertices[1].position.y = vertices[1].y - CAMERA.y;
+            d3d_vertices[2].position.x = vertices[2].x - CAMERA.x;
+            d3d_vertices[2].position.y = vertices[2].y - CAMERA.y;
 
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;

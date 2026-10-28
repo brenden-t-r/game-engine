@@ -74,9 +74,10 @@ void getIsoTilePoints(int row, int col, int height, Point points[4]) {
 }
 bool screenToIsoCell(float sx, float sy,int height,int* outRow, int* outCol)
 {
-    // undo origin + height offset
-    float x = sx - ORIGIN_X;
-    float y = sy - ORIGIN_Y + height * TILE_H;
+    // Undo camera, origin, and height offset
+    auto cam = normalized_to_screen(vec2{CAMERA.x, CAMERA.y});
+    float x = sx - WINDOW_WIDTH / 2.0f + cam.x - ORIGIN_X;
+    float y = sy - WINDOW_HEIGHT / 2.0f + cam.y - ORIGIN_Y + height * TILE_H;
 
     float halfW = TILE_W * 0.5f;
     float halfH = TILE_H * 0.5f;
@@ -90,7 +91,7 @@ bool screenToIsoCell(float sx, float sy,int height,int* outRow, int* outCol)
     int row = (int)floorf(rowf);
 
     // bounds check
-    if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS)
+    if (row < -GRID_ROWS || row >= GRID_ROWS || col < -GRID_COLS || col >= GRID_COLS)
         return false;
 
     *outRow = row;

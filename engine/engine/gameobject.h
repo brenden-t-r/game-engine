@@ -11,6 +11,12 @@
 #include <vector>
 #include <cassert>
 
+struct Camera {
+    float x = 0.0f;
+    float y = 0.0f;
+};
+Camera CAMERA;
+
 class Transform {
 public:
     vec3 pos = {0, 0, 0};
@@ -111,6 +117,8 @@ public:
         // Apply transformation matrix
         for (auto & vertice : vertices) {
             vertice = matrix_multiply_vec(transformation, vertice);
+            vertice.x += CAMERA.x;
+            vertice.y += CAMERA.y;
         }
     }
 
@@ -209,6 +217,8 @@ public:
         // Apply transformation matrix
         for (auto & vertice : vertices) {
             vertice = matrix_multiply_vec(transformation, vertice);
+            vertice.x -= CAMERA.x;
+            vertice.y -= CAMERA.y;
         }
     }
 

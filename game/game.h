@@ -32,7 +32,7 @@ public:
         matFont->isMSDF = true;
         setFontSize(font, 9);
 
-        CenterCameraOnCell(4,4,0);
+        CenterCameraOnCell(0,0,0);
     }
 
     Orientation rotatedOrientation(Orientation o, bool cw = true) {
@@ -54,17 +54,17 @@ public:
 #if DEBUG_PRINT
         printf("frame: %d\n", frame);
 #endif
-        if (platform->IsKeyPressed(KeyCode::Right)) {
-            ORIGIN_X -= 10;
+        if (platform->IsKeyPressed(KeyCode::D)) {
+            CAMERA.x += 0.01;
         }
-        if (platform->IsKeyPressed(KeyCode::Left)) {
-            ORIGIN_X += 10;
+        if (platform->IsKeyPressed(KeyCode::A)) {
+            CAMERA.x -= 0.01;
         }
-        if (platform->IsKeyPressed(KeyCode::Up)) {
-            ORIGIN_Y += 10;
+        if (platform->IsKeyPressed(KeyCode::W)) {
+            CAMERA.y += 0.01;
         }
-        if (platform->IsKeyPressed(KeyCode::Down)) {
-            ORIGIN_Y -= 10;
+        if (platform->IsKeyPressed(KeyCode::S)) {
+            CAMERA.y -= 0.01;
         }
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
@@ -72,10 +72,8 @@ public:
 
         int ccol = GetCenterCol(0);
         int crow = GetCenterRow(0);
-        printf("%d, %d\n", crow, ccol);
-
-
-
+        printf("%d %d\n", crow, ccol);
+        fflush(stdout);
         //endregion
 
         // region: Debug display
@@ -141,7 +139,7 @@ public:
                     if (!hasSeen) {
                         seen.push_back(parent->id);
                         int rotatedRow = parent->col;
-                        int rotatedCol = GRID_ROWS - 1 - parent->row;
+                        int rotatedCol = -parent->row;
 
                         auto rotated = drawRampCompositeTile(
                                 platform, mat,
@@ -376,25 +374,38 @@ private:
                 break;
         }
     }
+
     void CenterCameraOnCell(int row, int col, int height) {
-        ORIGIN_X = WINDOW_WIDTH / 2
-                   - (col - row) * (TILE_W / 2);
-        ORIGIN_Y = WINDOW_HEIGHT / 2
-                   - (col + row) * (TILE_H / 2)
-                   + height * TILE_H;
+        printf("Center on %d %d\n", row, col);
+        float x = ORIGIN_X + (col - row) * (TILE_W / 2.0f);
+        float y = ORIGIN_Y + (col + row) * (TILE_H / 2.0f)
+                  - height * TILE_H;
+        y += TILE_H/2;
+
+        auto n = screen_to_normalized(vec2{x, y});
+        CAMERA.x = n.x;
+        CAMERA.y = n.y;
     }
     int GetCenterCol(int height) {
-        return (WINDOW_WIDTH / 2 - ORIGIN_X) / TILE_W
-               + (WINDOW_HEIGHT / 2 - ORIGIN_Y + height * TILE_H) / TILE_H;
+        auto cam = normalized_to_screen(vec2{CAMERA.x, CAMERA.y});
+
+        return (int)floorf(
+                (cam.x - ORIGIN_X) / TILE_W
+                + (cam.y - ORIGIN_Y + height * TILE_H) / TILE_H
+        );
     }
     int GetCenterRow(int height) {
-        return (WINDOW_HEIGHT / 2 - ORIGIN_Y + height * TILE_H) / TILE_H
-               - (WINDOW_WIDTH / 2 - ORIGIN_X) / TILE_W;
+        auto cam = normalized_to_screen(vec2{CAMERA.x, CAMERA.y});
+
+        return (int)floorf(
+                (cam.y - ORIGIN_Y + height * TILE_H) / TILE_H
+                - (cam.x - ORIGIN_X) / TILE_W
+        );
     }
     void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
         std::vector<vec2> lines{};
-        for (int row = 0; row < GRID_ROWS; row++) {
-            for (int col = 0; col < GRID_COLS; col++) {
+        for (int row = -GRID_ROWS; row < GRID_ROWS; row++) {
+            for (int col = -GRID_COLS; col < GRID_COLS; col++) {
                 int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
                 int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
 
