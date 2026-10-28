@@ -279,6 +279,59 @@ public:
 
     //region GameObjects
 
+    void drawLines(const std::vector<vec2>& points, Material* material) {
+        if (points.size() < 2 || points.size() % 2 != 0)
+            return;
+        std::vector<VertexBasic> vertices;
+        vertices.reserve(points.size());
+        for (const vec2& p : points) {
+            vertices.push_back({ { p.x, p.y, 0.0f } });
+        }
+
+        D3D11_BUFFER_DESC desc = {};
+        desc.Usage = D3D11_USAGE_IMMUTABLE;
+        desc.ByteWidth = (UINT)(vertices.size() * sizeof(VertexBasic));
+        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+        D3D11_SUBRESOURCE_DATA data = {};
+        data.pSysMem = vertices.data();
+        ID3D11Buffer* vertexBuffer = nullptr;
+        HRESULT hr = d3dDevice->CreateBuffer(&desc, &data, &vertexBuffer);
+        assert(SUCCEEDED(hr));
+
+        UINT stride = sizeof(VertexBasic);
+        UINT offset = 0;
+        auto shaderd3d = (ShaderD3D*)colorShader;
+        d3dContext->IASetInputLayout(shaderd3d->inputLayout);
+        d3dContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+        d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+        d3dContext->VSSetShader(shaderd3d->vertexShader, nullptr, 0);
+        d3dContext->PSSetShader(shaderd3d->pixelShader, nullptr, 0);
+
+        ID3D11Buffer* constantBuffer = nullptr;
+        D3D11_BUFFER_DESC cbd = {};
+        cbd.ByteWidth = 32;
+        cbd.Usage = D3D11_USAGE_DYNAMIC;
+        cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+        hr = d3dDevice->CreateBuffer(&cbd, nullptr, &constantBuffer);
+        assert(SUCCEEDED(hr));
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        hr = d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        assert(SUCCEEDED(hr));
+
+        material->BindConstantBuffer(reinterpret_cast<uint8_t*>(mapped.pData));
+        d3dContext->Unmap(constantBuffer, 0);
+        d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+        d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
+        d3dContext->Draw((UINT)vertices.size(), 0);
+
+        constantBuffer->Release();
+        vertexBuffer->Release();
+    }
+
     void drawLine(vec2 a, vec2 b, Material* material) {
         VertexBasic vertices[] =
         {

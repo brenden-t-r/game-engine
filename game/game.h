@@ -392,17 +392,31 @@ private:
                - (WINDOW_WIDTH / 2 - ORIGIN_X) / TILE_W;
     }
     void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
+        std::vector<vec2> lines{};
         for (int row = 0; row < GRID_ROWS; row++) {
             for (int col = 0; col < GRID_COLS; col++) {
                 int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
                 int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
-                drawIsoTile(platform, mat, screenX, screenY, TILE_W, TILE_H);
+
+                vec2 points[5] = {
+                        screen_to_normalized(vec2{ (float)screenX,              (float)screenY }),
+                        screen_to_normalized(vec2{ (float)(screenX + TILE_W/2),  (float)(screenY + TILE_H/2)  }),
+                        screen_to_normalized(vec2{ (float)screenX,              (float)(screenY + TILE_H)     }),
+                        screen_to_normalized(vec2{ (float)(screenX - TILE_W/2),  (float)(screenY + TILE_H/2)  }),
+                        screen_to_normalized(vec2{ (float)screenX,              (float)screenY            }),
+                };
+                lines.push_back(points[0]);  lines.push_back(points[1]);
+                lines.push_back(points[1]);  lines.push_back(points[2]);
+                lines.push_back(points[2]);  lines.push_back(points[3]);
+                lines.push_back(points[3]);  lines.push_back(points[4]);
+
                 auto n = screen_to_normalized(vec2{(float)screenX - 20, (float)screenY + TILE_H/2 + 6});
                 char buffer[100];
                 sprintf(buffer, "(%d,%d)", row, col);
-                RenderText(font, buffer, n.x, n.y, atlas);
+//                RenderText(font, buffer, n.x, n.y, atlas);
             }
         }
+       ((PlatformDirectX*)platform)->drawLines(lines, mat);
     }
     void drawTile(Tile* t) {
 #if DEBUG_PRINT
