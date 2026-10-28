@@ -290,6 +290,18 @@ float lerp(float a, float b, float t)
 {
     return a + (b - a) * t;
 }
+Orientation rotatedOrientation(Orientation o, bool cw = true) {
+    switch (o) {
+        case NORTHEAST:
+            return cw ? SOUTHEAST : NORTHWEST;
+        case NORTHWEST:
+            return cw ? NORTHEAST : SOUTHWEST;
+        case SOUTHWEST:
+            return cw ? NORTHWEST : SOUTHEAST;
+        case SOUTHEAST:
+            return cw ? SOUTHWEST : NORTHEAST;
+    }
+}
 //endregion
 
 //region: draw
@@ -432,6 +444,8 @@ const char* pieceTypeStr(PIECE_TYPE c) {
         case PIECE_TYPE::CUBE: return "Cube";
         case PIECE_TYPE::COMPOSITE_RAMP: return "Ramp Composite";
         case PIECE_TYPE::COMPOSITE_RAMP_UNIT: return "Ramp Composite Unit";
+        case COMPOSITE_CUBE: return "Composite Cube";
+        case COMPOSITE_CUBE_UNIT: return "Composite Cube Unit";
         default: return "?";
     }
 }

@@ -756,6 +756,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
             }
         }
     }
+
     return cTiles;
 }
 

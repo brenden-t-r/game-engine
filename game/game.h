@@ -8,6 +8,7 @@
 #include "model.h"
 #include "util.h"
 #include "ramp.h"
+#include "cube.h"
 
 class IsoGame : public Game {
 public:
@@ -33,19 +34,6 @@ public:
         setFontSize(font, 9);
 
         CenterCameraOnCell(0,0,0);
-    }
-
-    Orientation rotatedOrientation(Orientation o, bool cw = true) {
-        switch (o) {
-            case NORTHEAST:
-                return cw ? SOUTHEAST : NORTHWEST;
-            case NORTHWEST:
-                return cw ? NORTHEAST : SOUTHWEST;
-            case SOUTHWEST:
-                return cw ? NORTHWEST : SOUTHEAST;
-            case SOUTHEAST:
-                return cw ? SOUTHWEST : NORTHEAST;
-        }
     }
 
     void Update() override {
@@ -198,6 +186,23 @@ public:
                     hoverBaseCol = col + l - 1;
                     hoverBaseRow = row;
                 }
+            } else if (selected == COMPOSITE_CUBE) {
+                auto p = drawCubeCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                for (auto t : tiles) {
+                    for (auto child : p->tiles) {
+                        if (child->row == t->row && child->col == t->col) {
+                            canDraw = false;
+                        }
+                    }
+                }
+                hoverTile = p;
+                if (piece_orientation == SOUTHWEST) {
+                    hoverBaseRow = row + l - 1;
+                    hoverBaseCol = col;
+                } else if (piece_orientation == SOUTHEAST) {
+                    hoverBaseCol = col + l - 1;
+                    hoverBaseRow = row;
+                }
             } else {
                 hoverTile = hoverBasic;
             }
@@ -222,7 +227,7 @@ public:
         camTile->col = GetCenterCol(0);
         camTile->height = 0;
         for (auto tile : tiles) {
-            if (tile->type == COMPOSITE_RAMP_UNIT || tile->type == COMPOSITE_RAMP) {
+            if (tile->type == COMPOSITE_RAMP_UNIT || tile->type == COMPOSITE_CUBE_UNIT) {
                 auto p = ((CompositeTile*)tile)->parent;
                 bool occluding = false;
                 for (auto child : p->tiles) {
@@ -245,6 +250,7 @@ public:
                 if (compareTiles(camTile, tile)) {
                     playerDrawn = true;
                     Triangle* tri = (Triangle*)platform->CreateTriangle();
+                    tri->SetPosition({CAMERA.x, CAMERA.y});
                     tri->SetScale({0.1,0.1,1});
                     tri->Update();
                     platform->Delete(tri);
@@ -279,6 +285,9 @@ public:
 
         if (!playerDrawn) {
             Triangle* tri = (Triangle*)platform->CreateTriangle();
+            tri->SetPosition({CAMERA.x, CAMERA.y});
+            tri->manualVertices = false;
+            tri->overlay = false;
             tri->SetScale({0.1, 0.1,1});
             tri->Update();
             platform->Delete(tri);
@@ -286,7 +295,7 @@ public:
         if (hover && !hoverDrawn && canDraw) {
             drawTile(hoverTile);
         }
-        if (hoverDrawn && hoverTile->type == COMPOSITE_RAMP) {
+        if (hoverDrawn && (hoverTile->type == COMPOSITE_RAMP || hoverTile->type == COMPOSITE_CUBE)) {
             delete(hoverTile);
         }
         //endregion
@@ -318,6 +327,11 @@ private:
                     for (auto tile: tcTiles) {
                         tiles.push_back(tile);
                         p->tiles.push_back(tile);
+                    }
+                } else if (selected == COMPOSITE_CUBE) {
+                    auto p = drawCubeCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                    for (auto tile : p->tiles) {
+                        tiles.push_back(tile);
                     }
                 } else {
                     Tile *t = nullptr;
@@ -361,6 +375,7 @@ private:
             case KeyCode::_3:
                 break;
             case KeyCode::_4:
+                selected = COMPOSITE_CUBE;
                 break;
             case KeyCode::_5:
                 selected = COMPOSITE_RAMP;
@@ -459,6 +474,37 @@ private:
             case CUBE:
                 drawCube(platform, mat, t->row, t->col, 0);
                 break;
+            case COMPOSITE_CUBE: {
+                // Used for hover display only
+                auto cr = dynamic_cast<CompositePiece*>(t);
+                std::sort(cr->tiles.begin(), cr->tiles.end(), compareTiles);
+                for (auto tile: cr->tiles) {
+                    drawTile(tile);
+                }
+                break;
+            }
+            case COMPOSITE_CUBE_UNIT: {
+                auto ccuTile = dynamic_cast<CompositeTile *>(t);
+                for (auto face: ccuTile->faces) {
+                    if (ccuTile->parent->occluding) face.color.a = 0.0;
+                    auto points = face.points;
+                    if (points.size() == 3) {
+                        auto tri = getTriangle(platform, points[0], points[1], points[2]);
+                        SetColor(mat->color, face.color);
+                        tri->SetMaterial(mat);
+                        tri->Update();
+                        platform->Delete(tri);
+                    } else if (points.size() == 4) {
+                        auto q1 = getQuad(platform, points[0], points[1], points[2], points[3]);
+                        drawQuadAndCleanUp(platform, mat, q1, face.color);
+                    }
+                }
+                SetColor(mat->color, COLOR::BLACK);
+                for (auto line: ccuTile->lines) {
+                    drawLine(platform, mat, line.a, line.b);
+                }
+                break;
+            }
             case COMPOSITE_RAMP: {
                 // Used for hover display only
                 auto cr = dynamic_cast<CompositePiece*>(t);
