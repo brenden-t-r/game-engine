@@ -312,6 +312,7 @@ vec2 pointToVec2(Point p){
 Triangle* getTriangle(Platform* platform, vec2 _1, vec2 _2, vec2 _3) {
     auto t = (Triangle*)platform->CreateTriangle();
     t->manualVertices = true;
+    t->overlay = false;
     t->vertices[0] = {_1.x, _1.y, 0.0};
     t->vertices[1] = {_2.x, _2.y, 0.0};
     t->vertices[2] = {_3.x, _3.y, 0.0};

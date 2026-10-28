@@ -402,12 +402,12 @@ public:
 
         void Update() override {
             Triangle::Update();
-            d3d_vertices[0].position.x = vertices[0].x - CAMERA.x;
-            d3d_vertices[0].position.y = vertices[0].y - CAMERA.y;
-            d3d_vertices[1].position.x = vertices[1].x - CAMERA.x;
-            d3d_vertices[1].position.y = vertices[1].y - CAMERA.y;
-            d3d_vertices[2].position.x = vertices[2].x - CAMERA.x;
-            d3d_vertices[2].position.y = vertices[2].y - CAMERA.y;
+            d3d_vertices[0].position.x = vertices[0].x;
+            d3d_vertices[0].position.y = vertices[0].y;
+            d3d_vertices[1].position.x = vertices[1].x;
+            d3d_vertices[1].position.y = vertices[1].y;
+            d3d_vertices[2].position.x = vertices[2].x;
+            d3d_vertices[2].position.y = vertices[2].y;
 
             // Map the buffer to update it
             D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -440,6 +440,7 @@ public:
 
             // Draw the triangle
             d3dContext->Draw(3, 0); // Draw 3 vertices
+            AfterDraw();
         }
     private:
         ID3D11DeviceContext* d3dContext = nullptr;

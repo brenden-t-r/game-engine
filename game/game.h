@@ -72,21 +72,20 @@ public:
 
         int ccol = GetCenterCol(0);
         int crow = GetCenterRow(0);
-        printf("%d %d\n", crow, ccol);
+//        printf("%d %d\n", crow, ccol);
         fflush(stdout);
         //endregion
 
         // region: Debug display
         auto q = getQuad(platform, Point{20,20},{400,20},{400,200},{20,200});
+        q->a->overlay = true;
+        q->b->overlay = true;
         SetColor(mat->color, Color(0,0,0,0.05));
         q->SetMaterial(mat);
         q->Update();
         deleteQuad(platform, q);
         SetColor(mat->color, COLOR::BLACK);
-        drawLine(platform, mat, Point{20, 20}, Point{400, 20});
-        drawLine(platform, mat, Point{20, 20}, Point{20, 200});
-        drawLine(platform, mat, Point{20, 200}, Point{400, 200});
-        drawLine(platform, mat, Point{400, 20}, Point{400, 200});
+        font->overlay = true;
         setFontSize(font, 9);
         matFont->color[3] = 1.0;
         char buffer[100];
@@ -96,6 +95,7 @@ public:
                 orientationToStr(selected_orientation), orientationToStr(piece_orientation));
         drawText(font, atlas, buffer, {50, 80});
         matFont->color[3] = 0.3;
+        font->overlay = false;
         //endregion
 
         //region: Rotation
@@ -178,7 +178,7 @@ public:
 
             if (selected == COMPOSITE_RAMP) {
                 auto _tiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
-                auto p = new CompositePiece();
+                auto p = _tiles[0]->parent;
                 for (auto t : _tiles) {
                     p->tiles.push_back(t);
                 }
@@ -217,12 +217,31 @@ public:
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
         bool playerDrawn = false;
+        Tile* camTile = new Tile();
+        camTile->row = GetCenterRow(0);
+        camTile->col = GetCenterCol(0);
+        camTile->height = 0;
         for (auto tile : tiles) {
+            if (tile->type == COMPOSITE_RAMP_UNIT || tile->type == COMPOSITE_RAMP) {
+                auto p = ((CompositeTile*)tile)->parent;
+                bool occluding = false;
+                for (auto child : p->tiles) {
+                    int r = child->row;
+                    int c = child->col;
+                    r -= child->height;
+                    c -= child->height;
+                    if (r == camTile->row && c == camTile->col) {
+                        occluding = true;
+                        break;
+                    } else if (r - 1 == camTile->row && c - 1 == camTile->col) {
+                        occluding = true;
+                        break;
+                    }
+                }
+                p->occluding = occluding;
+            }
+
             if (!playerDrawn) {
-                Tile* camTile = new Tile();
-                camTile->row = GetCenterRow(0);
-                camTile->col = GetCenterCol(0);
-                camTile->height = 0;
                 if (compareTiles(camTile, tile)) {
                     playerDrawn = true;
                     Triangle* tri = (Triangle*)platform->CreateTriangle();
@@ -230,7 +249,6 @@ public:
                     tri->Update();
                     platform->Delete(tri);
                 }
-                delete camTile;
             }
 
             if (hover && !hoverDrawn) {
@@ -257,9 +275,11 @@ public:
             }
             drawTile(tile);
         }
+        delete camTile;
+
         if (!playerDrawn) {
             Triangle* tri = (Triangle*)platform->CreateTriangle();
-            tri->SetScale({0.1,0.1,1});
+            tri->SetScale({0.1, 0.1,1});
             tri->Update();
             platform->Delete(tri);
         }
@@ -294,8 +314,10 @@ private:
             if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
                 if (selected == COMPOSITE_RAMP) {
                     auto tcTiles = drawRampCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
+                    auto p = tcTiles[0]->parent;
                     for (auto tile: tcTiles) {
                         tiles.push_back(tile);
+                        p->tiles.push_back(tile);
                     }
                 } else {
                     Tile *t = nullptr;
@@ -376,7 +398,7 @@ private:
     }
 
     void CenterCameraOnCell(int row, int col, int height) {
-        printf("Center on %d %d\n", row, col);
+//        printf("Center on %d %d\n", row, col);
         float x = ORIGIN_X + (col - row) * (TILE_W / 2.0f);
         float y = ORIGIN_Y + (col + row) * (TILE_H / 2.0f)
                   - height * TILE_H;
@@ -448,6 +470,8 @@ private:
             case COMPOSITE_RAMP_UNIT: {
                 auto cruTile = dynamic_cast<CompositeTile *>(t);
                 for (auto face: cruTile->faces) {
+                    if (cruTile->parent->occluding) face.color.a = 0.0;
+                    else face.color.a = 1.0;
                     auto points = face.points;
                     if (points.size() == 3) {
                         auto tri = getTriangle(platform, points[0], points[1], points[2]);

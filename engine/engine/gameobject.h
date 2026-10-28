@@ -54,6 +54,7 @@ public:
 
 class GameObject {
 public:
+    bool overlay = false;
     Transform transform{};
     Material* material;
     std::vector<EngineComponent*> components{};
@@ -89,9 +90,26 @@ public:
         SetPosition({0,0,0});
     }
 
+
+    void AfterDraw() {
+        if (manualVertices && !overlay) {
+            for (auto &vertice: vertices) {
+                vertice.x += CAMERA.x;
+                vertice.y += CAMERA.y;
+            }
+        }
+    }
+
     void Update() override {
         if (!manualVertices) SetPosition(transform.pos);
-        GameObject::Update();
+        if (manualVertices) {
+            if (!overlay) {
+                for (auto &vertice: vertices) {
+                    vertice.x -= CAMERA.x;
+                    vertice.y -= CAMERA.y;
+                }
+            }
+        }
     }
 
     void SetPosition(vec3 position) {
@@ -117,8 +135,10 @@ public:
         // Apply transformation matrix
         for (auto & vertice : vertices) {
             vertice = matrix_multiply_vec(transformation, vertice);
-            vertice.x += CAMERA.x;
-            vertice.y += CAMERA.y;
+            if (!overlay) {
+                vertice.x -= CAMERA.x;
+                vertice.y -= CAMERA.y;
+            }
         }
     }
 
@@ -217,8 +237,10 @@ public:
         // Apply transformation matrix
         for (auto & vertice : vertices) {
             vertice = matrix_multiply_vec(transformation, vertice);
-            vertice.x -= CAMERA.x;
-            vertice.y -= CAMERA.y;
+            if (!overlay) {
+                vertice.x -= CAMERA.x;
+                vertice.y -= CAMERA.y;
+            }
         }
     }
 

@@ -653,7 +653,7 @@ std::vector<CompositeTile*> drawRampCompositeTile(
                         }
                         sortPointsAroundCenter(points);
                         if (points.size() >= 3) {
-                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::BLACK)});
+                            tile->faces.push_back(CompositeTileFace{points, GetColor(COLOR::DARK)});
                         }
 
                         Point p1b[4];
@@ -756,7 +756,6 @@ std::vector<CompositeTile*> drawRampCompositeTile(
             }
         }
     }
-
     return cTiles;
 }
 

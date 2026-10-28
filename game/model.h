@@ -63,6 +63,7 @@ struct Tile {
     int height;
     int stairCount;
     int id;
+    bool occluding;
 };
 enum class COLOR {
     BLACK, DARK, MID, MID2, LIGHTEST
@@ -75,7 +76,7 @@ public:
 static Color GetColor(COLOR c) {
     switch (c) {
         case COLOR::BLACK: return Color(0.0, 0.0, 0.0, 1.0);
-        case COLOR::DARK: return Color(60/255.0, 60/255.0, 60/255.0, 1.0);
+        case COLOR::DARK: return Color(100/255.0, 100/255.0, 100/255.0, 1.0);
         case COLOR::MID: return Color(150/255.0, 150/255.0, 150/255.0, 1.0);
         case COLOR::MID2: return Color(180/255.0, 180/255.0, 180/255.0, 1.0);
         case COLOR::LIGHTEST: return Color(250/255.0, 250/255.0, 250/255.0, 1.0);
