@@ -412,33 +412,6 @@ private:
         }
     }
 
-    void CenterCameraOnCell(int row, int col, int height) {
-//        printf("Center on %d %d\n", row, col);
-        float x = ORIGIN_X + (col - row) * (TILE_W / 2.0f);
-        float y = ORIGIN_Y + (col + row) * (TILE_H / 2.0f)
-                  - height * TILE_H;
-        y += TILE_H/2;
-
-        auto n = screen_to_normalized(vec2{x, y});
-        CAMERA.x = n.x;
-        CAMERA.y = n.y;
-    }
-    int GetCenterCol(int height) {
-        auto cam = normalized_to_screen(vec2{CAMERA.x, CAMERA.y});
-
-        return (int)floorf(
-                (cam.x - ORIGIN_X) / TILE_W
-                + (cam.y - ORIGIN_Y + height * TILE_H) / TILE_H
-        );
-    }
-    int GetCenterRow(int height) {
-        auto cam = normalized_to_screen(vec2{CAMERA.x, CAMERA.y});
-
-        return (int)floorf(
-                (cam.y - ORIGIN_Y + height * TILE_H) / TILE_H
-                - (cam.x - ORIGIN_X) / TILE_W
-        );
-    }
     void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
         std::vector<vec2> lines{};
         for (int row = -GRID_ROWS; row < GRID_ROWS; row++) {

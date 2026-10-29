@@ -6,7 +6,7 @@
 
 #include "vector"
 
-void drawCubeNE(Platform* platform, MaterialColor* mat, CompositePiece* root);
+void drawCubeNE(CompositePiece* root);
 
 CompositePiece* drawCubeCompositeTile(
         Platform* platform, MaterialColor* mat,
@@ -22,7 +22,7 @@ CompositePiece* drawCubeCompositeTile(
     root->type = COMPOSITE_CUBE;
 
     switch (orientation) {
-        case NORTHEAST: drawCubeNE(platform, mat, root); break;
+        case NORTHEAST: drawCubeNE(root); break;
         case NORTHWEST: break;
         case SOUTHEAST: break;
         case SOUTHWEST: break;
@@ -31,7 +31,7 @@ CompositePiece* drawCubeCompositeTile(
     return root;
 }
 
-void drawCubeNE(Platform* platform, MaterialColor* mat, CompositePiece* root) {
+void drawCubeNE(CompositePiece* root) {
     for (int h = 0; h < root->height; h++) {
         for (int l = 0; l < root->length; l++) {
             for (int w = 0; w < root->width; w++) {
