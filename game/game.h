@@ -1,6 +1,7 @@
 #pragma once
 #define DEBUG_QUAD 0
-#define DEBUG_PRINT 0
+#define DEBUG_PRINT 1
+#define DEBUG_GRIDTEXT 1
 
 #include "../engine/engine/game.h"
 #include "../engine/platform/directx/directx.h"
@@ -56,6 +57,8 @@ public:
         }
         SetColor(mat->color, Color{0.0,0.0,0.0,10/255.0});
         drawIsoGrid(platform, mat, 0);
+        SetColor(mat->color, Color{0.0,0.0,1.0,40/255.0});
+//        drawIsoGrid(platform, mat, 1);
         SetColor(mat->color, COLOR::BLACK);
 
         int ccol = GetCenterCol(0);
@@ -79,8 +82,8 @@ public:
         char buffer[100];
         sprintf(buffer, "Selected: %s", selectedPieceStr());
         drawText(font, atlas, buffer, {50, 50});
-        sprintf(buffer, "L: %d  W: %d  H: %d  Global: %s Piece: %s", l, w, h,
-                orientationToStr(selected_orientation), orientationToStr(piece_orientation));
+        sprintf(buffer, "L: %d  W: %d  H: %d  Global: %s Piece: %s \n Hieght Base: %d ", l, w, h,
+                orientationToStr(selected_orientation), orientationToStr(piece_orientation), height_base);
         drawText(font, atlas, buffer, {50, 80});
         matFont->color[3] = 0.3;
         font->overlay = false;
@@ -158,8 +161,10 @@ public:
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
             hover = true;
 
+            printf("Hover %d %d\n", row, col);
+
             for (auto t : tiles) {
-                if (t->row == row && t->col==col) {
+                if (t->row == row && t->col==col && t->height == height_base) {
                     canDraw = false;
                 }
             }
@@ -186,7 +191,8 @@ public:
                     hoverBaseCol = col + l - 1;
                     hoverBaseRow = row;
                 }
-            } else if (selected == COMPOSITE_CUBE) {
+            }
+            else if (selected == COMPOSITE_CUBE) {
                 auto p = drawCubeCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
                 for (auto t : tiles) {
                     for (auto child : p->tiles) {
@@ -209,10 +215,10 @@ public:
             hoverTile->orientation = piece_orientation;
             hoverTile->row = row;
             hoverTile->col = col;
-            hoverTile->height_base = 0;
+            hoverTile->height_base = height_base;
             hoverTile->length = l - 1;
             hoverTile->width = w - 1;
-            hoverTile->height = 0; // hardcoded for now
+            hoverTile->height = height_base; // hardcoded for now
             hoverTile->stairCount = s;
             hoverTile->type = selected;
         }
@@ -262,7 +268,7 @@ public:
                     Tile* tmp = new Tile();
                     tmp->row = hoverBaseRow;
                     tmp->col = hoverBaseCol;
-                    tmp->height = 0;
+                    tmp->height = height_base;
                     if (compareTiles(tmp, tile)) {
                         hoverDrawn = true;
                         if (canDraw) {
@@ -312,6 +318,7 @@ private:
     int w = 1;
     int l = 1;
     int s = 2;
+    int height_base = 0;
     Sprite* font;
     TEXT_MSDF::FontAtlas atlas;
     int frame = 0;
@@ -340,10 +347,10 @@ private:
                     t->orientation = piece_orientation,
                     t->row = row,
                     t->col = col,
-                    t->height_base = 0,
+                    t->height_base = height_base,
                     t->length = l - 1,
                     t->width = w - 1,
-                    t->height = 0, // TODO: Support height and/or base height for cube etc.
+                    t->height = height_base, // TODO: Support height and/or base height for cube etc.
                     t->stairCount = s;
                     tiles.push_back(t);
                 }
@@ -389,6 +396,18 @@ private:
             case KeyCode::H:
                 selected_tool = HEIGHT;
                 break;
+            case KeyCode::Numpad0:
+                height_base = 0;
+                break;
+            case KeyCode::Numpad1:
+                height_base = 1;
+                break;
+            case KeyCode::Numpad2:
+                height_base = 2;
+                break;
+            case KeyCode::Numpad3:
+                height_base = 3;
+                break;
             case KeyCode::S:
                 break;
             case KeyCode::Up:
@@ -431,10 +450,12 @@ private:
                 lines.push_back(points[2]);  lines.push_back(points[3]);
                 lines.push_back(points[3]);  lines.push_back(points[4]);
 
+#if DEBUG_GRIDTEXT
                 auto n = screen_to_normalized(vec2{(float)screenX - 20, (float)screenY + TILE_H/2 + 6});
                 char buffer[100];
                 sprintf(buffer, "(%d,%d)", row, col);
-//                RenderText(font, buffer, n.x, n.y, atlas);
+                RenderText(font, buffer, n.x, n.y, atlas);
+#endif
             }
         }
        ((PlatformDirectX*)platform)->drawLines(lines, mat);
@@ -445,7 +466,7 @@ private:
 #endif
         switch(t->type) {
             case CUBE:
-                drawCube(platform, mat, t->row, t->col, 0);
+                drawCube(platform, mat, t->row, t->col, t->height);
                 break;
             case COMPOSITE_CUBE: {
                 // Used for hover display only

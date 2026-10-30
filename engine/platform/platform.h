@@ -26,6 +26,12 @@ enum class KeyCode {
     _3,
     _4,
     _5,
+    Numpad0,
+    Numpad1,
+    Numpad2,
+    Numpad3,
+    Numpad4,
+    Numpad5,
     // Add more keys as needed
 };
 enum class MouseButton {
