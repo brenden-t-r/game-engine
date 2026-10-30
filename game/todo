@@ -1,6 +1,5 @@
 
 - dont draw lines in SW that are obscured by faces
-- draw cubes and pieces that start above h=1
 
 - rotation face color updates based on orientation for cubes (better support for ramps)
 - stairs
