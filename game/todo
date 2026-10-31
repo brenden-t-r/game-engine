@@ -2,6 +2,14 @@
 - dont draw lines in SW that are obscured by faces
 - batch drawing glyphs
 - rotation face color updates based on orientation for cubes (better support for ramps)
+- cube composite rotation fix
 
-- stairs
-
+sprites / complex objects
+- draw complete object (either as multi cell geometry or a multi-cell sprite)
+- redraw the complete object for each cell it occupies, with a shader that masks
+    everything not in the given cell (ensure cells are sorted before drawing)
+- for sprite specifically, you will need to know which cells to include/exclude.
+        That include height. So you will need some kind of multi-level cell selection tool for the sprite.
+        ex for the stairs, choose the diagonal floor tiles as well as the height tiles for proper ordering.
+        Alternatively ignore height and do it just based on the based tile and height
+    For geometry you'll need to know what cells to include

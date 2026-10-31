@@ -10,6 +10,7 @@
 #include "util.h"
 #include "ramp.h"
 #include "cube.h"
+#include "stairs.h"
 
 class IsoGame : public Game {
 public:
@@ -305,6 +306,8 @@ public:
             delete(hoverTile);
         }
         //endregion
+
+        drawStairs(platform, mat, 0, 0, 1,1, 1, 4, NORTHEAST);
     }
 
 private:
