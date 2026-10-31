@@ -160,11 +160,11 @@ public:
         int hoverBaseCol = -1;
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
             hover = true;
-
             printf("Hover %d %d\n", row, col);
-
+            int effectualRow = row + height_base;
+            int effectualCol = col + height_base;
             for (auto t : tiles) {
-                if (t->row == row && t->col==col && t->height == height_base) {
+                if (t->row == effectualRow && t->col==effectualCol && t->height == height_base) {
                     canDraw = false;
                 }
             }
@@ -213,8 +213,8 @@ public:
                 hoverTile = hoverBasic;
             }
             hoverTile->orientation = piece_orientation;
-            hoverTile->row = row;
-            hoverTile->col = col;
+            hoverTile->row = effectualRow;
+            hoverTile->col = effectualCol;
             hoverTile->height_base = height_base;
             hoverTile->length = l - 1;
             hoverTile->width = w - 1;
@@ -345,8 +345,8 @@ private:
                     t = new Tile();
                     t->type = selected,
                     t->orientation = piece_orientation,
-                    t->row = row,
-                    t->col = col,
+                    t->row = row + height_base,
+                    t->col = col + height_base,
                     t->height_base = height_base,
                     t->length = l - 1,
                     t->width = w - 1,

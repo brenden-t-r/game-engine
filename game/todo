@@ -1,7 +1,7 @@
 
 - dont draw lines in SW that are obscured by faces
-
+- batch drawing glyphs
 - rotation face color updates based on orientation for cubes (better support for ramps)
+
 - stairs
 
-- batch drawing glyphs
