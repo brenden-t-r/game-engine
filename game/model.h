@@ -19,7 +19,8 @@ enum TOOL {
 };
 enum PIECE_TYPE {
     CUBE, RAMP, STAIRS,
-    COMPOSITE_CUBE, COMPOSITE_CUBE_UNIT, COMPOSITE_RAMP, COMPOSITE_RAMP_UNIT
+    COMPOSITE_CUBE, COMPOSITE_CUBE_UNIT, COMPOSITE_RAMP, COMPOSITE_RAMP_UNIT,
+    COMPOSITE_MASKED_GEOMETRY_UNIT
 };
 PIECE_TYPE selected = CUBE;
 TOOL selected_tool = WIDTH;
@@ -50,7 +51,7 @@ static int ID = 0;
 struct Tile {
     Tile(){
         id = ++ID;
-//        printf("Create tile %d\n", id);
+        printf("Create tile %d\n", id);
     }
     virtual ~Tile() = default;
     PIECE_TYPE type;
@@ -95,29 +96,13 @@ static void SetColor(float* float4, Color c) {
     float4[2] = c.b;
     float4[3] = c.a;
 }
-struct CompositeTileFace{
-    std::vector<Point>points;
-    Color color;
-};
-struct CompositeTileLine{
-    Point a;
-    Point b;
-};
-struct CompositePiece : public Tile{
-    std::vector<Tile*>tiles;
-};
-struct CompositeTile : public Tile{
-    std::vector<CompositeTileFace>faces{};
-    std::vector<CompositeTileLine>lines{};
-    CompositePiece* parent = nullptr;
-};
 
 class Quad {
 public:
     Triangle* a = nullptr;
     Triangle* b = nullptr;
     vec2 points[4];
-    void SetMaterial(MaterialColor* mat) {
+    void SetMaterial(Material* mat) {
         a->material = mat;
         b->material = mat;
     }
@@ -131,4 +116,36 @@ public:
 #endif
         b->Update();
     }
+};
+struct CompositeTileFace{
+    std::vector<Point>points;
+    Color color;
+
+    //
+    Triangle* tri = nullptr;
+    Quad* quad = nullptr;
+};
+struct CompositeTileLine{
+    Point a;
+    Point b;
+};
+struct CompositePiece : public Tile{
+    std::vector<Tile*>tiles;
+};
+struct CompositeTile : public Tile{
+    std::vector<CompositeTileFace>faces{};
+    std::vector<CompositeTileLine>lines{};
+    CompositePiece* parent = nullptr;
+};
+struct IsoCell {
+    int row;
+    int col;
+};
+struct CompositeMaskedGeometryTile : public Tile {
+    std::vector<CompositeTileFace>faces{};
+    std::vector<CompositeTileLine>lines{};
+    std::vector<Tile*> cells;
+};
+struct CompositeMaskedGeometryTileCell : public Tile {
+    CompositeMaskedGeometryTile* parent = nullptr;
 };

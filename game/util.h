@@ -105,7 +105,7 @@ bool compareTiles(const Tile* a, const Tile* b) {
     int ka = tileSortKey(a);
     int kb = tileSortKey(b);
 #if DEBUG_PRINT
-    printf("%d => (%d,%d) vs %d => (%d,%d) ka: %d kb %d\n", a->id, a->row, a->col, b->id, b->row, b->col, ka, kb);
+//    printf("%d => (%d,%d) vs %d => (%d,%d) ka: %d kb %d\n", a->id, a->row, a->col, b->id, b->row, b->col, ka, kb);
 #endif
     if (ka != kb)return ka < kb;
     if (a->row != b->row)return a->row < b->row;
@@ -402,18 +402,30 @@ void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int heig
 
     auto quadFront = getQuad(platform, bottom[0], top[0], top[3], bottom[3]);
     SetColor(mat->color, COLOR::MID);
+//    mat->uniformFields[0].f4[0] = GetColor(COLOR::MID).r;
+//    mat->uniformFields[0].f4[1] = GetColor(COLOR::MID).g;
+//    mat->uniformFields[0].f4[2] = GetColor(COLOR::MID).b;
+//    mat->uniformFields[0].f4[3] = GetColor(COLOR::MID).a;
     quadFront->SetMaterial(mat);
     quadFront->Update();
     deleteQuad(platform, quadFront);
 
     auto quadSide = getQuad(platform, bottom[0], bottom[1], top[1], top[0]);
-    SetColor(mat->color, COLOR::DARK);
+    SetColor(mat->color, COLOR::MID);
+//    mat->uniformFields[0].f4[0] = GetColor(COLOR::DARK).r;
+//    mat->uniformFields[0].f4[1] = GetColor(COLOR::DARK).g;
+//    mat->uniformFields[0].f4[2] = GetColor(COLOR::DARK).b;
+//    mat->uniformFields[0].f4[3] = GetColor(COLOR::DARK).a;
     quadSide->SetMaterial(mat);
     quadSide->Update();
     deleteQuad(platform, quadSide);
 
     auto quadTop = getQuad(platform, top[0], top[1], top[2], top[3]);
     SetColor(mat->color, COLOR::LIGHTEST);
+//    mat->uniformFields[0].f4[0] = GetColor(COLOR::LIGHTEST).r;
+//    mat->uniformFields[0].f4[1] = GetColor(COLOR::LIGHTEST).g;
+//    mat->uniformFields[0].f4[2] = GetColor(COLOR::LIGHTEST).b;
+//    mat->uniformFields[0].f4[3] = GetColor(COLOR::LIGHTEST).a;
     quadTop->SetMaterial(mat);
     quadTop->Update();
     deleteQuad(platform, quadTop);
@@ -473,6 +485,8 @@ const char* pieceTypeStr(PIECE_TYPE c) {
         case PIECE_TYPE::COMPOSITE_RAMP_UNIT: return "Ramp Composite Unit";
         case COMPOSITE_CUBE: return "Composite Cube";
         case COMPOSITE_CUBE_UNIT: return "Composite Cube Unit";
+        case PIECE_TYPE::COMPOSITE_MASKED_GEOMETRY_UNIT: return "Composite Masked Geometry Unit";
+        case PIECE_TYPE::STAIRS: return "Stairs";
         default: return "?";
     }
 }
@@ -480,7 +494,7 @@ const char* selectedPieceStr() {
     return pieceTypeStr(selected);
 }
 void printTile(Tile* t) {
-    printf("Draw: %d %s (%d,%d h%d) sort:%d\n", t->id, pieceTypeStr(t->type), t->row, t->col, t->height, tileSortKey(t));
+//    printf("Draw: %d %s (%d,%d h%d) sort:%d\n", t->id, pieceTypeStr(t->type), t->row, t->col, t->height, tileSortKey(t));
 }
 //endregion
 

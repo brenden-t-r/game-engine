@@ -5,7 +5,7 @@
 extern int WINDOW_WIDTH;
 extern int WINDOW_HEIGHT;
 
-// Rendering pixel dimensions, which woll be 2x for retina displays
+// Rendering pixel dimensions, which will be 2x for retina displays
 // Should be used in particular for texture sizing.
 extern int FRAMEBUFFER_WIDTH;
 extern int FRAMEBUFFER_HEIGHT;

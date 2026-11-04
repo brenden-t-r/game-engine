@@ -3,6 +3,7 @@
 - batch drawing glyphs
 - rotation face color updates based on orientation for cubes (better support for ramps)
 - cube composite rotation fix
+- something is apparently broken with drawLines, causes all kinds of issues. Probably a d3d bind/unbind resources issue.
 
 sprites / complex objects
 - draw complete object (either as multi cell geometry or a multi-cell sprite)

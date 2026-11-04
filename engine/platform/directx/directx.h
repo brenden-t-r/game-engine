@@ -179,6 +179,12 @@ public:
         );
         ShowWindow(hwnd, nCmdShow);
 
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+
+        printf("Client width: %ld\n", clientRect.right);
+        printf("Client height: %ld\n", clientRect.bottom);
+
         // Initialize Direct3D
         InitD3D(hwnd);
 
@@ -195,6 +201,12 @@ public:
             printf("Failed to initialize audio engine.");
         }
         assert(result == MA_SUCCESS);
+
+        UINT numViewports = 1;
+        D3D11_VIEWPORT viewport;
+        d3dContext->RSGetViewports(&numViewports, &viewport);
+        printf("TopLeftY: %f\n", viewport.TopLeftY);
+        printf("Height: %f\n", viewport.Height);
     }
 
     void SetGamepadVibration(int amountLeft, int amountRight) override {
@@ -367,17 +379,23 @@ public:
         );
         assert(SUCCEEDED(hr));
 
-        auto shaderd3d = (ShaderD3D*)colorShader;
-        d3dContext->IASetInputLayout(shaderd3d->inputLayout);
+        // Bind shaders
+        auto shader = (ShaderD3D*)material->shader;
+        ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+        d3dContext->VSSetShader(shader->vertexShader, nullptr, 0);
+        d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
+        d3dContext->PSSetShaderResources(0, 1, nullSRV);
+
+        // Buffers
+        d3dContext->IASetInputLayout(shader->inputLayout);
         d3dContext->IASetVertexBuffers(
                 0, 1, &vertexBuffer, &stride, &offset
         );
         d3dContext->IASetPrimitiveTopology(
                 D3D11_PRIMITIVE_TOPOLOGY_LINELIST
         );
-        d3dContext->VSSetShader(shaderd3d->vertexShader, nullptr, 0);
-        d3dContext->PSSetShader(shaderd3d->pixelShader, nullptr, 0);
 
+        // Bind constant buffer
         ID3D11Buffer* constantBuffer = nullptr;
         D3D11_BUFFER_DESC cbd = {};
         cbd.ByteWidth = 32;
@@ -394,6 +412,7 @@ public:
         d3dContext->Unmap(constantBuffer, 0);
         d3dContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
+        // Blend state
         d3dContext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
 
         d3dContext->Draw(2, 0);
@@ -403,9 +422,10 @@ public:
     //region Triangle
     class TriangleD3D : public Triangle {
     public:
-        explicit TriangleD3D(ID3D11DeviceContext* d3dContext, ID3D11Device* d3dDevice) {
+        explicit TriangleD3D(ID3D11DeviceContext* d3dContext, ID3D11Device* d3dDevice, ID3D11BlendState* blendState) {
             this->d3dContext = d3dContext;
             this->d3dDevice = d3dDevice;
+            this->blendState = blendState;
             Init();
         }
         ~TriangleD3D() override {
@@ -442,6 +462,10 @@ public:
             d3dContext->PSSetShader(shader->pixelShader, nullptr, 0);
             d3dContext->PSSetShaderResources(0, 1, nullSRV);
 
+            // Set blender state
+            float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            d3dContext->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+
             // Bind constant buffer
             D3D11_MAPPED_SUBRESOURCE mapped{};
             d3dContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -459,6 +483,7 @@ public:
         ID3D11Device* d3dDevice = nullptr;
         ID3D11Buffer* vertexBuffer = nullptr;
         ID3D11Buffer* constantBuffer = nullptr;
+        ID3D11BlendState* blendState = nullptr;
         Vertex d3d_vertices[3] {
                 { DirectX::XMFLOAT3(0.5f,  -0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
                 { DirectX::XMFLOAT3(-0.5f, -0.5f, 0.0f), DirectX::XMFLOAT2(0.5f, 0.0f) },
@@ -497,7 +522,7 @@ public:
         }
     };
     GameObject* CreateTriangle() override {
-        auto gameObject = new TriangleD3D(d3dContext, d3dDevice);
+        auto gameObject = new TriangleD3D(d3dContext, d3dDevice, blendState);
         gameObject->material = new MaterialColor(colorShader);
         return gameObject;
     }
@@ -974,6 +999,11 @@ private:
         swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer);
         d3dDevice->CreateRenderTargetView(backBuffer, NULL, &renderTargetView);
         backBuffer->Release();
+
+        D3D11_TEXTURE2D_DESC desc;
+        backBuffer->GetDesc(&desc);
+        printf("Backbuffer width: %u\n", desc.Width);
+        printf("Backbuffer height: %u\n", desc.Height);
 
         // Set the render target
         d3dContext->OMSetRenderTargets(1, &renderTargetView, NULL);

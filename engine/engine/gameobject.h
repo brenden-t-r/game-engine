@@ -90,7 +90,6 @@ public:
         SetPosition({0,0,0});
     }
 
-
     void AfterDraw() {
         if (manualVertices && !overlay) {
             for (auto &vertice: vertices) {

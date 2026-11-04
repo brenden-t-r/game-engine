@@ -4,6 +4,7 @@
 #define DEBUG_GRIDTEXT 1
 
 #include "../engine/engine/game.h"
+#include "../engine/engine/material.h"
 #include "../engine/platform/directx/directx.h"
 
 #include "model.h"
@@ -36,13 +37,44 @@ public:
         setFontSize(font, 9);
 
         CenterCameraOnCell(0,0,0);
+
+        isoShader = LoadISOShader();
+        matIso = new Material(isoShader);
+        Shader::UniformField Color = {Shader::FLOAT4, "Color"};
+        Color.f4[0] = 1.0;
+        Color.f4[1] = 0.0;
+        Color.f4[2] = 0.0;
+        Color.f4[3] = 1.0;
+        Shader::UniformField X = {Shader::FLOAT, "X"};
+        X.f = FRAMEBUFFER_WIDTH/2.0;
+        Shader::UniformField Y = {Shader::FLOAT, "Y"};
+        Y.f = FRAMEBUFFER_HEIGHT/2.0;
+        Shader::UniformField Width = {Shader::FLOAT, "Width"};
+        Width.f = 1000;
+        Shader::UniformField Height = {Shader::FLOAT, "Height"};
+        Height.f = 1000;
+        matIso->uniformFields.push_back(Color);
+        matIso->uniformFields.push_back(X);
+        matIso->uniformFields.push_back(Y);
+        matIso->uniformFields.push_back(Width);
+        matIso->uniformFields.push_back(Height);
+    }
+    Shader* isoShader;
+    Material* matIso;
+
+    Shader* LoadISOShader() {
+        ShaderDef shaderDef{};
+        shaderDef.path = "assets/shaders/iso.hlsl";
+        shaderDef.inputLayoutType = InputLayoutType::POSITION;
+        return platform->LoadShader(shaderDef);
     }
 
+    Tile* camTile = new Tile();
     void Update() override {
         //region: Init
         frame += 1;
 #if DEBUG_PRINT
-        printf("frame: %d\n", frame);
+//        printf("frame: %d\n", frame);
 #endif
         if (platform->IsKeyPressed(KeyCode::D)) {
             CAMERA.x += 0.01;
@@ -109,17 +141,7 @@ public:
 
             for (int i = 0; i < temp.size(); i++){
                 auto t = temp[i];
-                if (t->type != COMPOSITE_RAMP_UNIT && t->type != COMPOSITE_RAMP) {
-                    int row = t->row;
-                    int col = t->col;
-                    int rotatedRow = col;
-                    int rotatedCol = -row;
-//                    int rotatedRow = col;
-//                    int rotatedCol = GRID_ROWS - 1 - row;
-                    t->row = rotatedRow;
-                    t->col = rotatedCol;
-                    tiles.push_back(t);
-                } else {
+                if (t->type == COMPOSITE_RAMP_UNIT || t->type == COMPOSITE_RAMP) {
                     auto parent = ((CompositeTile*)t)->parent;
                     bool hasSeen = false;
                     for (auto id : seen) {
@@ -142,6 +164,17 @@ public:
                             tiles.push_back(tile);
                         }
                     }
+                } else if (t->type == STAIRS) {
+                    // TODO
+                }
+                else {
+                    int row = t->row;
+                    int col = t->col;
+                    int rotatedRow = col;
+                    int rotatedCol = -row;
+                    t->row = rotatedRow;
+                    t->col = rotatedCol;
+                    tiles.push_back(t);
                 }
             }
 
@@ -161,7 +194,6 @@ public:
         int hoverBaseCol = -1;
         if (screenToIsoCell(mousePos.x, mousePos.y, 0, &row, &col)) {
             hover = true;
-            printf("Hover %d %d\n", row, col);
             int effectualRow = row + height_base;
             int effectualCol = col + height_base;
             for (auto t : tiles) {
@@ -210,7 +242,25 @@ public:
                     hoverBaseCol = col + l - 1;
                     hoverBaseRow = row;
                 }
-            } else {
+            } else if (selected == STAIRS) {
+                auto st = getStairsMaskedGeometry(platform, matIso, row, col, l, w, h, s, piece_orientation);
+                for (auto t : tiles) {
+                    for (auto child : st->cells) {
+                        if (child->row == t->row && child->col == t->col) {
+                            canDraw = false;
+                        }
+                    }
+                }
+                hoverTile = st;
+                if (piece_orientation == SOUTHWEST) {
+                    hoverBaseRow = row + l - 1;
+                    hoverBaseCol = col;
+                } else if (piece_orientation == SOUTHEAST) {
+                    hoverBaseCol = col + l - 1;
+                    hoverBaseRow = row;
+                }
+            }
+            else {
                 hoverTile = hoverBasic;
             }
             hoverTile->orientation = piece_orientation;
@@ -229,7 +279,6 @@ public:
         std::sort(tiles.begin(), tiles.end(), compareTiles);
         bool hoverDrawn = false;
         bool playerDrawn = false;
-        Tile* camTile = new Tile();
         camTile->row = GetCenterRow(0);
         camTile->col = GetCenterCol(0);
         camTile->height = 0;
@@ -288,7 +337,6 @@ public:
             }
             drawTile(tile);
         }
-        delete camTile;
 
         if (!playerDrawn) {
             Triangle* tri = (Triangle*)platform->CreateTriangle();
@@ -302,12 +350,45 @@ public:
         if (hover && !hoverDrawn && canDraw) {
             drawTile(hoverTile);
         }
-        if (hoverDrawn && (hoverTile->type == COMPOSITE_RAMP || hoverTile->type == COMPOSITE_CUBE)) {
+        if (hoverDrawn && (hoverTile->type == COMPOSITE_RAMP || hoverTile->type == COMPOSITE_CUBE || hoverTile->type == STAIRS)) {
             delete(hoverTile);
         }
         //endregion
+    }
 
-        drawStairs(platform, mat, 0, 0, 1,1, 1, 4, NORTHEAST);
+    void drawMaskedCompositeCell(CompositeMaskedGeometryTileCell* tile) {
+        auto camN = normalized_to_screen(vec3{CAMERA.x, CAMERA.y});
+        auto root = tile->parent;
+        Point points[4];
+        getIsoTilePoints(tile->row, tile->col, tile->height, points);
+
+        matIso->uniformFields[1].f = points[0].x - TILE_W/2.0 + (WINDOW_WIDTH/2.0-camN.x);
+        matIso->uniformFields[2].f = points[0].y + (WINDOW_HEIGHT/2.0-camN.y);
+        matIso->uniformFields[3].f = TILE_W;
+        matIso->uniformFields[4].f = TILE_H*2.0;
+
+//        printf("%zu faces %zu cells\n",root->faces.size(),root->cells.size());
+        for (auto face : root->faces) {
+            if (face.points.size() == 3) {
+                SetColor(matIso->uniformFields[0].f4, face.color);
+                auto tri = face.tri;
+                tri->SetMaterial(matIso);
+                tri->Update();
+            }
+            else if (face.points.size() == 4) {
+                SetColor(matIso->uniformFields[0].f4, face.color);
+                auto quad = face.quad;
+                quad->SetMaterial(matIso);
+                quad->Update();
+            }
+            else {
+                assert(false);
+            }
+        }
+        for (auto line : root->lines) {
+            SetColor(matIso->uniformFields[0].f4, GetColor(COLOR::BLACK));
+            drawLine(platform, matIso, line.a, line.b);
+        }
     }
 
 private:
@@ -340,10 +421,15 @@ private:
                     }
                 } else if (selected == COMPOSITE_CUBE) {
                     auto p = drawCubeCompositeTile(platform, mat, row, col, l, w, h, piece_orientation);
-                    for (auto tile : p->tiles) {
+                    for (auto tile: p->tiles) {
                         tiles.push_back(tile);
                     }
-                } else {
+                } else if (selected == STAIRS) {
+                    auto stairs = getStairsMaskedGeometry(platform, matIso, row, col, l, w, h, s, NORTHEAST); // todo: o
+                    for (auto tile: stairs->cells) {
+                        tiles.push_back(tile);
+                    }
+                }else {
                     Tile *t = nullptr;
                     t = new Tile();
                     t->type = selected,
@@ -383,6 +469,7 @@ private:
             case KeyCode::_2:
                 break;
             case KeyCode::_3:
+                selected = STAIRS;
                 break;
             case KeyCode::_4:
                 selected = COMPOSITE_CUBE;
@@ -398,6 +485,9 @@ private:
                 break;
             case KeyCode::H:
                 selected_tool = HEIGHT;
+                break;
+            case KeyCode::Numpad5: // todo
+                selected_tool = STAIRCOUNT;
                 break;
             case KeyCode::Numpad0:
                 height_base = 0;
@@ -496,10 +586,10 @@ private:
                         drawQuadAndCleanUp(platform, mat, q1, face.color);
                     }
                 }
-                SetColor(mat->color, COLOR::BLACK);
-                for (auto line: ccuTile->lines) {
-                    drawLine(platform, mat, line.a, line.b);
-                }
+//                SetColor(mat->color, COLOR::BLACK);
+//                for (auto line: ccuTile->lines) {
+//                    drawLine(platform, mat, line.a, line.b);
+//                }
                 break;
             }
             case COMPOSITE_RAMP: {
@@ -541,6 +631,20 @@ private:
                 SetColor(mat->color, COLOR::BLACK);
                 for (auto line: cruTile->lines) {
                     drawLine(platform, mat, line.a, line.b);
+                }
+                break;
+            }
+            case COMPOSITE_MASKED_GEOMETRY_UNIT: {
+                drawMaskedCompositeCell((CompositeMaskedGeometryTileCell*)t);
+                break;
+            }
+            case STAIRS: {
+                // Used for hover display only
+                auto st = dynamic_cast<CompositeMaskedGeometryTile*>(t);
+                printf("Child cells; %zu", st->cells.size());
+                std::sort(st->cells.begin(), st->cells.end(), compareTiles);
+                for (auto tile: st->cells) {
+                    drawTile(tile);
                 }
                 break;
             }
