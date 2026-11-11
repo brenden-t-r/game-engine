@@ -6,6 +6,9 @@
 
 #include "vector"
 
+
+void stairsNE(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
+
 CompositeMaskedGeometryTile *getStairsMaskedGeometry(
         Platform* platform, Material* mat,
         int row, int col, int length, int width, int height, int steps, Orientation orientation
@@ -19,7 +22,57 @@ CompositeMaskedGeometryTile *getStairsMaskedGeometry(
     root->type = STAIRS;
     root->height_base = 0; // todo
 
-    assert(orientation == NORTHEAST);
+    stairsNE(root, row, col, length, width, height, steps);
+
+    for (int h = 0; h < root->height; h++) {
+        for (int l = 0; l < root->length; l++) {
+            for (int w = 0; w < root->width; w++) {
+
+                switch(orientation) {
+                    case NORTHEAST: {
+                        auto tile = new CompositeMaskedGeometryTileCell();
+                        tile->row = row - l;
+                        tile->col = col - w;
+                        tile->height = h;
+                        tile->type = COMPOSITE_MASKED_GEOMETRY_UNIT;
+                        tile->parent = root;
+                        root->cells.push_back(tile);
+                        break;
+                    }
+                    case NORTHWEST:
+                        break;
+                    case SOUTHWEST:
+                        break;
+                    case SOUTHEAST:
+                        break;
+                }
+            }
+        }
+    }
+    for (auto& face : root->faces) {
+        if (face.points.size() == 3) {
+            auto tri = getTriangle(platform, face.points[0], face.points[1], face.points[2]);
+            SetColor(mat->uniformFields[0].f4, face.color);
+            tri->SetMaterial(mat);
+            face.tri = tri;
+        }
+        else if (face.points.size() == 4) {
+            auto quad = getQuad(platform, face.points[0], face.points[1], face.points[2], face.points[3]);
+            SetColor(mat->uniformFields[0].f4, face.color);
+            quad->SetMaterial(mat);
+            face.quad = quad;
+        }
+        else {
+            assert(false);
+        }
+    }
+    return root;
+}
+
+void stairsNE(
+        CompositeMaskedGeometryTile* root,
+        int row, int col, int length, int width, int height, int steps
+) {
     Point southEast[4];
     getIsoTilePoints(row, col, 0, southEast);
     Point northEast[4];
@@ -101,51 +154,6 @@ CompositeMaskedGeometryTile *getStairsMaskedGeometry(
     root->lines.push_back({northEast[1], northEastTop[1]});
     root->lines.push_back({northEastTop[1], northWestTop[2]});
     root->lines.push_back({southWest[3], southEast[0]});
-
-    for (int h = 0; h < root->height; h++) {
-        for (int l = 0; l < root->length; l++) {
-            for (int w = 0; w < root->width; w++) {
-                switch(orientation) {
-                    case NORTHEAST: {
-                        auto tile = new CompositeMaskedGeometryTileCell();
-                        tile->row = row - l;
-                        tile->col = col - w;
-                        tile->height = h;
-                        tile->type = COMPOSITE_MASKED_GEOMETRY_UNIT;
-                        tile->parent = root;
-                        root->cells.push_back(tile);
-                        break;
-                    }
-                    case NORTHWEST:
-                        break;
-                    case SOUTHWEST:
-                        break;
-                    case SOUTHEAST:
-                        break;
-                }
-            }
-        }
-    }
-
-    for (auto& face : root->faces) {
-        if (face.points.size() == 3) {
-            auto tri = getTriangle(platform, face.points[0], face.points[1], face.points[2]);
-            SetColor(mat->uniformFields[0].f4, face.color);
-            tri->SetMaterial(mat);
-            face.tri = tri;
-        }
-        else if (face.points.size() == 4) {
-            auto quad = getQuad(platform, face.points[0], face.points[1], face.points[2], face.points[3]);
-            SetColor(mat->uniformFields[0].f4, face.color);
-            quad->SetMaterial(mat);
-            face.quad = quad;
-        }
-        else {
-            assert(false);
-        }
-    }
-
-    return root;
 }
 
 
