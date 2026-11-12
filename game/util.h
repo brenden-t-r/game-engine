@@ -411,7 +411,7 @@ void drawCube(Platform* platform, MaterialColor* mat, int row, int col, int heig
     deleteQuad(platform, quadFront);
 
     auto quadSide = getQuad(platform, bottom[0], bottom[1], top[1], top[0]);
-    SetColor(mat->color, COLOR::MID);
+    SetColor(mat->color, COLOR::DARK);
 //    mat->uniformFields[0].f4[0] = GetColor(COLOR::DARK).r;
 //    mat->uniformFields[0].f4[1] = GetColor(COLOR::DARK).g;
 //    mat->uniformFields[0].f4[2] = GetColor(COLOR::DARK).b;
