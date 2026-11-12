@@ -131,11 +131,22 @@ struct CompositeTileLine{
 };
 struct CompositePiece : public Tile{
     std::vector<Tile*>tiles;
+    ~CompositePiece() {
+        for (auto tile : tiles) {
+            delete(tile);
+        }
+    }
 };
 struct CompositeTile : public Tile{
     std::vector<CompositeTileFace>faces{};
     std::vector<CompositeTileLine>lines{};
     CompositePiece* parent = nullptr;
+    ~CompositeTile() {
+        for (auto f : faces) {
+            delete(f.tri);
+            delete(f.quad);
+        }
+    }
 };
 struct IsoCell {
     int row;
@@ -145,6 +156,12 @@ struct CompositeMaskedGeometryTile : public Tile {
     std::vector<CompositeTileFace>faces{};
     std::vector<CompositeTileLine>lines{};
     std::vector<Tile*> cells;
+    ~CompositeMaskedGeometryTile() {
+        for (auto f : faces) {
+            delete(f.tri);
+            delete(f.quad);
+        }
+    }
 };
 struct CompositeMaskedGeometryTileCell : public Tile {
     CompositeMaskedGeometryTile* parent = nullptr;
