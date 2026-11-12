@@ -164,6 +164,29 @@ public:
                             tiles.push_back(tile);
                         }
                     }
+                } else if (t->type == COMPOSITE_CUBE_UNIT || t->type == COMPOSITE_CUBE) {
+                    auto parent = ((CompositeTile*)t)->parent;
+                    bool hasSeen = false;
+                    for (auto id : seen) {
+                        if (parent->id==id) {
+                            hasSeen = true;
+                            break;
+                        }
+                    }
+                    if (!hasSeen) {
+                        seen.push_back(parent->id);
+                        int rotatedRow = parent->col;
+                        int rotatedCol = -parent->row;
+
+                        auto piece = drawCubeCompositeTile(
+                                platform, mat,
+                                rotatedRow, rotatedCol, parent->length, parent->width, parent->height,
+                                rotatedOrientation(parent->orientation)
+                        );
+                        for (auto tile : piece->tiles) {
+                            tiles.push_back(tile);
+                        }
+                    }
                 } else if (t->type == STAIRS) {
                     // TODO
                 }
@@ -586,10 +609,10 @@ private:
                         drawQuadAndCleanUp(platform, mat, q1, face.color);
                     }
                 }
-//                SetColor(mat->color, COLOR::BLACK);
-//                for (auto line: ccuTile->lines) {
-//                    drawLine(platform, mat, line.a, line.b);
-//                }
+                SetColor(mat->color, COLOR::BLACK);
+                for (auto line: ccuTile->lines) {
+                    drawLine(platform, mat, line.a, line.b);
+                }
                 break;
             }
             case COMPOSITE_RAMP: {
