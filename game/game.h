@@ -526,8 +526,8 @@ private:
 
     void drawIsoGrid(Platform* platform, Material* mat, int height = 0) {
         std::vector<vec2> lines{};
-        for (int row = -GRID_ROWS; row < GRID_ROWS; row++) {
-            for (int col = -GRID_COLS; col < GRID_COLS; col++) {
+        for (int row = -GRID_ROWS; row <= GRID_ROWS; row++) {
+            for (int col = -GRID_COLS; col <= GRID_COLS; col++) {
                 int screenX = ORIGIN_X + (col - row) * (TILE_W / 2);
                 int screenY = ORIGIN_Y + (col + row) * (TILE_H / 2) - height * TILE_H;
 
