@@ -8,6 +8,7 @@
 
 
 void stairsNE(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
+void stairsNW(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
 
 CompositeMaskedGeometryTile *getStairsMaskedGeometry(
         Platform* platform, Material* mat,
@@ -22,7 +23,12 @@ CompositeMaskedGeometryTile *getStairsMaskedGeometry(
     root->type = STAIRS;
     root->height_base = 0; // todo
 
-    stairsNE(root, row, col, length, width, height, steps);
+    switch(orientation) {
+        case NORTHEAST: stairsNE(root, row, col, length, width, height, steps); break;
+        case NORTHWEST: stairsNW(root, row, col, length, width, height, steps); break;
+        case SOUTHWEST: break;
+        case SOUTHEAST: break;
+    }
 
     for (int h = 0; h < root->height; h++) {
         for (int l = 0; l < root->length; l++) {
@@ -39,8 +45,16 @@ CompositeMaskedGeometryTile *getStairsMaskedGeometry(
                         root->cells.push_back(tile);
                         break;
                     }
-                    case NORTHWEST:
+                    case NORTHWEST: {
+                        auto tile = new CompositeMaskedGeometryTileCell();
+                        tile->row = row + w;
+                        tile->col = col - l;
+                        tile->height = h;
+                        tile->type = COMPOSITE_MASKED_GEOMETRY_UNIT;
+                        tile->parent = root;
+                        root->cells.push_back(tile);
                         break;
+                    }
                     case SOUTHWEST:
                         break;
                     case SOUTHEAST:
@@ -154,4 +168,94 @@ void stairsNE(
     root->lines.push_back({northEast[1], northEastTop[1]});
     root->lines.push_back({northEastTop[1], northWestTop[2]});
     root->lines.push_back({southWest[3], southEast[0]});
+}
+
+void stairsNW(
+        CompositeMaskedGeometryTile* root,
+        int row, int col, int length, int width, int height, int steps
+) {
+    Point southEast[4];
+    getIsoTilePoints(row, col, 0, southEast);
+    Point northEast[4];
+    getIsoTilePoints(row, col - (length - 1), 0, northEast);
+    Point northEastTop[4];
+    getIsoTilePoints(row, col - (length - 1), height, northEastTop);
+
+    Point southWest[4];
+    getIsoTilePoints(row + (width - 1), col, 0, southWest);
+    Point northWest[4];
+    getIsoTilePoints(row + (width - 1), col - (length - 1), 0, northWest);
+    Point northWestTop[4];
+    getIsoTilePoints(row + (width - 1), col - (length - 1), height, northWestTop);
+
+    float xDist = distance(southWest[0], northWest[3]);
+    float yDist = distance(northWest[3], northWestTop[3]);
+    float stairLength = xDist / (float) steps;
+    float stairHeight = yDist / (float) steps;
+
+    Point start = northWestTop[3];
+    Point end;
+    int sideLength = (int) distance(southEast[0], southEast[3]);
+    Point qBottom1 = Point(start.x, start.y + height * TILE_H);
+    for (int i = 0; i < steps; i++) {
+        // Draw length
+        auto vec = multiplyVectorPoint(start, getBasisVector(SOUTHEAST), stairLength);
+        end = Point{(int) vec.x, (int) vec.y};
+        root->lines.push_back({start, end});
+
+        // Color east face
+        auto qBottom2Vec = multiplyVectorPoint(qBottom1, getBasisVector(SOUTHEAST), stairLength);
+        auto qBottom2 = Point(qBottom2Vec.x, qBottom2Vec.y);
+        root->faces.push_back({{start, end, qBottom2, qBottom1}, GetColor(COLOR::DARK)});
+
+        qBottom1 = Point(qBottom2.x, qBottom2.y);
+
+        // Color top surface
+        auto topWidthVec = multiplyVectorPoint(end, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        auto topWidthPoint = Point{(int) topWidthVec.x, (int) topWidthVec.y};
+        auto startWidthVec = multiplyVectorPoint(start, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        auto startWidthPoint = Point{(int) startWidthVec.x, (int) startWidthVec.y};
+        root->faces.push_back({{start, end, topWidthPoint, startWidthPoint}, GetColor(COLOR::LIGHTEST)});
+
+        // Draw width lines at top of stair
+        auto vecWidthLine = multiplyVectorPoint(end, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        Point pointWidthLine = Point{(int) vecWidthLine.x, (int) vecWidthLine.y};
+        root->lines.push_back({end, pointWidthLine});
+
+        // Draw height
+        start = end;
+        end = Point{start.x, start.y + (int) stairHeight};
+        root->lines.push_back({start, end});
+
+        // Color north face (riser)
+        auto northWidthVec = multiplyVectorPoint(end, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        auto northWidthPoint = Point{(int) northWidthVec.x, (int) northWidthVec.y};
+        startWidthVec = multiplyVectorPoint(start, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        startWidthPoint = Point{(int) startWidthVec.x, (int) startWidthVec.y};
+        root->faces.push_back({{end, start, startWidthPoint, northWidthPoint}, GetColor(COLOR::MID)});
+
+        start = end;
+
+        // Draw width lines at bottom of stair
+        vecWidthLine = multiplyVectorPoint(end, getBasisVector(NORTHEAST), (float) (width * sideLength));
+        pointWidthLine = Point{(int) vecWidthLine.x, (int) vecWidthLine.y};
+        root->lines.push_back({end, pointWidthLine});
+    }
+    start = northEastTop[2];
+    for (int i = 0; i < steps; i++) {
+        // Draw length
+        auto vec = multiplyVectorPoint(start, getBasisVector(SOUTHEAST), stairLength);
+        end = Point{(int) vec.x, (int) vec.y};
+        root->lines.push_back({start, end});
+        // Draw height
+        start = end;
+        end = Point{start.x, start.y + (int) stairHeight};
+        root->lines.push_back({start, end});
+        start = end;
+    }
+
+    root->lines.push_back({southWest[0], northWest[3]});
+    root->lines.push_back({northWest[3], northWestTop[3]});
+    root->lines.push_back({northWestTop[3], northEastTop[2]});
+    root->lines.push_back({southWest[0], southEast[1]});
 }

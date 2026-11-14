@@ -448,7 +448,7 @@ private:
                         tiles.push_back(tile);
                     }
                 } else if (selected == STAIRS) {
-                    auto stairs = getStairsMaskedGeometry(platform, matIso, row, col, l, w, h, s, NORTHEAST); // todo: o
+                    auto stairs = getStairsMaskedGeometry(platform, matIso, row, col, l, w, h, s, piece_orientation);
                     for (auto tile: stairs->cells) {
                         tiles.push_back(tile);
                     }
