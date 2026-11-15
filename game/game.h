@@ -187,8 +187,29 @@ public:
                             tiles.push_back(tile);
                         }
                     }
-                } else if (t->type == STAIRS) {
-                    // TODO
+                } else if (t->type == STAIRS || t->type == COMPOSITE_MASKED_GEOMETRY_UNIT) {
+                    auto parent = ((CompositeMaskedGeometryTileCell*)t)->parent;
+                    bool hasSeen = false;
+                    for (auto id : seen) {
+                        if (parent->id==id) {
+                            hasSeen = true;
+                            break;
+                        }
+                    }
+                    if (!hasSeen) {
+                        seen.push_back(parent->id);
+                        int rotatedRow = parent->col;
+                        int rotatedCol = -parent->row;
+
+                        auto stairs = getStairsMaskedGeometry(
+                                platform, matIso,
+                                rotatedRow, rotatedCol, parent->length, parent->width, parent->height, parent->stairCount,
+                                rotatedOrientation(parent->orientation)
+                        );
+                        for (auto tile : stairs->cells) {
+                            tiles.push_back(tile);
+                        }
+                    }
                 }
                 else {
                     int row = t->row;

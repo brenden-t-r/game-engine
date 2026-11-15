@@ -1,14 +1,20 @@
-
-- dont draw lines in SW that are obscured by faces
 - batch drawing glyphs
-- rotation face color updates based on orientation for cubes (better support for ramps)
-- cube composite rotation fix
 - something is apparently broken with drawLines, causes all kinds of issues. Probably a d3d bind/unbind resources issue.
 
+- dont draw lines that are obscured by faces
+- rotation face color updates based on orientation for cubes (better support for ramps)
+- height base for ramp, composite cube, stairs
+- piece transparency for player obscuring for cube, composite cube, and stairs
+
+- composite sprites
+- composite geometry/sprite object bake system to atlas
+- batch drawing tiles from atlas using sorted order of tile indices
+
+
 sprites / complex objects
-- draw complete object (either as multi cell geometry or a multi-cell sprite)
-- redraw the complete object for each cell it occupies, with a shader that masks
-    everything not in the given cell (ensure cells are sorted before drawing)
+- x draw complete object (either as multi cell geometry or a multi-cell sprite)
+- x redraw the complete object for each cell it occupies, with a shader that masks
+   x everything not in the given cell (ensure cells are sorted before drawing)
 - for sprite specifically, you will need to know which cells to include/exclude.
         That include height. So you will need some kind of multi-level cell selection tool for the sprite.
         ex for the stairs, choose the diagonal floor tiles as well as the height tiles for proper ordering.

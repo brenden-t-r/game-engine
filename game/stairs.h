@@ -22,6 +22,8 @@ CompositeMaskedGeometryTile *getStairsMaskedGeometry(
     root->width = width;
     root->height = height;
     root->type = STAIRS;
+    root->orientation = orientation;
+    root->stairCount = steps;
     root->height_base = 0; // todo
 
     switch(orientation) {
