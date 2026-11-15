@@ -6,7 +6,6 @@
 
 #include "vector"
 
-
 void stairsNE(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
 void stairsNW(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
 void stairsSW(CompositeMaskedGeometryTile* root, int row, int col, int length, int width, int height, int steps);
@@ -290,67 +289,60 @@ void stairsSW(
     Point northEastTop[4];
     getIsoTilePoints(row, col + (width - 1), height, northEastTop);
     Point southWest[4];
-    getIsoTilePoints(row + (length - 1), col + (width - 1), 0, southWest);
+    getIsoTilePoints(row + (length - 1), col, 0, southWest);
     Point southWestTop[4];
-    getIsoTilePoints(row + (length - 1), col  + (width - 1), height, southWestTop);
+    getIsoTilePoints(row + (length - 1), col, height, southWestTop);
+
     Point northWest[4];
     getIsoTilePoints(row, col, 0, northWest);
     Point northWestTop[4];
     getIsoTilePoints(row, col, height, northWestTop);
 
-    float xDist = distance(southEast[0], northEast[1]);
+    float xDist = distance(northEast[1], southEast[0]);
     float yDist = distance(southWest[0], southWestTop[0]);
+    int sideLength = (int) distance(northWest[3], northWest[2]);
     float stairLength = xDist / (float) steps;
     float stairHeight = yDist / (float) steps;
+    float stairWidth = (width * sideLength);
 
-    Point start = southEastTop[0];
-    Point end;
-    int sideLength = (int) distance(southEast[0], southEast[3]);
-    Point qBottom1 = Point(start.x, start.y + height * TILE_H);
-
-    // Color back face
-    auto qBottom3Vec = multiplyVectorPoint(qBottom1, getBasisVector(NORTHWEST), xDist);
-    auto qBottom3 = Point(qBottom3Vec.x, qBottom3Vec.y);
-    Point qTop3 = Point(qBottom3.x, qBottom3.y - height * TILE_H);
-    root->faces.push_back({{start, qBottom1, qBottom3, qTop3}, GetColor(COLOR::MID)});
+    Point start = northEast[1];
 
     for (int i = 0; i < steps; i++) {
-        // Draw length
-        auto vec = multiplyVectorPoint(start, getBasisVector(NORTHEAST), stairLength);
-        end = Point{(int) vec.x, (int) vec.y};
-        root->lines.push_back({start, end});
+        // Draw stair height
+        Point stairBottom = Point{start.x, start.y - (i)*(int)stairHeight};
+        Point stairHeightTop = Point{stairBottom.x, stairBottom.y - (int)stairHeight};
+        root->lines.push_back({stairBottom, stairHeightTop});
 
-        // Color top surface
-        auto topWidthVec = multiplyVectorPoint(end, getBasisVector(NORTHWEST), (float) (width * sideLength));
-        auto topWidthPoint = Point{(int) topWidthVec.x, (int) topWidthVec.y};
-        auto startWidthVec = multiplyVectorPoint(start, getBasisVector(NORTHWEST), (float) (width * sideLength));
-        auto startWidthPoint = Point{(int) startWidthVec.x, (int) startWidthVec.y};
-        root->lines.push_back({startWidthPoint, topWidthPoint});
-        root->faces.push_back({{start, end, topWidthPoint, startWidthPoint}, GetColor(COLOR::LIGHTEST)});
+        // Draw stair width
+        Point stairTopBack = multiplyPointByVector(stairHeightTop, getBasisVector(NORTHWEST), stairWidth);
+        root->lines.push_back({stairHeightTop, stairTopBack});
 
-        // Color east face
-        auto qBottom2Vec = multiplyVectorPoint(qBottom1, getBasisVector(NORTHEAST), stairLength);
-        auto qBottom2 = Point(qBottom2Vec.x, qBottom2Vec.y);
-        root->faces.push_back({{start, end, qBottom2, qBottom1}, GetColor(COLOR::DARK)});
-        qBottom1 = Point(qBottom2.x, qBottom2.y);
+        // Draw stair length front
+        Point stairEndFrontTop = multiplyPointByVector(stairHeightTop, getBasisVector(SOUTHWEST), stairLength);
+        root->lines.push_back({stairHeightTop, stairEndFrontTop});
 
-        // Draw width lines at top of stair
-        auto vecWidthLine = multiplyVectorPoint(end, getBasisVector(NORTHWEST), (float) (width * sideLength));
-        Point pointWidthLine = Point{(int) vecWidthLine.x, (int) vecWidthLine.y};
-        root->lines.push_back({end, pointWidthLine});
+        // Draw stair length back
+        Point stairEndBack = multiplyPointByVector(stairTopBack, getBasisVector(SOUTHWEST), stairLength);
+        root->lines.push_back({stairTopBack, stairEndBack});
 
-        // Draw height
-        start = end;
-        end = Point{start.x, start.y + (int) stairHeight};
-        root->lines.push_back({start, end});
+        // Draw side face
+        Point end = multiplyPointByVector(start, getBasisVector(SOUTHWEST), stairLength);
+        root->faces.push_back({{start, stairHeightTop, stairEndFrontTop, end}, GetColor(COLOR::DARK)});
+
+        // Draw top face
+        root->faces.push_back({{stairHeightTop, stairEndFrontTop, stairEndBack, stairTopBack}, GetColor(COLOR::LIGHTEST)});
 
         start = end;
     }
 
-    root->lines.push_back({southEast[0], northEast[1]});
-    root->lines.push_back({southEast[0], southEastTop[0]});
-    root->lines.push_back({southWestTop[3], southEastTop[0]});
-    root->lines.push_back({southWest[3], southEast[0]});
+    // Color back face
+    root->faces.push_back({{southEast[0], southEastTop[0], southWestTop[3], southWest[3]}, GetColor(COLOR::MID)});
+
+    root->lines.push_back({southEast[0], northEast[1]}); // side length bottom
+    root->lines.push_back({southEast[0], southEastTop[0]}); // vertical back east
+    root->lines.push_back({southWest[3], southWestTop[3]}); // vertical back west
+    root->lines.push_back({southWest[3], southEast[0]}); // back length bottom
+    root->lines.push_back({southWestTop[3], southEastTop[0]}); // back length top
 }
 
 void stairsSE(
