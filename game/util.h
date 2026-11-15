@@ -25,6 +25,10 @@ Vec2 multiplyVectorPoint(Point p, Vec2 dirNormalized, float dist)
 {
     return { p.x + dirNormalized.x * dist, p.y + dirNormalized.y * dist };
 }
+Point multiplyPointByVector(Point p, Vec2 dirNormalized, float dist)
+{
+    return Point(p.x + dirNormalized.x * dist, p.y + dirNormalized.y * dist);
+}
 Vec2 getBasisVector(Orientation orientation) {
     float length = sqrt((float)(TILE_W*TILE_W + TILE_H*TILE_H));
     switch(orientation){
